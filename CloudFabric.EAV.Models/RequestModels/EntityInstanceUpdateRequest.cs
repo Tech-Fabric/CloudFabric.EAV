@@ -1,10 +1,10 @@
-﻿using Nastolkino.Service.Models.RequestModels.EAV.Attributes;
+using CloudFabric.EAV.Service.Models.RequestModels.Attributes;
 
 using System;
 using System.Collections.Generic;
 
 
-namespace Nastolkino.Service.Models.RequestModels.EAV
+namespace CloudFabric.EAV.Service.Models.RequestModels.EAV
 {
     public class EntityInstanceUpdateRequest
     {

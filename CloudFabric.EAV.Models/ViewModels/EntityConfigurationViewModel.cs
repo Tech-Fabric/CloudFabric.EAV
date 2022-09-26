@@ -1,11 +1,11 @@
-﻿using Nastolkino.Json.Utilities;
-using Nastolkino.Service.Models.ViewModels.EAV.Attributes;
+﻿using CloudFabric.EAV.Json.Utilities;
+using CloudFabric.EAV.Service.Models.ViewModels.Attributes;
 
 using System;
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
-namespace Nastolkino.Service.Models.ViewModels.EAV
+namespace CloudFabric.EAV.Service.Models.ViewModels.EAV
 {
     public class EntityConfigurationViewModel
     {

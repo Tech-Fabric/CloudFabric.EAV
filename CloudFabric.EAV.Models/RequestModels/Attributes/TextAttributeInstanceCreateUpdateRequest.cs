@@ -1,6 +1,6 @@
-﻿using Nastolkino.Data.Enums;
+﻿using CloudFabric.EAV.Data.Enums;
 
-namespace Nastolkino.Service.Models.RequestModels.EAV.Attributes
+namespace CloudFabric.EAV.Service.Models.RequestModels.Attributes
 {
     public class TextAttributeInstanceCreateUpdateRequest : AttributeInstanceCreateUpdateRequest
     {
