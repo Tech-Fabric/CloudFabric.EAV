@@ -8,6 +8,9 @@
 
   <ItemGroup>
     <PackageReference Include="AutoMapper" Version="11.0.1" />
+    <PackageReference Include="CloudFabric.EventSourcing.Domain" Version="0.0.1" />
+    <PackageReference Include="CloudFabric.Projections" Version="0.0.1" />
+    <PackageReference Include="CloudFabric.Projections.Attributes" Version="0.0.1" />
   </ItemGroup>
 
   <ItemGroup>
