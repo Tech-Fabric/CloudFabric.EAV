@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="AutoMapper" Version="11.0.1" />
+    <PackageReference Include="CloudFabric.EventSourcing.Domain" Version="0.0.1" />
+    <PackageReference Include="CloudFabric.Projections" Version="0.0.1" />
+    <PackageReference Include="CloudFabric.Projections.Attributes" Version="0.0.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\CloudFabric.EAV.Json\CloudFabric.EAV.Json.csproj" />
+    <ProjectReference Include="..\CloudFabric.EAV.Models\CloudFabric.EAV.Service.Models.csproj" />
+    <ProjectReference Include="..\CloudFabric.EAV\CloudFabric.EAV.Data.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,8 +1,8 @@
-﻿using Nastolkino.Json.Utilities;
+﻿using CloudFabric.EAV.Json.Utilities;
 
 using System.Collections.Generic;
 
-namespace Nastolkino.Service.Models.RequestModels.EAV.Attributes
+namespace CloudFabric.EAV.Service.Models.RequestModels.Attributes
 {
     public class ArrayAttributeInstanceCreateUpdateRequest: AttributeInstanceCreateUpdateRequest
     {

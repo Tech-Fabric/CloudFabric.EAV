@@ -1,7 +1,7 @@
 ﻿
 using System.Collections.Generic;
 
-namespace Nastolkino.Service.Models.RequestModels.EAV.Attributes
+namespace CloudFabric.EAV.Service.Models.RequestModels.Attributes
 {
     public class LocalizedTextAttributeInstanceCreateUpdateRequest : AttributeInstanceCreateUpdateRequest
     {

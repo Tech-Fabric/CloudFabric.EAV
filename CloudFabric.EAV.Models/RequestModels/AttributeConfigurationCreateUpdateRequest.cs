@@ -1,10 +1,10 @@
-﻿using Nastolkino.Data.Enums;
-using Nastolkino.Json.Utilities;
+using CloudFabric.EAV.Data.Enums;
+using CloudFabric.EAV.Json.Utilities;
 
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
-namespace Nastolkino.Service.Models.RequestModels.EAV.Attributes
+namespace CloudFabric.EAV.Service.Models.RequestModels.Attributes
 {
     [JsonConverter(typeof(PolymorphicJsonConverter<AttributeConfigurationCreateUpdateRequest>))]
     public abstract class AttributeConfigurationCreateUpdateRequest

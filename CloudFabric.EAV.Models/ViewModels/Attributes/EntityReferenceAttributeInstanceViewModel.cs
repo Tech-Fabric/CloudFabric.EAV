@@ -1,7 +1,7 @@
 ﻿using System;
-using Nastolkino.Service.Models.ViewModels.EAV.Attributes;
+using CloudFabric.EAV.Service.Models.ViewModels.Attributes;
 
-namespace Nastolkino.Service.Models.RequestModels.EAV.Attributes
+namespace CloudFabric.EAV.Service.Models.RequestModels.Attributes
 {
     public class EntityReferenceAttributeInstanceViewModel : AttributeInstanceViewModel
     {
