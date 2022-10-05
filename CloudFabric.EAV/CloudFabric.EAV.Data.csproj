@@ -17,4 +17,8 @@
     <ProjectReference Include="..\CloudFabric.EAV.Json\CloudFabric.EAV.Json.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Events\Configuration" />
+  </ItemGroup>
+
 </Project>

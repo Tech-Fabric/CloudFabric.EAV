@@ -1,5 +1,7 @@
 ﻿using CloudFabric.EAV.Data.Enums;
 using System.Collections.Generic;
+using CloudFabric.EAV.Data.Models.Base;
+using CloudFabric.EventSourcing.EventStore;
 
 namespace CloudFabric.EAV.Data.Models.Attributes
 {
@@ -25,5 +27,13 @@ namespace CloudFabric.EAV.Data.Models.Attributes
         public List<ImageThumbnailDefinition> ThumbnailsConfiguration { get; set; }
 
         public override EavAttributeType ValueType { get; } = EavAttributeType.Image;
+
+        public ImageAttributeConfiguration(IEnumerable<IEvent> events) : base(events)
+        {
+        }
+
+        public ImageAttributeConfiguration(List<LocalizedString> name, List<LocalizedString> description, string machineName, List<AttributeValidationRule> validationRules) : base(name, description, machineName, validationRules)
+        {
+        }
     }
 }

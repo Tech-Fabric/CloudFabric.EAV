@@ -4,6 +4,9 @@ using CloudFabric.EAV.Service.Models.ViewModels.EAV;
 using CloudFabric.EAV.Data.Repositories;
 using Microsoft.Extensions.Logging;
 using AutoMapper;
+using CloudFabric.EventSourcing.Domain;
+using CloudFabric.EventSourcing.EventStore.Persistence;
+using CloudFabric.Projections;
 
 namespace CloudFabric.EAV.Service;
 
@@ -11,33 +14,37 @@ public class EAVService : IEAVService
 {
     private readonly ILogger<EAVService> _logger;
     private readonly IMapper _mapper;
-    private readonly EntityConfigurationRepository _entityConfigurationRepository;
-    private readonly EntityInstanceRepository _entityInstanceRepository;
+    private readonly AggregateRepository<EntityConfiguration> _entityConfigurationRepository;
+    private readonly AggregateRepository<EntityInstance> _entityInstanceRepository;
 
+    private readonly EventUserInfo _userInfo;
+    //private readonly IProjectionRepository<EntityConfigurationProjection> _
     public EAVService(
         ILogger<EAVService> logger,
         IMapper mapper,
-        EntityConfigurationRepository entityConfigurationRepository,
-        EntityInstanceRepository entityInstanceRepository
-        )
+        AggregateRepository<EntityConfiguration> entityConfigurationRepository,
+        AggregateRepository<EntityInstance> entityInstanceRepository, 
+        EventUserInfo userInfo
+    )
     {
         _logger = logger;
         _mapper = mapper;
         _entityConfigurationRepository = entityConfigurationRepository;
         _entityInstanceRepository = entityInstanceRepository;
+        _userInfo = userInfo;
     }
-
+/*
     public async Task<EntityConfigurationViewModel> GetEntityConfiguration(Guid id)
     {
-        var entityConfiguration = await _entityConfigurationRepository
+        var entityConfiguration = await _entityConfigurationRepository.
             .GetOne(id);
 
         return _mapper.Map<EntityConfigurationViewModel>(entityConfiguration);
     }
-
+    
     public async Task<List<EntityConfigurationViewModel>> ListEntityConfigurations(int take, int skip = 0)
     {
-        var records = await _entityConfigurationRepository
+        var records = await _entityConfigurationRepository.
             .GetQuery()
             .Take(take)
             .Skip(skip)
@@ -45,16 +52,15 @@ public class EAVService : IEAVService
 
         return _mapper.Map<List<EntityConfigurationViewModel>>(records);
     }
-
-    public async Task<EntityConfigurationViewModel> CreateEntityConfiguration(Guid userId, EntityConfigurationCreateRequest entity)
+*/
+    public async Task<EntityConfigurationViewModel> CreateEntityConfiguration(Guid userId, EntityConfigurationCreateRequest entity, CancellationToken cancellationToken)
     {
         var entityConfiguration = _mapper.Map<EntityConfiguration>(entity);
-
-        var created = await _entityConfigurationRepository.Create(entityConfiguration, userId);
-
-        return _mapper.Map<EntityConfigurationViewModel>(created);
+        var created = await _entityConfigurationRepository.SaveAsync(_userInfo, entityConfiguration, cancellationToken);
+        
+        return _mapper.Map<EntityConfigurationViewModel>(entityConfiguration);
     }
-
+/*
     public Task UpdateEntityConfiguration(Guid userId, EntityConfigurationUpdateRequest entity)
     {
         throw new NotImplementedException();
@@ -117,4 +123,5 @@ public class EAVService : IEAVService
     {
         throw new NotImplementedException();
     }
+    */
 }
