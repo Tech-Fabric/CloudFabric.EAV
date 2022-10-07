@@ -1,8 +1,6 @@
 using System;
 using System.Collections.Generic;
-using CloudFabric.EAV.Data.Events.Instance;
 using CloudFabric.EAV.Data.Events.Instance.Entity;
-using CloudFabric.EAV.Data.Models.Base;
 using CloudFabric.EventSourcing.Domain;
 using CloudFabric.EventSourcing.EventStore;
 

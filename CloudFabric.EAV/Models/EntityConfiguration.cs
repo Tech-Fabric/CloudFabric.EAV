@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Reflection.PortableExecutable;
 using CloudFabric.EAV.Data.Events.Configuration.Entity;
 using CloudFabric.EAV.Data.Models.Base;
 using CloudFabric.EventSourcing.Domain;

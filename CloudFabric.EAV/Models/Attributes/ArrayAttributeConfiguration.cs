@@ -12,13 +12,5 @@ namespace CloudFabric.EAV.Data.Models.Attributes
         public EavAttributeType ItemsType { get; set; }
 
         public AttributeConfiguration ItemsAttributeConfiguration { get; set; }
-
-        public ArrayAttributeConfiguration(IEnumerable<IEvent> events) : base(events)
-        {
-        }
-
-        public ArrayAttributeConfiguration(List<LocalizedString> name, List<LocalizedString> description, string machineName, List<AttributeValidationRule> validationRules) : base(name, description, machineName, validationRules)
-        {
-        }
     }
 }
