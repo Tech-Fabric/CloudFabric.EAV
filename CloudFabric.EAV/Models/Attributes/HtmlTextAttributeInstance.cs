@@ -1,4 +1,4 @@
-namespace CloudFabric.EAV.Data.Models.Attributes
+namespace CloudFabric.EAV.Domain.Models.Attributes
 {
     public class HtmlTextAttributeInstance
     {

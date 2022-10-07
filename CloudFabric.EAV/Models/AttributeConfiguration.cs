@@ -1,13 +1,13 @@
-using CloudFabric.EAV.Data.Enums;
-using CloudFabric.EAV.Data.Models.Base;
-using CloudFabric.EAV.Json.Utilities;
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
+using CloudFabric.EAV.Domain.Enums;
+using CloudFabric.EAV.Domain.Models.Base;
+using CloudFabric.EAV.Json.Utilities;
 
-namespace CloudFabric.EAV.Data.Models
+namespace CloudFabric.EAV.Domain.Models
 {
     [JsonConverter(typeof(PolymorphicJsonConverter<AttributeConfiguration>))]
-    public abstract class AttributeConfiguration: Model 
+    public abstract class AttributeConfiguration
     {
         public List<LocalizedString> Name { get; protected set; }
 

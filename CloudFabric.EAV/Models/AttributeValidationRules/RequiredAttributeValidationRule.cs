@@ -1,6 +1,6 @@
 using System.Threading.Tasks;
 
-namespace CloudFabric.EAV.Data.Models.AttributeValidationRules
+namespace CloudFabric.EAV.Domain.Models.AttributeValidationRules
 {
     public class RequiredAttributeValidationRule : AttributeValidationRule
     {

@@ -1,8 +1,7 @@
-﻿using CloudFabric.EAV.Service.Models.ViewModels.Attributes;
+﻿using System;
+using CloudFabric.EAV.Models.ViewModels.Attributes;
 
-using System;
-
-namespace CloudFabric.EAV.Service.Models.RequestModels.Attributes
+namespace CloudFabric.EAV.Models.RequestModels.Attributes
 {
     public class EntityReferenceAttributeConfigurationViewModel : AttributeConfigurationViewModel
     {

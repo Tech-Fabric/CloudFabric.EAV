@@ -1,8 +1,5 @@
-﻿using System;
-
-namespace CloudFabric.EAV.Data.Models.Base;
+﻿namespace CloudFabric.EAV.Domain.Models.Base;
 
 public class Model
 {
-    public Guid Id { get; set; }
 }

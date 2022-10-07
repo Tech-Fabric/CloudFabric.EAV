@@ -1,9 +1,6 @@
-using System.Collections.Generic;
-using CloudFabric.EAV.Data.Enums;
-using CloudFabric.EAV.Data.Models.Base;
-using CloudFabric.EventSourcing.EventStore;
+using CloudFabric.EAV.Domain.Enums;
 
-namespace CloudFabric.EAV.Data.Models.Attributes
+namespace CloudFabric.EAV.Domain.Models.Attributes
 {
     public class ArrayAttributeConfiguration : AttributeConfiguration
     {

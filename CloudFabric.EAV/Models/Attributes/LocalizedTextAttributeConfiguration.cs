@@ -1,7 +1,10 @@
-using CloudFabric.EAV.Data.Enums;
-using CloudFabric.EAV.Data.Models.Base;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
+using CloudFabric.EAV.Domain.Enums;
+using CloudFabric.EAV.Domain.Models.Base;
+using CloudFabric.EventSourcing.EventStore;
 
-namespace CloudFabric.EAV.Data.Models.Attributes
+namespace CloudFabric.EAV.Domain.Models.Attributes
 {
     public class LocalizedTextAttributeConfiguration : AttributeConfiguration
     {

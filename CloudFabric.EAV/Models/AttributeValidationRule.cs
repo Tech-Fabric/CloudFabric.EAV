@@ -3,7 +3,7 @@ using CloudFabric.EAV.Json.Utilities;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
-namespace CloudFabric.EAV.Data.Models
+namespace CloudFabric.EAV.Domain.Models
 {
     [JsonConverter(typeof(PolymorphicJsonConverter<AttributeValidationRule>))]
     public abstract class AttributeValidationRule

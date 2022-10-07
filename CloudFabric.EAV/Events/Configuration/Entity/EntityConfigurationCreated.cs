@@ -1,8 +1,9 @@
+using System;
 using System.Collections.Generic;
-using CloudFabric.EAV.Data.Models;
-using CloudFabric.EAV.Data.Models.Base;
+using CloudFabric.EAV.Domain.Models;
+using CloudFabric.EAV.Domain.Models.Base;
 using CloudFabric.EventSourcing.EventStore;
 
-namespace CloudFabric.EAV.Data.Events.Configuration.Entity;
+namespace CloudFabric.EAV.Domain.Events.Configuration.Entity;
 
-public record EntityConfigurationCreated(List<LocalizedString> Name, string MachineName, List<AttributeConfiguration> Attributes) : Event;
+public record EntityConfigurationCreated(Guid Id, List<LocalizedString> Name, string MachineName, List<AttributeConfiguration> Attributes) : Event;

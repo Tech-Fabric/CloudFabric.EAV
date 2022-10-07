@@ -5,6 +5,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="CloudFabric.EventSourcing.Domain" Version="0.0.2-ci-version-updates-20220410143920" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="6.0.0" />
     <PackageReference Include="System.ComponentModel.Annotations" Version="5.0.0" />
     <PackageReference Include="System.Text.Json" Version="6.0.2" />
@@ -12,7 +13,10 @@
 
   <ItemGroup>
     <ProjectReference Include="..\CloudFabric.EAV.Json\CloudFabric.EAV.Json.csproj" />
-    <ProjectReference Include="..\CloudFabric.EAV\CloudFabric.EAV.Data.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Events\Configuration" />
   </ItemGroup>
 
 </Project>

@@ -1,10 +1,9 @@
-﻿using CloudFabric.EAV.Service.Models.ViewModels.Attributes;
-
-using System;
+﻿using System;
 using System.Collections.Generic;
+using CloudFabric.EAV.Models.ViewModels.Attributes;
 
 
-namespace CloudFabric.EAV.Service.Models.ViewModels.EAV
+namespace CloudFabric.EAV.Models.ViewModels.EAV
 {
     public class EntityInstanceViewModel
     {

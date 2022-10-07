@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
-using CloudFabric.EAV.Data.Enums;
+using CloudFabric.EAV.Domain.Enums;
 
-namespace CloudFabric.EAV.Service.Models.RequestModels.Attributes
+namespace CloudFabric.EAV.Models.RequestModels.Attributes
 {
     public class HtmlTextAttributeConfigurationCreateUpdateRequest : AttributeConfigurationCreateUpdateRequest
     {

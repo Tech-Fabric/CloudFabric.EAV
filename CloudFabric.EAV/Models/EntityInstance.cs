@@ -1,18 +1,18 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using CloudFabric.EAV.Data.Events.Configuration.Entity;
-using CloudFabric.EAV.Data.Events.Instance.Entity;
+using CloudFabric.EAV.Domain.Events.Instance;
+using CloudFabric.EAV.Domain.Models.Base;
+using CloudFabric.EAV.Domain.Events.Instance.Entity;
 using CloudFabric.EventSourcing.Domain;
 using CloudFabric.EventSourcing.EventStore;
 
-namespace CloudFabric.EAV.Data.Models
+namespace CloudFabric.EAV.Domain.Models
 {
     public class EntityInstance : AggregateBase
     {
+        public override string PartitionKey => Id;
+        
         public Guid EntityConfigurationId { get; protected set; }
-
-        public EntityConfiguration EntityConfiguration { get; protected set; }
 
         public List<AttributeInstance> Attributes { get; protected set; }
 
@@ -20,48 +20,17 @@ namespace CloudFabric.EAV.Data.Models
         {
         }
 
-        public EntityInstance(Guid entityConfigurationId, EntityConfiguration entityConfiguration, List<AttributeInstance> attributes)
+        public EntityInstance(Guid id, Guid entityConfigurationId, List<AttributeInstance> attributes)
         {
-            Apply(new EntityInstanceCreated(entityConfigurationId, entityConfiguration, attributes));
+            Apply(new EntityInstanceCreated(id, entityConfigurationId, attributes));
         }
+        
+        #region Event Handlers
 
-        public void EntityConfigurationChanged(EntityConfiguration configuration)
+        protected void On()
         {
-            Apply(new EntityConfigurationChanged(configuration));
+            
         }
-
-        public void AddAttribute(AttributeInstance attributeInstance)
-        {
-            Apply(new AddAttributeInstance(attributeInstance));
-        }
-
-        public void RemoveAttribute(Guid id)
-        {
-            Apply(new RemoveAttributeInstance(id));
-        }
-
-        public void UpdateAttribute(AttributeInstance attributeInstance)
-        {
-            Apply(new UpdateAttributeInstance(attributeInstance));
-        }
-        #region Events
-
-        public void On(EntityInstanceCreated @event)
-        {
-            EntityConfigurationId = @event.EntityConfigurationId;
-            EntityConfiguration = @event.EntityConfiguration;
-            Attributes = @event.Attributes;
-        }
-
-        public void On(EntityConfigurationChanged @event)
-        {
-            EntityConfiguration = @event.Configuration;
-        }
-
-        public void On(AddAttributeInstance @event)
-        {
-        }
-
         #endregion
     }
 }

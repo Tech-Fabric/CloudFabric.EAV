@@ -1,6 +1,6 @@
 using System;
 
-namespace CloudFabric.EAV.Data.Models.Attributes
+namespace CloudFabric.EAV.Domain.Models.Attributes
 {
     public class EntityReferenceAttributeInstance : AttributeInstance
     {

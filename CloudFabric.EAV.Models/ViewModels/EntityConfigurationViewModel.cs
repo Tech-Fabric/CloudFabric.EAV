@@ -1,11 +1,8 @@
-﻿using CloudFabric.EAV.Json.Utilities;
-using CloudFabric.EAV.Service.Models.ViewModels.Attributes;
-
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.Text.Json.Serialization;
+using CloudFabric.EAV.Models.ViewModels.Attributes;
 
-namespace CloudFabric.EAV.Service.Models.ViewModels.EAV
+namespace CloudFabric.EAV.Models.ViewModels
 {
     public class EntityConfigurationViewModel
     {

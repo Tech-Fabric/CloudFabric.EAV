@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace CloudFabric.EAV.Data.Models.Attributes
+namespace CloudFabric.EAV.Domain.Models.Attributes
 {
     public class ArrayAttributeInstance : AttributeInstance
     {

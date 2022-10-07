@@ -1,4 +1,4 @@
-namespace CloudFabric.EAV.Data.Enums;
+namespace CloudFabric.EAV.Domain.Enums;
 
 public enum EavAttributeType
 {

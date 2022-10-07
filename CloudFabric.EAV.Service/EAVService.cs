@@ -1,12 +1,13 @@
-using CloudFabric.EAV.Data.Models;
-using CloudFabric.EAV.Service.Models.RequestModels.EAV;
-using CloudFabric.EAV.Service.Models.ViewModels.EAV;
-using CloudFabric.EAV.Data.Repositories;
-using Microsoft.Extensions.Logging;
 using AutoMapper;
+using AutoMapper.Internal.Mappers;
+using CloudFabric.EAV.Domain.Models;
+using CloudFabric.EAV.Domain.Models.Base;
+using CloudFabric.EAV.Models.RequestModels;
+using CloudFabric.EAV.Models.ViewModels;
+using CloudFabric.EAV.Models.ViewModels.EAV;
 using CloudFabric.EventSourcing.Domain;
 using CloudFabric.EventSourcing.EventStore.Persistence;
-using CloudFabric.Projections;
+using Microsoft.Extensions.Logging;
 
 namespace CloudFabric.EAV.Service;
 
@@ -33,68 +34,76 @@ public class EAVService : IEAVService
         _entityInstanceRepository = entityInstanceRepository;
         _userInfo = userInfo;
     }
-/*
-    public async Task<EntityConfigurationViewModel> GetEntityConfiguration(Guid id)
+
+    public async Task<EntityConfigurationViewModel> GetEntityConfiguration(Guid id, string partitionKey)
     {
-        var entityConfiguration = await _entityConfigurationRepository.
-            .GetOne(id);
+        var entityConfiguration = await _entityConfigurationRepository.LoadAsync(id.ToString(), partitionKey);
 
         return _mapper.Map<EntityConfigurationViewModel>(entityConfiguration);
     }
     
-    public async Task<List<EntityConfigurationViewModel>> ListEntityConfigurations(int take, int skip = 0)
-    {
-        var records = await _entityConfigurationRepository.
-            .GetQuery()
-            .Take(take)
-            .Skip(skip)
-            .ToListAsync();
+    // public async Task<List<EntityConfigurationViewModel>> ListEntityConfigurations(int take, int skip = 0)
+    // {
+    //     var records = await _entityConfigurationRepository.
+    //         .GetQuery()
+    //         .Take(take)
+    //         .Skip(skip)
+    //         .ToListAsync();
+    //
+    //     return _mapper.Map<List<EntityConfigurationViewModel>>(records);
+    // }
 
-        return _mapper.Map<List<EntityConfigurationViewModel>>(records);
-    }
-*/
-    public async Task<EntityConfigurationViewModel> CreateEntityConfiguration(Guid userId, EntityConfigurationCreateRequest entity, CancellationToken cancellationToken)
+    public async Task<EntityConfigurationViewModel> CreateEntityConfiguration(Guid userId, EntityConfigurationCreateRequest entityConfigurationCreateRequest, CancellationToken cancellationToken)
     {
-        var entityConfiguration = _mapper.Map<EntityConfiguration>(entity);
+        var entityConfiguration = new EntityConfiguration(
+            Guid.NewGuid(),
+            _mapper.Map<List<LocalizedString>>(entityConfigurationCreateRequest.Name),
+            entityConfigurationCreateRequest.MachineName,
+            _mapper.Map<List<AttributeConfiguration>>(entityConfigurationCreateRequest.Attributes)
+        );
         var created = await _entityConfigurationRepository.SaveAsync(_userInfo, entityConfiguration, cancellationToken);
         
         return _mapper.Map<EntityConfigurationViewModel>(entityConfiguration);
     }
-/*
+
     public Task UpdateEntityConfiguration(Guid userId, EntityConfigurationUpdateRequest entity)
     {
         throw new NotImplementedException();
     }
 
-    public async Task<List<EntityInstanceViewModel>> ListEntityInstances(string entityConfigurationMachineName, int take, int skip = 0)
-    {
-        var records = await _entityInstanceRepository
-            .GetQuery()
-            .Where(e => e.EntityConfiguration.MachineName == entityConfigurationMachineName)
-            .Take(take)
-            .Skip(skip)
-            .ToListAsync();
-
-        return _mapper.Map<List<EntityInstanceViewModel>>(records);
-    }
-
-    public async Task<List<EntityInstanceViewModel>> ListEntityInstances(Guid entityConfigurationId, int take, int skip = 0)
-    {
-        var records = await _entityInstanceRepository
-            .GetQuery()
-            .Where(e => e.EntityConfigurationId == entityConfigurationId)
-            .Take(take)
-            .Skip(skip)
-            .ToListAsync();
-
-        return _mapper.Map<List<EntityInstanceViewModel>>(records);
-    }
+    // public async Task<List<EntityInstanceViewModel>> ListEntityInstances(string entityConfigurationMachineName, int take, int skip = 0)
+    // {
+    //     var records = await _entityInstanceRepository
+    //         .GetQuery()
+    //         .Where(e => e.EntityConfiguration.MachineName == entityConfigurationMachineName)
+    //         .Take(take)
+    //         .Skip(skip)
+    //         .ToListAsync();
+    //
+    //     return _mapper.Map<List<EntityInstanceViewModel>>(records);
+    // }
+    //
+    // public async Task<List<EntityInstanceViewModel>> ListEntityInstances(Guid entityConfigurationId, int take, int skip = 0)
+    // {
+    //     var records = await _entityInstanceRepository
+    //         .GetQuery()
+    //         .Where(e => e.EntityConfigurationId == entityConfigurationId)
+    //         .Take(take)
+    //         .Skip(skip)
+    //         .ToListAsync();
+    //
+    //     return _mapper.Map<List<EntityInstanceViewModel>>(records);
+    // }
 
     public async Task<EntityInstanceViewModel> CreateEntityInstance(Guid userId, EntityInstanceCreateRequest entity)
     {
-        var entityInstance = _mapper.Map<EntityInstance>(entity);
+        var entityInstance = new EntityInstance(
+            Guid.NewGuid(),
+            entity.EntityConfigurationId,
+            _mapper.Map<List<AttributeInstance>>(entity.Attributes)
+        );
 
-        var entityConfiguration = await GetEntityConfiguration(entityInstance.EntityConfigurationId);
+        var entityConfiguration = await GetEntityConfiguration(entityInstance.EntityConfigurationId, entityInstance.Id);
 
         if (entityConfiguration != null)
         {
@@ -106,15 +115,14 @@ public class EAVService : IEAVService
             }
         }
 
-        var created = await _entityInstanceRepository.Create(entityInstance, userId);
+        var created = await _entityInstanceRepository.SaveAsync(_userInfo, entityInstance);
 
-        return _mapper.Map<EntityInstanceViewModel>(created);
+        return _mapper.Map<EntityInstanceViewModel>(entityInstance);
     }
 
-    public async Task<EntityInstanceViewModel> GetEntityInstance(Guid id)
+    public async Task<EntityInstanceViewModel> GetEntityInstance(Guid id, string partitionKey)
     {
-        var entityInstance = await _entityInstanceRepository
-            .GetOne(id);
+        var entityInstance = await _entityInstanceRepository.LoadAsync(id.ToString(), partitionKey);
 
         return _mapper.Map<EntityInstanceViewModel>(entityInstance);
     }
@@ -123,5 +131,4 @@ public class EAVService : IEAVService
     {
         throw new NotImplementedException();
     }
-    */
 }

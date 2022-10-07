@@ -1,10 +1,9 @@
-using CloudFabric.EAV.Service.Models.RequestModels.Attributes;
-
 using System;
 using System.Collections.Generic;
+using CloudFabric.EAV.Models.RequestModels.Attributes;
 
 
-namespace CloudFabric.EAV.Service.Models.RequestModels.EAV
+namespace CloudFabric.EAV.Models.RequestModels
 {
     public class EntityInstanceUpdateRequest
     {
@@ -12,6 +11,6 @@ namespace CloudFabric.EAV.Service.Models.RequestModels.EAV
         
         public Guid EntityConfigurationId { get; set; }
         
-        public List<AttributeInstanceCreateUpdateRequest> Fields { get; set; }
+        public List<AttributeInstanceCreateUpdateRequest> Attributes { get; set; }
     }
 }
