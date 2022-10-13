@@ -33,20 +33,31 @@ namespace CloudFabric.EAV.Domain.Models
 
         public void ChangeName(string newName)
         {
-            Apply(new EntityConfigurationNameChanged(newName, CultureInfo.GetCultureInfo("EN-us").LCID));
+            Apply(new EntityConfigurationNameChanged(Guid.Parse(Id), newName, CultureInfo.GetCultureInfo("EN-us").LCID));
         }
         
         public void ChangeName(string newName, int cultureInfoId)
         {
-            Apply(new EntityConfigurationNameChanged(newName, cultureInfoId));
+            Apply(new EntityConfigurationNameChanged(Guid.Parse(Id), newName, cultureInfoId));
         }
 
         public void AddAttribute(AttributeConfiguration attributeConfiguration)
         {
-            Apply(new EntityConfigurationAttributeAdded(attributeConfiguration));
+            Apply(new EntityConfigurationAttributeAdded(Guid.Parse(Id), attributeConfiguration));
+        }
+
+        public void UpdateAttribute(AttributeConfiguration attributeConfiguration)
+        {
+            Apply(new EntityConfigurationAttributeUpdated(Guid.Parse(Id), attributeConfiguration));
+        }
+
+        public void RemoveAttribute(string attributeMachineName)
+        {
+            Apply(new EntityConfigurationAttributeRemoved(Guid.Parse(Id), attributeMachineName));
         }
         
         #region EventHandlers
+
         public void On(EntityConfigurationCreated @event)
         {
             Id = @event.Id.ToString();
@@ -57,13 +68,13 @@ namespace CloudFabric.EAV.Domain.Models
         
         public void On(EntityConfigurationNameChanged @event)
         {
-            var name = Name.FirstOrDefault(n => n.CultureInfoId == @event.cultureInfoId);
+            var name = Name.FirstOrDefault(n => n.CultureInfoId == @event.CultureInfoId);
 
             if (name == null)
             {
                 Name.Add(new LocalizedString()
                 {
-                    CultureInfoId = @event.cultureInfoId,
+                    CultureInfoId = @event.CultureInfoId,
                     String = @event.NewName
                 });
             }
@@ -75,8 +86,31 @@ namespace CloudFabric.EAV.Domain.Models
 
         public void On(EntityConfigurationAttributeAdded @event)
         {
+            Attributes ??= new();
             Attributes.Add(@event.Attribute);
         }
+
+        public void On(EntityConfigurationAttributeUpdated @event)
+        {
+            var attributeToRemove = Attributes?.FirstOrDefault(x => x.MachineName == @event.Attribute.MachineName);
+
+            if (attributeToRemove != null)
+            {
+                Attributes.Remove(attributeToRemove);
+                Attributes.Add(@event.Attribute);
+            }
+        }
+
+        public void On(EntityConfigurationAttributeRemoved @event)
+        {
+            var attributeToRemove = Attributes?.FirstOrDefault(x => x.MachineName == @event.AttributeMachineName);
+
+            if (attributeToRemove != null)
+            {
+                Attributes.Remove(attributeToRemove);
+            }
+        }
+
         #endregion
     }
 }

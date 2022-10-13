@@ -1,5 +1,6 @@
+using System;
 using CloudFabric.EventSourcing.EventStore;
 
 namespace CloudFabric.EAV.Domain.Events.Configuration.Entity;
 
-public record EntityConfigurationNameChanged(string NewName, int cultureInfoId) : Event;
+public record EntityConfigurationNameChanged(Guid Id, string NewName, int CultureInfoId) : Event;

@@ -69,4 +69,89 @@ public static class EntityConfigurationFactory
             }
         };
     }
+
+    public static EntityConfigurationCreateRequest CreateCarTireEntityConfigurationCreateRequest()
+    {
+        return new EntityConfigurationCreateRequest()
+        {
+            Name = new List<LocalizedStringCreateRequest>()
+            {
+                new LocalizedStringCreateRequest() { CultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID, String = "Tire" },
+                new LocalizedStringCreateRequest() { CultureInfoId = CultureInfo.GetCultureInfo("RU-ru").LCID, String = "Шина" }
+            },
+            MachineName = "CarTire",
+            Attributes = new List<AttributeConfigurationCreateUpdateRequest>()
+            {
+                new LocalizedTextAttributeConfigurationCreateUpdateRequest() {
+                    MachineName = "brand",
+                    Name = new List<LocalizedStringCreateRequest>()
+                    {
+                        new LocalizedStringCreateRequest() { CultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID, String = "Brand" },
+                        new LocalizedStringCreateRequest() { CultureInfoId = CultureInfo.GetCultureInfo("RU-ru").LCID, String = "Бренд" }
+                    },
+                },
+                new NumberAttributeConfigurationCreateUpdateRequest() {
+                    MachineName = "width",
+                    Name = new List<LocalizedStringCreateRequest>()
+                    {
+                        new LocalizedStringCreateRequest() { CultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID, String = "Width" },
+                        new LocalizedStringCreateRequest() { CultureInfoId = CultureInfo.GetCultureInfo("RU-ru").LCID, String = "Ширина" }
+                    },
+                    DefaultValue = 0,
+                    Description = new List<LocalizedStringCreateRequest>
+                    {
+                        new LocalizedStringCreateRequest() { CultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID, String = "Tire width" },
+                        new LocalizedStringCreateRequest() { CultureInfoId = CultureInfo.GetCultureInfo("RU-ru").LCID, String = "Ширина шины" }
+                    }
+                },
+                new NumberAttributeConfigurationCreateUpdateRequest() {
+                    MachineName = "diameter",
+                    Name = new List<LocalizedStringCreateRequest>()
+                    {
+                        new LocalizedStringCreateRequest() { CultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID, String = "Diameter" },
+                        new LocalizedStringCreateRequest() { CultureInfoId = CultureInfo.GetCultureInfo("RU-ru").LCID, String = "Диаметр" }
+                    },
+                    DefaultValue = 0,
+                    Description = new List<LocalizedStringCreateRequest>
+                    {
+                        new LocalizedStringCreateRequest() { CultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID, String = "Tire diameter" },
+                        new LocalizedStringCreateRequest() { CultureInfoId = CultureInfo.GetCultureInfo("RU-ru").LCID, String = "Диаметр шины" }
+                    }
+                },
+                new NumberAttributeConfigurationCreateUpdateRequest() {
+                    MachineName = "height",
+                    Name = new List<LocalizedStringCreateRequest>()
+                    {
+                        new LocalizedStringCreateRequest() { CultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID, String = "Height" },
+                        new LocalizedStringCreateRequest() { CultureInfoId = CultureInfo.GetCultureInfo("RU-ru").LCID, String = "Высота" }
+                    },
+                    DefaultValue = 0,
+                    Description = new List<LocalizedStringCreateRequest>
+                    {
+                        new LocalizedStringCreateRequest() { CultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID, String = "Tire height" },
+                        new LocalizedStringCreateRequest() { CultureInfoId = CultureInfo.GetCultureInfo("RU-ru").LCID, String = "Высота шины" }
+                    }
+                },
+                new ArrayAttributeConfigurationCreateUpdateRequest() {
+                    MachineName = "vehiclemakes",
+                    Name = new List<LocalizedStringCreateRequest>()
+                    {
+                        new LocalizedStringCreateRequest() { CultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID, String = "Vehicle makes" },
+                        new LocalizedStringCreateRequest() { CultureInfoId = CultureInfo.GetCultureInfo("RU-ru").LCID, String = "Марки автомобилей" }
+                    },
+                    ItemsType = EavAttributeType.Text,
+                    ItemsAttributeConfiguration = new TextAttributeConfigurationCreateUpdateRequest
+                    {
+                        DefaultValue = "",
+                        Name = new List<LocalizedStringCreateRequest>
+                        {
+                            new LocalizedStringCreateRequest() { CultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID, String = "Vehicle make" },
+                            new LocalizedStringCreateRequest() { CultureInfoId = CultureInfo.GetCultureInfo("RU-ru").LCID, String = "Марка автомобиля" }
+                        },
+                        MachineName = "vehiclemake"
+                    }
+                }
+            }
+        };
+    }
 }

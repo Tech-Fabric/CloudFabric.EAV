@@ -10,11 +10,13 @@ namespace CloudFabric.EAV.Models.RequestModels
     {
         public Guid Id { get; set; }
         
+        public string PartitionKey { get; set; }
+
         public List<LocalizedStringCreateRequest> Name { get; set; }
         
         public string MachineName { get; set; }
 
         //[JsonConverter(typeof(PolymorphicJsonConverter<AttributeConfigurationCreateUpdateRequest>))]
-        public List<AttributeConfigurationCreateUpdateRequest> Fields { get; set; }
+        public List<AttributeConfigurationCreateUpdateRequest> Attributes { get; set; }
     }
 }
