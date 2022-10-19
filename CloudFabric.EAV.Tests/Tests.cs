@@ -67,13 +67,13 @@ public class Tests
             Guid.Empty, configurationCreateRequest, CancellationToken.None
         );
 
-        var configuration = await _eavService.GetEntityConfiguration(createdConfiguration.Id, createdConfiguration.Id.ToString());
+        var configuration = await _eavService.GetEntityConfiguration(createdConfiguration.Id, createdConfiguration.PartitionKey);
 
         var entityInstance = EntityInstanceFactory.CreateBoardGameEntityInstanceCreateRequest(createdConfiguration.Id);
 
         var createdInstance = await _eavService.CreateEntityInstance(Guid.Empty, entityInstance);
 
-        createdInstance.Id.Should().NotBe(null);
+        createdInstance.Id.Should().NotBeEmpty();
     }
 
     [TestMethod]

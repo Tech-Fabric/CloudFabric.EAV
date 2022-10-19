@@ -144,7 +144,7 @@ public class EAVService : IEAVService
             _mapper.Map<List<AttributeInstance>>(entity.Attributes)
         );
 
-        var entityConfiguration = await GetEntityConfiguration(entityInstance.EntityConfigurationId, entityInstance.Id);
+        var entityConfiguration = await GetEntityConfiguration(entityInstance.EntityConfigurationId, EntityConfiguration.ENTITY_CONFIGURATION_PARTITION_KEY);
 
         if (entityConfiguration != null)
         {

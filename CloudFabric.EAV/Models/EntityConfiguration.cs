@@ -12,6 +12,7 @@ namespace CloudFabric.EAV.Domain.Models
 {
     public class EntityConfiguration : AggregateBase
     {
+        public static readonly string ENTITY_CONFIGURATION_PARTITION_KEY = "EntityConfiguration";
         public List<LocalizedString> Name { get; protected set; }
         
         public string MachineName { get; protected set; }
@@ -19,7 +20,7 @@ namespace CloudFabric.EAV.Domain.Models
 
         public List<AttributeConfiguration> Attributes { get; protected set; }
 
-        public override string PartitionKey => "EntityConfiguration";
+        public override string PartitionKey => ENTITY_CONFIGURATION_PARTITION_KEY;
 
         public EntityConfiguration(List<IEvent> events) : base(events)
         {
