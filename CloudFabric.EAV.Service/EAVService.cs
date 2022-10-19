@@ -11,6 +11,7 @@ using CloudFabric.EAV.Models.RequestModels;
 using CloudFabric.EAV.Models.ViewModels;
 using CloudFabric.EAV.Models.ViewModels.EAV;
 using CloudFabric.EventSourcing.Domain;
+using CloudFabric.EventSourcing.EventStore;
 using CloudFabric.EventSourcing.EventStore.Persistence;
 using CloudFabric.Projections;
 using Microsoft.Extensions.Logging;
@@ -41,7 +42,7 @@ public class EAVService : IEAVService
         _userInfo = userInfo;
     }
 
-    public async Task<EntityConfigurationViewModel> GetEntityConfiguration(Guid id, string partitionKey)
+    public async Task<EntityConfigurationViewModel?> GetEntityConfiguration(Guid id, string partitionKey)
     {
         var entityConfiguration = await _entityConfigurationRepository.LoadAsync(id.ToString(), partitionKey);
 
@@ -70,13 +71,18 @@ public class EAVService : IEAVService
 
     public async Task<EntityConfigurationViewModel> UpdateEntityConfiguration(Guid userId, EntityConfigurationUpdateRequest entity, CancellationToken cancellationToken)
     {
-        var entityConfiguration = await _entityConfigurationRepository.LoadAsync(entity.Id.ToString(), entity.PartitionKey);
+        var entityConfiguration = await _entityConfigurationRepository.LoadAsync(entity.Id.ToString(), entity.PartitionKey, cancellationToken);
+
+        if (entityConfiguration == null)
+        {
+            throw new NotFoundException();
+        }
 
         foreach (var name in entity.Name)
         {
             if (!entityConfiguration.Name.Any(x => x.CultureInfoId == name.CultureInfoId && x.String == name.String))
             {
-                entityConfiguration.ChangeName(name.String, name.CultureInfoId);
+                entityConfiguration.UpdateName(name.String, name.CultureInfoId);
             }
         }
 
@@ -88,7 +94,7 @@ public class EAVService : IEAVService
 
         foreach (var attribute in attributesToRemove)
         {
-            entityConfiguration.RemoveAttribute(attribute.MachineName);
+            entityConfiguration.RemoveAttribute(attribute);
         }
 
         foreach (var attribute in entity.Attributes)
@@ -144,16 +150,18 @@ public class EAVService : IEAVService
             _mapper.Map<List<AttributeInstance>>(entity.Attributes)
         );
 
-        var entityConfiguration = await GetEntityConfiguration(entityInstance.EntityConfigurationId, entityInstance.Id);
+        var entityConfiguration = await GetEntityConfiguration(entityInstance.EntityConfigurationId, entityInstance.EntityConfigurationId.ToString());
 
-        if (entityConfiguration != null)
+        if (entityConfiguration == null)
         {
-            foreach (var a in entityConfiguration.Attributes)
-            {
-                var attributeValue = entityInstance.Attributes.FirstOrDefault(attr => a.MachineName == attr.ConfigurationAttributeMachineName);
+            throw new Exception($"Entity configuration not found. Id: {entityInstance.EntityConfigurationId}");
+        }
+        
+        foreach (var a in entityConfiguration.Attributes)
+        {
+            var attributeValue = entityInstance.Attributes.FirstOrDefault(attr => a.MachineName == attr.ConfigurationAttributeMachineName);
 
-
-            }
+            
         }
 
         var created = await _entityInstanceRepository.SaveAsync(_userInfo, entityInstance);

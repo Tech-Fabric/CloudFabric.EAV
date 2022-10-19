@@ -73,7 +73,8 @@ public class Tests
 
         var createdInstance = await _eavService.CreateEntityInstance(Guid.Empty, entityInstance);
 
-        createdInstance.Id.Should().NotBe(null);
+        createdInstance.Id.Should().NotBeEmpty();
+        createdInstance.Attributes.Count.Should().Be(entityInstance.Attributes.Count);
     }
 
     [TestMethod]

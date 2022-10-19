@@ -10,7 +10,7 @@ namespace CloudFabric.EAV.Domain.Projections.EntityConfigurationProjection;
 
 public class EntityConfigurationProjectionBuilder : ProjectionBuilder,
     IHandleEvent<EntityConfigurationCreated>,
-    IHandleEvent<EntityConfigurationNameChanged>,
+    IHandleEvent<EntityConfigurationNameUpdated>,
     IHandleEvent<EntityConfigurationAttributeAdded>,
     IHandleEvent<EntityConfigurationAttributeRemoved>
 {
@@ -30,7 +30,7 @@ public class EntityConfigurationProjectionBuilder : ProjectionBuilder,
         @event.PartitionKey);
     }
 
-    public async Task On(EntityConfigurationNameChanged @event)
+    public async Task On(EntityConfigurationNameUpdated @event)
     {
         await UpdateDocument(@event.Id,
             @event.PartitionKey,
