@@ -51,12 +51,14 @@ public class EAVService : IEAVService
 
     //public async Task<List<EntityConfigurationViewModel>> ListEntityConfigurations(int take, int skip = 0)
     //{
-        
+
 
     //    return _mapper.Map<List<EntityConfigurationViewModel>>(records);
     //}
 
-    public async Task<EntityConfigurationViewModel> CreateEntityConfiguration(Guid userId, EntityConfigurationCreateRequest entityConfigurationCreateRequest, CancellationToken cancellationToken)
+    public async Task<EntityConfigurationViewModel> CreateEntityConfiguration(
+        EntityConfigurationCreateRequest entityConfigurationCreateRequest, CancellationToken cancellationToken
+    )
     {
         var entityConfiguration = new EntityConfiguration(
             Guid.NewGuid(),
@@ -65,11 +67,11 @@ public class EAVService : IEAVService
             _mapper.Map<List<AttributeConfiguration>>(entityConfigurationCreateRequest.Attributes)
         );
         var created = await _entityConfigurationRepository.SaveAsync(_userInfo, entityConfiguration, cancellationToken);
-        
+
         return _mapper.Map<EntityConfigurationViewModel>(entityConfiguration);
     }
 
-    public async Task<EntityConfigurationViewModel> UpdateEntityConfiguration(Guid userId, EntityConfigurationUpdateRequest entity, CancellationToken cancellationToken)
+    public async Task<EntityConfigurationViewModel> UpdateEntityConfiguration(EntityConfigurationUpdateRequest entity, CancellationToken cancellationToken)
     {
         var entityConfiguration = await _entityConfigurationRepository.LoadAsync(entity.Id.ToString(), entity.PartitionKey, cancellationToken);
 
@@ -150,18 +152,38 @@ public class EAVService : IEAVService
             _mapper.Map<List<AttributeInstance>>(entity.Attributes)
         );
 
-        var entityConfiguration = await GetEntityConfiguration(entityInstance.EntityConfigurationId, entityInstance.EntityConfigurationId.ToString());
+        //var entityConfiguration = await GetEntityConfiguration(entityInstance.EntityConfigurationId, EntityConfiguration.ENTITY_CONFIGURATION_PARTITION_KEY);
 
-        if (entityConfiguration == null)
-        {
-            throw new Exception($"Entity configuration not found. Id: {entityInstance.EntityConfigurationId}");
-        }
-        
+        var entityConfiguration = await _entityConfigurationRepository.LoadAsync(
+            entityInstance.EntityConfigurationId.ToString(), EntityConfiguration.ENTITY_CONFIGURATION_PARTITION_KEY
+        );
+        if (entityConfiguration == null) throw new ArgumentNullException(nameof(entityConfiguration));
+        var validationErrors = new Dictionary<string, List<string>>();
         foreach (var a in entityConfiguration.Attributes)
         {
             var attributeValue = entityInstance.Attributes.FirstOrDefault(attr => a.MachineName == attr.ConfigurationAttributeMachineName);
+            var errors = new List<string>();
+            if (a.ValidationRules != null)
+            {
+                foreach (var rule in a.ValidationRules)
+                {
+                    var isValid = await rule.Validate(attributeValue);
+                    if (!isValid)
+                    {
+                        errors.Add(rule.ValidationError);
+                    }
+                }
 
-            
+                if (errors.Count > 0)
+                {
+                    validationErrors.Add(a.MachineName, errors);
+                }
+            }
+        }
+
+        if (validationErrors.Count > 0)
+        {
+            //throw error
         }
 
         var created = await _entityInstanceRepository.SaveAsync(_userInfo, entityInstance);

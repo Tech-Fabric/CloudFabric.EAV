@@ -59,12 +59,11 @@ public class Tests
     }
 
     [TestMethod]
-    public async Task Test()
+    public async Task CreateInstance_Success()
     {
         var configurationCreateRequest = EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
 
-        var createdConfiguration = await _eavService.CreateEntityConfiguration(
-            Guid.Empty, configurationCreateRequest, CancellationToken.None
+        var createdConfiguration = await _eavService.CreateEntityConfiguration(configurationCreateRequest, CancellationToken.None
         );
 
         var configuration = await _eavService.GetEntityConfiguration(createdConfiguration.Id, createdConfiguration.PartitionKey);
@@ -74,6 +73,29 @@ public class Tests
         var createdInstance = await _eavService.CreateEntityInstance(Guid.Empty, entityInstance);
 
         createdInstance.Id.Should().NotBeEmpty();
+        createdInstance.EntityConfigurationId.Should().Be(configuration.Id);
+    }
+
+    [TestMethod]
+    public async Task CreateEntityConfiguration_Success()
+    {
+        var configurationCreateRequest = EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
+        var createdConfiguration = await _eavService.CreateEntityConfiguration(configurationCreateRequest, CancellationToken.None
+        );
+        createdConfiguration.Should().NotBeNull();
+    }
+
+    [TestMethod]
+    public async Task GetEntityConfiguration_Success()
+    {
+        
+        var configurationCreateRequest = EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
+
+        var createdConfiguration = await _eavService.CreateEntityConfiguration(configurationCreateRequest, CancellationToken.None
+        );
+
+        var configuration = await _eavService.GetEntityConfiguration(createdConfiguration.Id, createdConfiguration.PartitionKey);
+        configuration.Should().BeEquivalentTo(createdConfiguration);
     }
 
     [TestMethod]
@@ -97,7 +119,6 @@ public class Tests
         var configurationCreateRequest = EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
 
         var createdConfiguration = await _eavService.CreateEntityConfiguration(
-            Guid.Empty,
             configurationCreateRequest,
             CancellationToken.None
         );

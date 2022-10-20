@@ -8,6 +8,7 @@ namespace CloudFabric.EAV.Domain.Models
     [JsonConverter(typeof(PolymorphicJsonConverter<AttributeValidationRule>))]
     public abstract class AttributeValidationRule
     {
+        public abstract string ValidationError { get; }
         public abstract Task<bool> Validate(object value);
     }
 }
