@@ -68,7 +68,7 @@ public class Tests
 
         var configuration = await _eavService.GetEntityConfiguration(createdConfiguration.Id, createdConfiguration.PartitionKey);
 
-        var entityInstance = EntityInstanceFactory.CreateBoardGameEntityInstanceCreateRequest(createdConfiguration.Id);
+        var entityInstance = EntityInstanceFactory.CreateValidBoardGameEntityInstanceCreateRequest(createdConfiguration.Id);
 
         var createdInstance = await _eavService.CreateEntityInstance(Guid.Empty, entityInstance);
 

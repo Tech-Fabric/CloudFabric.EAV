@@ -15,6 +15,11 @@ namespace CloudFabric.EAV.Models.RequestModels.Attributes
 
         public string MachineName { get; set; }
 
-        public abstract EavAttributeType ValueType { get; }
+        public abstract EavAttributeType ValueType { get; } 
+    }
+    
+    public class AttributeConfigurationValidationRequest
+    {
+        public bool IsRequired { get; set; }
     }
 }

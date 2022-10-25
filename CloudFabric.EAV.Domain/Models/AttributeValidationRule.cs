@@ -10,5 +10,10 @@ namespace CloudFabric.EAV.Domain.Models
     {
         public abstract string ValidationError { get; }
         public abstract Task<bool> Validate(object value);
+
+        public AttributeValidationRule()
+        {
+            
+        }
     }
 }

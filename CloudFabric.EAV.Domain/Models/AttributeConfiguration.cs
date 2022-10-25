@@ -15,7 +15,7 @@ namespace CloudFabric.EAV.Domain.Models
 
         public string MachineName { get; protected set; }
 
-        public List<AttributeValidationRule> ValidationRules { get; protected set; }
+        public List<AttributeValidationRule> ValidationRules { get; set; }
 
         public abstract EavAttributeType ValueType { get; }
     }

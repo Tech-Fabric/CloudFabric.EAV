@@ -10,5 +10,6 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
         public float DefaultValue { get; set; }
 
         public override EavAttributeType ValueType { get; } = EavAttributeType.Number;
+        
     }
 }
