@@ -179,7 +179,8 @@ public class EAVService : IEAVService
 
         if (validationErrors.Count > 0)
         {
-            //throw error
+            // TODO: throw standartized exception 
+            throw new Exception(validationErrors.ToString());
         }
 
         var created = await _entityInstanceRepository.SaveAsync(_userInfo, entityInstance);

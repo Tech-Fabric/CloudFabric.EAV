@@ -57,6 +57,11 @@ public static class EntityConfigurationFactory
                         new LocalizedStringCreateRequest() { CultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID, String = "Number of players min" },
                         new LocalizedStringCreateRequest() { CultureInfoId = CultureInfo.GetCultureInfo("RU-ru").LCID, String = "Количество игроков, от" }
                     },
+                    Validators = new NumberAttributeConfigurationValidationRequest()
+                    {
+                        IsRequired = true, 
+                        MinimumValue = 1
+                    }
                 },
                 new NumberAttributeConfigurationCreateUpdateRequest() {
                     MachineName = "players_max",
@@ -65,6 +70,11 @@ public static class EntityConfigurationFactory
                         new LocalizedStringCreateRequest() { CultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID, String = "Number of players max" },
                         new LocalizedStringCreateRequest() { CultureInfoId = CultureInfo.GetCultureInfo("RU-ru").LCID, String = "Количество игроков, до" }
                     },
+                    Validators = new NumberAttributeConfigurationValidationRequest()
+                    {
+                        MaximumValue = 10,
+                        IsRequired = true
+                    }
                 }
             }
         };

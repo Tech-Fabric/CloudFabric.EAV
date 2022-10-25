@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using CloudFabric.EAV.Domain.Models.Attributes;
 
 namespace CloudFabric.EAV.Domain.Models.AttributeValidationRules;
 
@@ -10,11 +11,16 @@ public class MinimumValueValidationRule: AttributeValidationRule
         MinimumValue = minimumValue;
     }
 
-    public override string ValidationError => $"Must be greater than {MinimumValue}";
-    private float MinimumValue { get; }
+    public MinimumValueValidationRule()
+    {
+    }
+
+    public override string ValidationError => $"Must be greater or equal to {MinimumValue}";
+    public float MinimumValue { get; set; }
     public override Task<bool> Validate(object value)
     {
-        var floatValue = value is float f ? f : 0;
+        var instance = value as NumberAttributeInstance;
+        var floatValue = instance?.Value ?? 0;
         return Task.FromResult(floatValue >= MinimumValue);
     }
 }
