@@ -10,13 +10,15 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		.runsettings = .runsettings
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CloudFabric.EAV.Data", "CloudFabric.EAV\CloudFabric.EAV.Data.csproj", "{CA7944E9-5D2B-4A7B-B5B5-8A5C1024B742}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CloudFabric.EAV.Domain", "CloudFabric.EAV.Domain\CloudFabric.EAV.Domain.csproj", "{CA7944E9-5D2B-4A7B-B5B5-8A5C1024B742}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CloudFabric.EAV.Service.Models", "CloudFabric.EAV.Models\CloudFabric.EAV.Service.Models.csproj", "{E1978D70-968B-42BA-9D4E-ED14E5E719B6}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CloudFabric.EAV.Models", "CloudFabric.EAV.Models\CloudFabric.EAV.Models.csproj", "{E1978D70-968B-42BA-9D4E-ED14E5E719B6}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CloudFabric.EAV.Json", "CloudFabric.EAV.Json\CloudFabric.EAV.Json.csproj", "{E80CD3FF-294A-4552-9553-DF92AD34208F}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CloudFabric.EAV.Service", "CloudFabric.EAV.Service\CloudFabric.EAV.Service.csproj", "{DE16FDE5-E63F-4168-B0BB-7ED14A067E68}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CloudFabric.EAV.Tests", "CloudFabric.EAV.Tests\CloudFabric.EAV.Tests.csproj", "{1B539CD2-48E9-428B-AB2E-6494ACA29CE6}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -58,6 +60,14 @@ Global
 		{DE16FDE5-E63F-4168-B0BB-7ED14A067E68}.Release|Any CPU.Build.0 = Release|Any CPU
 		{DE16FDE5-E63F-4168-B0BB-7ED14A067E68}.Release|x64.ActiveCfg = Release|Any CPU
 		{DE16FDE5-E63F-4168-B0BB-7ED14A067E68}.Release|x64.Build.0 = Release|Any CPU
+		{1B539CD2-48E9-428B-AB2E-6494ACA29CE6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1B539CD2-48E9-428B-AB2E-6494ACA29CE6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1B539CD2-48E9-428B-AB2E-6494ACA29CE6}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{1B539CD2-48E9-428B-AB2E-6494ACA29CE6}.Debug|x64.Build.0 = Debug|Any CPU
+		{1B539CD2-48E9-428B-AB2E-6494ACA29CE6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1B539CD2-48E9-428B-AB2E-6494ACA29CE6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1B539CD2-48E9-428B-AB2E-6494ACA29CE6}.Release|x64.ActiveCfg = Release|Any CPU
+		{1B539CD2-48E9-428B-AB2E-6494ACA29CE6}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

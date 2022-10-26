@@ -1,7 +1,6 @@
-﻿using CloudFabric.EAV.Data.Enums;
-using CloudFabric.EAV.Service.Models.ViewModels.Attributes;
+﻿using CloudFabric.EAV.Domain.Enums;
 
-namespace CloudFabric.EAV.Service.Models.RequestModels.Attributes
+namespace CloudFabric.EAV.Models.ViewModels.Attributes
 {
     public class ArrayAttributeConfigurationViewModel : AttributeConfigurationViewModel
     {

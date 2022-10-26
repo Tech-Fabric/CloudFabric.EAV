@@ -8,15 +8,14 @@
 
   <ItemGroup>
     <PackageReference Include="AutoMapper" Version="11.0.1" />
-    <PackageReference Include="CloudFabric.EventSourcing.Domain" Version="0.0.1" />
-    <PackageReference Include="CloudFabric.Projections" Version="0.0.1" />
-    <PackageReference Include="CloudFabric.Projections.Attributes" Version="0.0.1" />
+    <PackageReference Include="CloudFabric.EventSourcing.Domain" Version="0.0.3" />
+    <PackageReference Include="CloudFabric.Projections" Version="0.0.3" />
+    <PackageReference Include="CloudFabric.Projections.Attributes" Version="0.0.3" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\CloudFabric.EAV.Json\CloudFabric.EAV.Json.csproj" />
-    <ProjectReference Include="..\CloudFabric.EAV.Models\CloudFabric.EAV.Service.Models.csproj" />
-    <ProjectReference Include="..\CloudFabric.EAV\CloudFabric.EAV.Data.csproj" />
+    <ProjectReference Include="..\CloudFabric.EAV.Models\CloudFabric.EAV.Models.csproj" />
   </ItemGroup>
 
 </Project>

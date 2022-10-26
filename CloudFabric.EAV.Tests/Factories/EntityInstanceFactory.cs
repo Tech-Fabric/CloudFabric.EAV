@@ -1,3 +1,9 @@
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using CloudFabric.EAV.Models.RequestModels;
+using CloudFabric.EAV.Models.RequestModels.Attributes;
+
 namespace CloudFabric.EAV.Tests.Factories;
 
 public class EntityInstanceFactory

@@ -1,10 +1,10 @@
-using CloudFabric.EAV.Data.Enums;
+using CloudFabric.EAV.Domain.Enums;
 using CloudFabric.EAV.Json.Utilities;
 
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
-namespace CloudFabric.EAV.Service.Models.RequestModels.Attributes
+namespace CloudFabric.EAV.Models.RequestModels.Attributes
 {
     [JsonConverter(typeof(PolymorphicJsonConverter<AttributeConfigurationCreateUpdateRequest>))]
     public abstract class AttributeConfigurationCreateUpdateRequest
