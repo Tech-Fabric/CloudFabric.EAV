@@ -5,10 +5,13 @@ using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using AutoMapper;
 using AutoMapper.Internal.Mappers;
+using CloudFabric.EAV.Domain.Enums;
 using CloudFabric.EAV.Domain.Models;
 using CloudFabric.EAV.Domain.Models.Base;
 using CloudFabric.EAV.Models.RequestModels;
+using CloudFabric.EAV.Models.RequestModels.Attributes;
 using CloudFabric.EAV.Models.ViewModels;
+using CloudFabric.EAV.Models.ViewModels.Attributes;
 using CloudFabric.EAV.Models.ViewModels.EAV;
 using CloudFabric.EventSourcing.Domain;
 using CloudFabric.EventSourcing.EventStore;
@@ -41,6 +44,8 @@ public class EAVService : IEAVService
         _entityInstanceRepository = entityInstanceRepository;
         _userInfo = userInfo;
     }
+
+    #region EntityConfiguration
 
     public async Task<EntityConfigurationViewModel> GetEntityConfiguration(Guid id, string partitionKey)
     {
@@ -116,6 +121,8 @@ public class EAVService : IEAVService
         return _mapper.Map<EntityConfigurationViewModel>(entityConfiguration);
     }
 
+    #endregion
+
     // public async Task<List<EntityInstanceViewModel>> ListEntityInstances(string entityConfigurationMachineName, int take, int skip = 0)
     // {
     //     var records = await _entityInstanceRepository
@@ -140,7 +147,9 @@ public class EAVService : IEAVService
     //     return _mapper.Map<List<EntityInstanceViewModel>>(records);
     // }
 
-    public async Task<EntityInstanceViewModel> CreateEntityInstance(Guid userId, EntityInstanceCreateRequest entity)
+    #region EntityInstance
+
+    public async Task<EntityInstanceViewModel> CreateEntityInstance(EntityInstanceCreateRequest entity)
     {
         var entityInstance = new EntityInstance(
             Guid.NewGuid(),
@@ -158,22 +167,12 @@ public class EAVService : IEAVService
         foreach (var a in entityConfiguration.Attributes)
         {
             var attributeValue = entityInstance.Attributes.FirstOrDefault(attr => a.MachineName == attr.ConfigurationAttributeMachineName);
-            var errors = new List<string>();
-            if (a.ValidationRules != null)
+            if (a.ValidationRules == null) continue;
+            var errors = (await Task.WhenAll(a.ValidationRules.Select(async r => await r.Validate(attributeValue) ? "" : r.ValidationError)
+                .Where(ve => !string.IsNullOrEmpty(ve.Result))).ConfigureAwait(false)).ToList();
+            if (errors.Count > 0)
             {
-                foreach (var rule in a.ValidationRules)
-                {
-                    var isValid = await rule.Validate(attributeValue);
-                    if (!isValid)
-                    {
-                        errors.Add(rule.ValidationError);
-                    }
-                }
-
-                if (errors.Count > 0)
-                {
-                    validationErrors.Add(a.MachineName, errors);
-                }
+                validationErrors.Add(a.MachineName, errors);
             }
         }
 
@@ -199,4 +198,21 @@ public class EAVService : IEAVService
     {
         throw new NotImplementedException();
     }
+    
+    #endregion
+    
+    #region AttributeConfiguration
+
+    public async Task<AttributeConfigurationViewModel?> GetAttributeConfiguration(EavAttributeType type) 
+    {
+        switch (type)
+        {
+           case EavAttributeType.Number:
+               return new NumberAttributeConfigurationViewModel();
+           default:
+               return null;
+        }
+    }
+
+    #endregion
 }
