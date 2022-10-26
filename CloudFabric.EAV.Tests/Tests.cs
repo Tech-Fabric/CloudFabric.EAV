@@ -89,6 +89,14 @@ public class Tests
         var createdConfiguration = await _eavService.CreateEntityConfiguration(configurationCreateRequest, CancellationToken.None
         );
         createdConfiguration.Should().NotBeNull();
+        createdConfiguration.Id.Should().NotBeEmpty();
+        foreach (var name in createdConfiguration.Name)
+        {
+            name.String.Should().Be(configurationCreateRequest.Name.First(n => n.CultureInfoId == name.CultureInfoId).String);
+        }
+
+        createdConfiguration.MachineName.Should().Be(configurationCreateRequest.MachineName);
+        createdConfiguration.Attributes.Count.Should().Be(configurationCreateRequest.Attributes.Count);
     }
 
     [TestMethod]
@@ -144,39 +152,38 @@ public class Tests
     public async Task TestNumberAttribute_Success()
     {
         var cultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID;
+        var numberAttribute =
+            new NumberAttributeConfigurationCreateUpdateRequest()
+            {
+                MachineName = "testAttr",
+                Description = new List<LocalizedStringCreateRequest>() { new() { CultureInfoId = cultureInfoId, String = "testAttrDesc" } },
+                Name = new List<LocalizedStringCreateRequest>() { new() { CultureInfoId = cultureInfoId, String = "testAttrName" } },
+                DefaultValue = 15,
+                Validators = new NumberAttributeConfigurationValidationRequest()
+                {
+                    IsRequired = true,
+                    MaximumValue = 100,
+                    MinimumValue = -100
+                }
+            };
         var configCreateRequest = new EntityConfigurationCreateRequest()
         {
             MachineName = "test",
             Name = new List<LocalizedStringCreateRequest>() { new() { CultureInfoId = cultureInfoId, String = "test" } },
             Attributes = new List<AttributeConfigurationCreateUpdateRequest>()
             {
-                new NumberAttributeConfigurationCreateUpdateRequest()
-                {
-                    MachineName = "testAttr",
-                    Description = new List<LocalizedStringCreateRequest>() { new() { CultureInfoId = cultureInfoId, String = "testAttrDesc" } },
-                    Name = new List<LocalizedStringCreateRequest>() { new() { CultureInfoId = cultureInfoId, String = "testAttrName" } },
-                    DefaultValue = 15,
-                    Validators = new NumberAttributeConfigurationValidationRequest()
-                    {
-                        IsRequired = true,
-                        MaximumValue = 100,
-                        MinimumValue = -100
-                    }
-                }
+                numberAttribute
             }
         };
 
         var created = await _eavService.CreateEntityConfiguration(configCreateRequest, CancellationToken.None);
-        created.Id.Should().NotBeEmpty();
-        created.Name.First().CultureInfoId.Should().Be(cultureInfoId);
-        created.Name.First().String.Should().Be("test");
-        created.Attributes.First().ValueType.Should().Be(EavAttributeType.Number);
         var attributeResult = created.Attributes.First().As<NumberAttributeConfigurationViewModel>();
-        attributeResult.MachineName.Should().Be("testAttr");
+        
+        attributeResult.MachineName.Should().Be(numberAttribute.MachineName);
         attributeResult.Description.First().CultureInfoId.Should().Be(cultureInfoId);
-        attributeResult.Description.First().String.Should().Be("testAttrDesc");
+        attributeResult.Description.First().String.Should().Be(numberAttribute.Description.First().String);
         attributeResult.Name.First().CultureInfoId.Should().Be(cultureInfoId);
-        attributeResult.Name.First().String.Should().Be("testAttrName");
+        attributeResult.Name.First().String.Should().Be(numberAttribute.Name.First().String);
         attributeResult.DefaultValue.Should().Be(15);
         // TODO: Add validators to a viewModel
     }

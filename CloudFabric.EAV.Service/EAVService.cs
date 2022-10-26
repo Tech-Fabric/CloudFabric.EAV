@@ -78,12 +78,9 @@ public class EAVService : IEAVService
             throw new NotFoundException();
         }
 
-        foreach (var name in entity.Name)
+        foreach (var name in entity.Name.Where(name => !entityConfiguration.Name.Any(x => x.CultureInfoId == name.CultureInfoId && x.String == name.String)))
         {
-            if (!entityConfiguration.Name.Any(x => x.CultureInfoId == name.CultureInfoId && x.String == name.String))
-            {
-                entityConfiguration.UpdateName(name.String, name.CultureInfoId);
-            }
+            entityConfiguration.UpdateName(name.String, name.CultureInfoId);
         }
 
         var attributesToRemove = entityConfiguration.Attributes
@@ -166,7 +163,9 @@ public class EAVService : IEAVService
             var attributeValue = entityInstance.Attributes.FirstOrDefault(attr => a.MachineName == attr.ConfigurationAttributeMachineName);
             if (a.ValidationRules == null) continue;
             var errors = (await Task.WhenAll(a.ValidationRules.Select(async r => await r.Validate(attributeValue) ? "" : r.ValidationError)
-                .Where(ve => !string.IsNullOrEmpty(ve.Result))).ConfigureAwait(false)).ToList();
+                .Where(ve => !string.IsNullOrEmpty(ve.Result)))
+                .ConfigureAwait(false))
+                .ToList();
             if (errors.Count > 0)
             {
                 validationErrors.Add(a.MachineName, errors);
