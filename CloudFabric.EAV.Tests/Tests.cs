@@ -1,13 +1,14 @@
-using System;
 using System.Collections.Generic;
+using System.Globalization;
+using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using AutoMapper;
-using Castle.DynamicProxy.Generators;
-using Castle.DynamicProxy.Generators.Emitters.SimpleAST;
+using CloudFabric.EAV.Domain.Enums;
 using CloudFabric.EAV.Domain.Models;
 using CloudFabric.EAV.Domain.Projections.EntityConfigurationProjection;
+using CloudFabric.EAV.Models.RequestModels;
 using CloudFabric.EAV.Models.RequestModels.Attributes;
 using CloudFabric.EAV.Service;
 using CloudFabric.EAV.Tests.Factories;
@@ -70,10 +71,15 @@ public class Tests
 
         var entityInstance = EntityInstanceFactory.CreateValidBoardGameEntityInstanceCreateRequest(createdConfiguration.Id);
 
-        var createdInstance = await _eavService.CreateEntityInstance(Guid.Empty, entityInstance);
+        var createdInstance = await _eavService.CreateEntityInstance(entityInstance);
 
         createdInstance.Id.Should().NotBeEmpty();
         createdInstance.EntityConfigurationId.Should().Be(configuration.Id);
+    }
+
+    public async Task CreateInstance_MissingRequiredField()
+    {
+        
     }
 
     [TestMethod]
@@ -134,6 +140,46 @@ public class Tests
         await projectionsEngine.StopAsync();
     }
 
+    [TestMethod]
+    public async Task TestNumberAttribute_Success()
+    {
+        var cultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID;
+        var configCreateRequest = new EntityConfigurationCreateRequest()
+        {
+            MachineName = "test",
+            Name = new List<LocalizedStringCreateRequest>() { new() { CultureInfoId = cultureInfoId, String = "test" } },
+            Attributes = new List<AttributeConfigurationCreateUpdateRequest>()
+            {
+                new NumberAttributeConfigurationCreateUpdateRequest()
+                {
+                    MachineName = "testAttr",
+                    Description = new List<LocalizedStringCreateRequest>() { new() { CultureInfoId = cultureInfoId, String = "testAttrDesc" } },
+                    Name = new List<LocalizedStringCreateRequest>() { new() { CultureInfoId = cultureInfoId, String = "testAttrName" } },
+                    DefaultValue = 15,
+                    Validators = new NumberAttributeConfigurationValidationRequest()
+                    {
+                        IsRequired = true,
+                        MaximumValue = 100,
+                        MinimumValue = -100
+                    }
+                }
+            }
+        };
+
+        var created = await _eavService.CreateEntityConfiguration(configCreateRequest, CancellationToken.None);
+        created.Id.Should().NotBeEmpty();
+        created.Name.First().CultureInfoId.Should().Be(cultureInfoId);
+        created.Name.First().String.Should().Be("test");
+        created.Attributes.First().ValueType.Should().Be(EavAttributeType.Number);
+        var attributeResult = created.Attributes.First().As<NumberAttributeConfigurationViewModel>();
+        attributeResult.MachineName.Should().Be("testAttr");
+        attributeResult.Description.First().CultureInfoId.Should().Be(cultureInfoId);
+        attributeResult.Description.First().String.Should().Be("testAttrDesc");
+        attributeResult.Name.First().CultureInfoId.Should().Be(cultureInfoId);
+        attributeResult.Name.First().String.Should().Be("testAttrName");
+        attributeResult.DefaultValue.Should().Be(15);
+        // TODO: Add validators to a viewModel
+    }
     private IProjectionRepository GetProjectionRepository(ProjectionDocumentSchema schema)
     {
         return new InMemoryProjectionRepository(schema);
