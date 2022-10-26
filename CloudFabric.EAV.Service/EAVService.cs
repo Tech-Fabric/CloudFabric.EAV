@@ -1,10 +1,4 @@
-using System;
-using System.Collections.Concurrent;
-using System.Net;
-using System.Security.Cryptography.X509Certificates;
-using System.Threading;
 using AutoMapper;
-using AutoMapper.Internal.Mappers;
 using CloudFabric.EAV.Domain.Enums;
 using CloudFabric.EAV.Domain.Models;
 using CloudFabric.EAV.Domain.Models.Base;
@@ -16,7 +10,6 @@ using CloudFabric.EAV.Models.ViewModels.EAV;
 using CloudFabric.EventSourcing.Domain;
 using CloudFabric.EventSourcing.EventStore;
 using CloudFabric.EventSourcing.EventStore.Persistence;
-using CloudFabric.Projections;
 using Microsoft.Extensions.Logging;
 
 namespace CloudFabric.EAV.Service;
@@ -164,7 +157,7 @@ public class EAVService : IEAVService
         //var entityConfiguration = await GetEntityConfiguration(entityInstance.EntityConfigurationId, EntityConfiguration.ENTITY_CONFIGURATION_PARTITION_KEY);
 
         var entityConfiguration = await _entityConfigurationRepository.LoadAsync(
-            entityInstance.EntityConfigurationId.ToString(), EntityConfiguration.ENTITY_CONFIGURATION_PARTITION_KEY
+            entityInstance.EntityConfigurationId.ToString(), entityInstance.EntityConfigurationId.ToString()
         );
         if (entityConfiguration == null) throw new ArgumentNullException(nameof(entityConfiguration));
         var validationErrors = new Dictionary<string, List<string>>();
