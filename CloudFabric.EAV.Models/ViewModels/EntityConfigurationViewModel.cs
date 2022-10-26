@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using CloudFabric.EAV.Models.ViewModels.Attributes;
 
@@ -9,6 +9,8 @@ namespace CloudFabric.EAV.Models.ViewModels
         public Guid Id { get; set; }
         
         public List<LocalizedStringViewModel> Name { get; set; }
+
+        public string PartitionKey { get; set; }
         
         public string MachineName { get; set; }
         
