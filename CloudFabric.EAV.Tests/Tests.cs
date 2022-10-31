@@ -185,7 +185,6 @@ public class Tests
         attributeResult.MaximumValue.Should().Be(100);
         attributeResult.MinimumValue.Should().Be(-100);
         attributeResult.IsRequired.Should().Be(true);
-        // TODO: Add validators to a viewModel
     }
     private IProjectionRepository GetProjectionRepository(ProjectionDocumentSchema schema)
     {
