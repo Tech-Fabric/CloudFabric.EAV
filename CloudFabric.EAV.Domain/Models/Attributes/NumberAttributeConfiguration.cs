@@ -15,9 +15,14 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
         public override EavAttributeType ValueType { get; } = EavAttributeType.Number;
         public override (bool, List<string>) Validate(AttributeInstance instance)
         {
-            var (result, errors) = (true, new List<string>());
-            var numberInstance = instance as NumberAttributeInstance; 
-            var floatValue = numberInstance?.Value ?? 0;
+            var (result, errors) = base.Validate(instance);
+            if (instance is not NumberAttributeInstance numberInstance)
+            {
+                errors.Add("Cannot validate attribute. Expected attribute type: Number)");
+                return (false, errors);
+            }
+            
+            var floatValue = numberInstance.Value;
             if (floatValue < MinimumValue)
             {
                 result = false;

@@ -149,7 +149,7 @@ public class Tests
     }
 
     [TestMethod]
-    public async Task TestNumberAttribute_Success()
+    public async Task TestCreateNumberAttribute_Success()
     {
         var cultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID;
         var numberAttribute =
@@ -159,12 +159,9 @@ public class Tests
                 Description = new List<LocalizedStringCreateRequest>() { new() { CultureInfoId = cultureInfoId, String = "testAttrDesc" } },
                 Name = new List<LocalizedStringCreateRequest>() { new() { CultureInfoId = cultureInfoId, String = "testAttrName" } },
                 DefaultValue = 15,
-                Validators = new NumberAttributeConfigurationValidationRequest()
-                {
-                    IsRequired = true,
-                    MaximumValue = 100,
-                    MinimumValue = -100
-                }
+                IsRequired = true,
+                MaximumValue = 100,
+                MinimumValue = -100
             };
         var configCreateRequest = new EntityConfigurationCreateRequest()
         {

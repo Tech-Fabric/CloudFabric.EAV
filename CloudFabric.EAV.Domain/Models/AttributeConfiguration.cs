@@ -17,6 +17,15 @@ namespace CloudFabric.EAV.Domain.Models
         public string MachineName { get; protected set; }
 
         public abstract EavAttributeType ValueType { get; }
-        public abstract (bool, List<string>) Validate(AttributeInstance instance);
+
+        public virtual (bool, List<string>) Validate(AttributeInstance instance)
+        {
+            if (IsRequired && instance == null)
+            {
+                return (false, new List<string>() { "Attribute is Required" });
+            }
+
+            return (true, new List<string>());
+        }
     }
 }
