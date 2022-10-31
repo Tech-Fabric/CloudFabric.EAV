@@ -192,19 +192,4 @@ public class EAVService : IEAVService
     }
     
     #endregion
-    
-    #region AttributeConfiguration
-
-    public async Task<AttributeConfigurationViewModel?> GetAttributeConfiguration(EavAttributeType type) 
-    {
-        switch (type)
-        {
-           case EavAttributeType.Number:
-               return new NumberAttributeConfigurationViewModel();
-           default:
-               return null;
-        }
-    }
-
-    #endregion
 }
