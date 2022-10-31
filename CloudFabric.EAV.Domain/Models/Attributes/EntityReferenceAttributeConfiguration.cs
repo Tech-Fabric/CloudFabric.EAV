@@ -13,5 +13,9 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
         public Guid ReferenceEntityConfiguration { get; set; }
 
         public Guid DefaultValue { get; set; }
+        public override (bool, List<string>) Validate(AttributeInstance instance)
+        {
+            return (true, new List<string>());
+        }
     }
 }

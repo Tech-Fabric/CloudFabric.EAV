@@ -27,5 +27,9 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
         public List<ImageThumbnailDefinition> ThumbnailsConfiguration { get; set; }
 
         public override EavAttributeType ValueType { get; } = EavAttributeType.Image;
+        public override (bool, List<string>) Validate(AttributeInstance instance)
+        {
+            return (true, new List<string>());
+        }
     }
 }

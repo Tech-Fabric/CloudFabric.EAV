@@ -54,27 +54,21 @@ public static class EntityConfigurationFactory
                     MachineName = "players_min",
                     Name = new List<LocalizedStringCreateRequest>()
                     {
-                        new LocalizedStringCreateRequest() { CultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID, String = "Number of players min" },
-                        new LocalizedStringCreateRequest() { CultureInfoId = CultureInfo.GetCultureInfo("RU-ru").LCID, String = "Количество игроков, от" }
+                        new() { CultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID, String = "Number of players min" },
+                        new() { CultureInfoId = CultureInfo.GetCultureInfo("RU-ru").LCID, String = "Количество игроков, от" }
                     },
-                    Validators = new NumberAttributeConfigurationValidationRequest()
-                    {
-                        IsRequired = true, 
-                        MinimumValue = 1
-                    }
+                    MinimumValue = 1,
+                    IsRequired = true
                 },
                 new NumberAttributeConfigurationCreateUpdateRequest() {
                     MachineName = "players_max",
                     Name = new List<LocalizedStringCreateRequest>()
                     {
-                        new LocalizedStringCreateRequest() { CultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID, String = "Number of players max" },
-                        new LocalizedStringCreateRequest() { CultureInfoId = CultureInfo.GetCultureInfo("RU-ru").LCID, String = "Количество игроков, до" }
+                        new() { CultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID, String = "Number of players max" },
+                        new() { CultureInfoId = CultureInfo.GetCultureInfo("RU-ru").LCID, String = "Количество игроков, до" }
                     },
-                    Validators = new NumberAttributeConfigurationValidationRequest()
-                    {
-                        MaximumValue = 10,
-                        IsRequired = true
-                    }
+                    MaximumValue = 10,
+                    IsRequired = true
                 }
             }
         };

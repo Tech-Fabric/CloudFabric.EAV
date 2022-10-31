@@ -161,20 +161,16 @@ public class EAVService : IEAVService
         foreach (var a in entityConfiguration.Attributes)
         {
             var attributeValue = entityInstance.Attributes.FirstOrDefault(attr => a.MachineName == attr.ConfigurationAttributeMachineName);
-            if (a.ValidationRules == null) continue;
-            var errors = (await Task.WhenAll(a.ValidationRules.Select(async r => await r.Validate(attributeValue) ? "" : r.ValidationError)
-                .Where(ve => !string.IsNullOrEmpty(ve.Result)))
-                .ConfigureAwait(false))
-                .ToList();
-            if (errors.Count > 0)
+            var (isValid, attrValidationErrors) = a.Validate(attributeValue);
+            if (!isValid)
             {
-                validationErrors.Add(a.MachineName, errors);
+                validationErrors.Add(a.MachineName, attrValidationErrors);
             }
         }
 
         if (validationErrors.Count > 0)
         {
-            // TODO: throw standartized exception 
+            // TODO: throw standardized exception
             throw new Exception(validationErrors.ToString());
         }
 
