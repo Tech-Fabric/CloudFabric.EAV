@@ -13,28 +13,26 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
         public float? MaximumValue { get; set; }
 
         public override EavAttributeType ValueType { get; } = EavAttributeType.Number;
-        public override (bool, List<string>) Validate(AttributeInstance instance)
+        public override List<string> Validate(AttributeInstance instance)
         {
-            var (result, errors) = base.Validate(instance);
+            var errors = base.Validate(instance);
             if (instance is not NumberAttributeInstance numberInstance)
             {
                 errors.Add("Cannot validate attribute. Expected attribute type: Number)");
-                return (false, errors);
+                return errors;
             }
             
             var floatValue = numberInstance.Value;
             if (floatValue < MinimumValue)
             {
-                result = false;
                 errors.Add($"Value should be greater or equal than {MinimumValue}");
             }
 
             if (floatValue > MaximumValue)
             {
-                result = false;
                 errors.Add($"Value should be less or equal than {MaximumValue}");
             }
-            return (result, errors);
+            return errors;
         }
     }
 }

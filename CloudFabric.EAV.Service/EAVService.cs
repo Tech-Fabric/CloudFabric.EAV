@@ -156,13 +156,16 @@ public class EAVService : IEAVService
         var entityConfiguration = await _entityConfigurationRepository.LoadAsync(
             entityInstance.EntityConfigurationId.ToString(), entityInstance.EntityConfigurationId.ToString()
         );
-        if (entityConfiguration == null) throw new ArgumentNullException(nameof(entityConfiguration));
+        if (entityConfiguration == null)
+        {
+            throw new ArgumentNullException(nameof(entityConfiguration));
+        }
         var validationErrors = new Dictionary<string, List<string>>();
         foreach (var a in entityConfiguration.Attributes)
         {
             var attributeValue = entityInstance.Attributes.FirstOrDefault(attr => a.MachineName == attr.ConfigurationAttributeMachineName);
-            var (isValid, attrValidationErrors) = a.Validate(attributeValue);
-            if (!isValid)
+            var attrValidationErrors = a.Validate(attributeValue);
+            if (attrValidationErrors is { Count: > 0 })
             {
                 validationErrors.Add(a.MachineName, attrValidationErrors);
             }

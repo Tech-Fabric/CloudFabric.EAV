@@ -18,14 +18,14 @@ namespace CloudFabric.EAV.Domain.Models
 
         public abstract EavAttributeType ValueType { get; }
 
-        public virtual (bool, List<string>) Validate(AttributeInstance instance)
+        public virtual List<string> Validate(AttributeInstance instance)
         {
             if (IsRequired && instance == null)
             {
-                return (false, new List<string>() { "Attribute is Required" });
+                return new List<string>() { "Attribute is Required" };
             }
 
-            return (true, new List<string>());
+            return new List<string>();
         }
     }
 }
