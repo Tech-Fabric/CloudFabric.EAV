@@ -186,6 +186,7 @@ public class Tests
         attributeResult.MinimumValue.Should().Be(-100);
         attributeResult.IsRequired.Should().Be(true);
     }
+    
     private IProjectionRepository GetProjectionRepository(ProjectionDocumentSchema schema)
     {
         return new InMemoryProjectionRepository(schema);
