@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using AutoMapper;
 using CloudFabric.EAV.Domain.Enums;
 using CloudFabric.EAV.Domain.Models;
+using CloudFabric.EAV.Domain.Models.Base;
 using CloudFabric.EAV.Domain.Projections.EntityConfigurationProjection;
 using CloudFabric.EAV.Models.RequestModels;
 using CloudFabric.EAV.Models.RequestModels.Attributes;
@@ -110,6 +111,75 @@ public class Tests
 
         var configuration = await _eavService.GetEntityConfiguration(createdConfiguration.Id, createdConfiguration.PartitionKey);
         configuration.Should().BeEquivalentTo(createdConfiguration);
+    }
+
+    [TestMethod]
+    public async Task UpdateEntityConfiguration_ChangeLocalizedStringAttribute_Success()
+    {
+        var cultureId = CultureInfo.GetCultureInfo("EN-us").LCID;
+        const string newName = "newName";
+        var configRequest = EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
+        var createdConfig = await _eavService.CreateEntityConfiguration(configRequest, CancellationToken.None);
+        var nameAttrIndex = configRequest.Attributes.FindIndex(a => a.MachineName == "name");
+        configRequest.Attributes[nameAttrIndex] = new LocalizedTextAttributeConfigurationCreateUpdateRequest()
+        {
+            MachineName = "name",
+            Name = new List<LocalizedStringCreateRequest>()
+            {
+                new LocalizedStringCreateRequest()
+                {
+                    CultureInfoId = cultureId,
+                    String = newName
+                },
+            },
+        };
+        var updateRequest = new EntityConfigurationUpdateRequest()
+        {
+            Attributes = configRequest.Attributes,
+            Id = createdConfig.Id,
+            MachineName = configRequest.MachineName,
+            Name = configRequest.Name,
+            PartitionKey = createdConfig.PartitionKey
+        };
+        var updatedConfig = await _eavService.UpdateEntityConfiguration(updateRequest, CancellationToken.None);
+        updatedConfig.Attributes.First(a => a.MachineName == "name").As<LocalizedTextAttributeConfigurationViewModel>().Name.First().String.Should().Be(newName);
+        updatedConfig.Attributes.First(a => a.MachineName == "name").As<LocalizedTextAttributeConfigurationViewModel>().Name.First().CultureInfoId.Should().Be(cultureId);
+        updatedConfig.Id.Should().Be(createdConfig.Id);
+        updatedConfig.MachineName.Should().Be(createdConfig.MachineName);
+        updatedConfig.PartitionKey.Should().Be(createdConfig.PartitionKey);
+    }
+    
+    [TestMethod]
+    public async Task UpdateEntityConfiguration_ChangeName_Success()
+    {
+        var cultureId = CultureInfo.GetCultureInfo("EN-us").LCID;
+        const string newName = "newName";
+        var configRequest = EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
+        var createdConfig = await _eavService.CreateEntityConfiguration(configRequest, CancellationToken.None);
+        var nameAttrIndex = configRequest.Attributes.FindIndex(a => a.MachineName == "name");
+        configRequest.Name = new List<LocalizedStringCreateRequest>()
+        {
+            new LocalizedStringCreateRequest()
+            {
+                CultureInfoId = cultureId,
+                String = newName
+            },
+        };
+        var updateRequest = new EntityConfigurationUpdateRequest()
+        {
+            Attributes = configRequest.Attributes,
+            Id = createdConfig.Id,
+            MachineName = configRequest.MachineName,
+            Name = configRequest.Name,
+            PartitionKey = createdConfig.PartitionKey
+        };
+        var updatedConfig = await _eavService.UpdateEntityConfiguration(updateRequest, CancellationToken.None);
+        updatedConfig.Name.First().String.Should().Be(newName);
+        updatedConfig.Name.First().CultureInfoId.Should().Be(cultureId);
+        updatedConfig.Attributes.Should().Equal(createdConfig.Attributes);
+        updatedConfig.Id.Should().Be(createdConfig.Id);
+        updatedConfig.MachineName.Should().Be(createdConfig.MachineName);
+        updatedConfig.PartitionKey.Should().Be(createdConfig.PartitionKey);
     }
 
     [TestMethod]

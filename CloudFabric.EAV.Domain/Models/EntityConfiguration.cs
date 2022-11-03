@@ -93,6 +93,17 @@ namespace CloudFabric.EAV.Domain.Models
             newCollection.Add(@event.Attribute);
             Attributes = newCollection.AsReadOnly();
         }
+
+        public void On(EntityConfigurationAttributeUpdated @event)
+        {
+            var newCollection = new List<AttributeConfiguration>(Attributes);
+            var attrIndex = newCollection.FindIndex(a => a.MachineName == @event.Attribute.MachineName);
+            if (attrIndex != -1)
+            {
+                newCollection[attrIndex] = @event.Attribute;
+            }
+            Attributes = newCollection.AsReadOnly();
+        }
         #endregion
     }
 }
