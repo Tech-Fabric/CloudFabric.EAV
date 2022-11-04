@@ -1,9 +1,7 @@
-namespace CloudFabric.EAV.Domain.Enums
+namespace CloudFabric.EAV.Domain.Enums;
+
+public enum CreateEntityInstanceResult
 {
-    public enum CreateEntityInstanceResult
-    {
-        ValidationError,
-        InstanceCreated
-    }
-    
+    ValidationError,
+    InstanceCreated
 }

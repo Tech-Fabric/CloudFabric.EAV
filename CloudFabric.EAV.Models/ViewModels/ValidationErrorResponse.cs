@@ -4,35 +4,34 @@ using CloudFabric.EAV.Domain.Enums;
 
 using Microsoft.AspNetCore.Mvc;
 
-namespace CloudFabric.EAV.Models.ViewModels
+namespace CloudFabric.EAV.Models.ViewModels;
+
+public class ValidationErrorResponse : ValidationProblemDetails
 {
-    public class ValidationErrorResponse : ValidationProblemDetails
+    public new IDictionary<string, string[]> Errors { get; }
+
+    public ValidationErrorResponse(IDictionary<string, string[]> errors)
     {
-        public new IDictionary<string, string[]> Errors { get; }
+        Type = CommonErrorTypes.ValidationError;
+        Title = "Validation errors occured";
+        Errors = errors;
+    }
 
-        public ValidationErrorResponse(IDictionary<string, string[]> errors)
-        {
-            Type = CommonErrorTypes.ValidationError;
-            Title = "Validation errors occured";
-            Errors = errors;
-        }
+    public ValidationErrorResponse(string fieldName, string errorMessage)
+        : this(GetDictionary(fieldName, new string[] { errorMessage }))
+    {
+    }
 
-        public ValidationErrorResponse(string fieldName, string errorMessage)
-            : this(GetDictionary(fieldName, new string[] { errorMessage }))
-        {
-        }
+    public ValidationErrorResponse(string fieldName, string[] errorMessages)
+        : this(GetDictionary(fieldName, errorMessages))
+    {
+    }
 
-        public ValidationErrorResponse(string fieldName, string[] errorMessages)
-            : this(GetDictionary(fieldName, errorMessages))
+    private static IDictionary<string, string[]> GetDictionary(string fieldName, string[] errorMessages)
+    {
+        return new Dictionary<string, string[]>
         {
-        }
-
-        private static IDictionary<string, string[]> GetDictionary(string fieldName, string[] errorMessages)
-        {
-            return new Dictionary<string, string[]>
-            {
-                { fieldName, errorMessages }
-            };
-        }
+            { fieldName, errorMessages }
+        };
     }
 }
