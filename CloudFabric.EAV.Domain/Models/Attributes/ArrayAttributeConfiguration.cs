@@ -1,3 +1,5 @@
+using System;
+
 using CloudFabric.EAV.Domain.Enums;
 
 namespace CloudFabric.EAV.Domain.Models.Attributes

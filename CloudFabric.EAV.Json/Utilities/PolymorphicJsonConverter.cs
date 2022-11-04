@@ -10,7 +10,7 @@ namespace CloudFabric.EAV.Json.Utilities
 
         public override bool CanConvert(Type type)
         {
-            if (type.Name.IndexOf("List") == 0)
+            if (type.Name.IndexOf("List", StringComparison.Ordinal) == 0)
             {
                 return typeof(T).GenericTypeArguments[0].IsAssignableFrom(type.GenericTypeArguments[0]);
             }
@@ -27,7 +27,7 @@ namespace CloudFabric.EAV.Json.Utilities
             // It's important to get assembly from generic of the attribute since we don't want to create types of unknown assemblies
             var typeAssemblyName = typeof(T).Assembly.FullName;
 
-            if (typeToConvert.Name.IndexOf("List") == 0)
+            if (typeToConvert.Name.IndexOf("List", StringComparison.Ordinal) == 0)
             {
                 if (reader.TokenType != JsonTokenType.StartArray)
                 {
@@ -146,7 +146,7 @@ namespace CloudFabric.EAV.Json.Utilities
             T value,
             JsonSerializerOptions options)
         {
-            if (typeof(T).Name.IndexOf("List") == 0)
+            if (typeof(T).Name.IndexOf("List", StringComparison.Ordinal) == 0)
             {
                 writer.WriteStartArray();
 

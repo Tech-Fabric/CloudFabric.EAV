@@ -1,14 +1,18 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
+using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using AutoMapper;
-using Castle.DynamicProxy.Generators;
-using Castle.DynamicProxy.Generators.Emitters.SimpleAST;
+using CloudFabric.EAV.Domain.Enums;
 using CloudFabric.EAV.Domain.Models;
 using CloudFabric.EAV.Domain.Projections.EntityConfigurationProjection;
+using CloudFabric.EAV.Models.RequestModels;
 using CloudFabric.EAV.Models.RequestModels.Attributes;
+using CloudFabric.EAV.Models.ViewModels;
+using CloudFabric.EAV.Models.ViewModels.EAV;
 using CloudFabric.EAV.Service;
 using CloudFabric.EAV.Tests.Factories;
 using CloudFabric.EventSourcing.Domain;
@@ -19,6 +23,8 @@ using CloudFabric.Projections;
 using CloudFabric.Projections.InMemory;
 using CloudFabric.Projections.Queries;
 using FluentAssertions;
+
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -59,22 +65,81 @@ public class Tests
     }
 
     [TestMethod]
-    public async Task Test()
+    public async Task CreateInstance_Success()
     {
         var configurationCreateRequest = EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
 
-        var createdConfiguration = await _eavService.CreateEntityConfiguration(
-            Guid.Empty, configurationCreateRequest, CancellationToken.None
+        var createdConfiguration = await _eavService.CreateEntityConfiguration(configurationCreateRequest, CancellationToken.None
         );
 
-        var configuration = await _eavService.GetEntityConfiguration(createdConfiguration.Id, createdConfiguration.Id.ToString());
+        var configuration = await _eavService.GetEntityConfiguration(createdConfiguration.Id, createdConfiguration.PartitionKey);
 
-        var entityInstance = EntityInstanceFactory.CreateBoardGameEntityInstanceCreateRequest(createdConfiguration.Id);
+        var entityInstanceCreateRequest = EntityInstanceFactory.CreateValidBoardGameEntityInstanceCreateRequest(createdConfiguration.Id);
 
-        var createdInstance = await _eavService.CreateEntityInstance(Guid.Empty, entityInstance);
+        var (createdInstance, validationErrors)  = await _eavService.CreateEntityInstance(entityInstanceCreateRequest);
 
+        validationErrors.Should().BeNull();
         createdInstance.Id.Should().NotBeEmpty();
-        createdInstance.Attributes.Count.Should().Be(entityInstance.Attributes.Count);
+        createdInstance.EntityConfigurationId.Should().Be(configuration.Id);
+    }
+    
+    [TestMethod]
+    public async Task CreateInstance_InvalidConfigurationId()
+    {
+        var entityInstanceCreateRequest = EntityInstanceFactory.CreateValidBoardGameEntityInstanceCreateRequest(Guid.NewGuid());
+        (EntityInstanceViewModel result, ProblemDetails validationErrors) =  await _eavService.CreateEntityInstance(entityInstanceCreateRequest);
+        result.Should().BeNull();
+        validationErrors.Should().BeOfType<ValidationErrorResponse>();
+        validationErrors.As<ValidationErrorResponse>().Errors.Should().ContainKey("EntityConfigurationId");
+        validationErrors.As<ValidationErrorResponse>().Errors["EntityConfigurationId"].First().Should().Be("Configuration not found");
+    }
+
+    public async Task CreateInstance_MissingRequiredAttribute()
+    {
+        var configurationCreateRequest = EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
+
+        var createdConfiguration = await _eavService.CreateEntityConfiguration(configurationCreateRequest, CancellationToken.None
+        );
+
+        var configuration = await _eavService.GetEntityConfiguration(createdConfiguration.Id, createdConfiguration.PartitionKey);
+        var requiredAttributeMachineName = configuration.Attributes.First(a => a.IsRequired).MachineName;
+        var entityInstanceCreateRequest = EntityInstanceFactory.CreateValidBoardGameEntityInstanceCreateRequest(createdConfiguration.Id);
+        entityInstanceCreateRequest.Attributes = entityInstanceCreateRequest.Attributes.Where(a => a.ConfigurationAttributeMachineName != requiredAttributeMachineName).ToList();
+        (EntityInstanceViewModel createdInstance, ProblemDetails validationErrors)  = await _eavService.CreateEntityInstance(entityInstanceCreateRequest);
+        createdInstance.Should().BeNull();
+        
+        validationErrors.As<ValidationErrorResponse>().Errors.Should().ContainKey(requiredAttributeMachineName);
+        validationErrors.As<ValidationErrorResponse>().Errors[requiredAttributeMachineName].First().Should().Be("Attribute is Required");
+    }
+
+    [TestMethod]
+    public async Task CreateEntityConfiguration_Success()
+    {
+        var configurationCreateRequest = EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
+        var createdConfiguration = await _eavService.CreateEntityConfiguration(configurationCreateRequest, CancellationToken.None
+        );
+        createdConfiguration.Should().NotBeNull();
+        createdConfiguration.Id.Should().NotBeEmpty();
+        foreach (var name in createdConfiguration.Name)
+        {
+            name.String.Should().Be(configurationCreateRequest.Name.First(n => n.CultureInfoId == name.CultureInfoId).String);
+        }
+
+        createdConfiguration.MachineName.Should().Be(configurationCreateRequest.MachineName);
+        createdConfiguration.Attributes.Count.Should().Be(configurationCreateRequest.Attributes.Count);
+    }
+
+    [TestMethod]
+    public async Task GetEntityConfiguration_Success()
+    {
+        
+        var configurationCreateRequest = EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
+
+        var createdConfiguration = await _eavService.CreateEntityConfiguration(configurationCreateRequest, CancellationToken.None
+        );
+
+        var configuration = await _eavService.GetEntityConfiguration(createdConfiguration.Id, createdConfiguration.PartitionKey);
+        configuration.Should().BeEquivalentTo(createdConfiguration);
     }
 
     [TestMethod]
@@ -98,7 +163,6 @@ public class Tests
         var configurationCreateRequest = EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
 
         var createdConfiguration = await _eavService.CreateEntityConfiguration(
-            Guid.Empty,
             configurationCreateRequest,
             CancellationToken.None
         );
@@ -114,6 +178,45 @@ public class Tests
         await projectionsEngine.StopAsync();
     }
 
+    [TestMethod]
+    public async Task TestCreateNumberAttribute_Success()
+    {
+        var cultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID;
+        var numberAttribute =
+            new NumberAttributeConfigurationCreateUpdateRequest()
+            {
+                MachineName = "testAttr",
+                Description = new List<LocalizedStringCreateRequest>() { new() { CultureInfoId = cultureInfoId, String = "testAttrDesc" } },
+                Name = new List<LocalizedStringCreateRequest>() { new() { CultureInfoId = cultureInfoId, String = "testAttrName" } },
+                DefaultValue = 15,
+                IsRequired = true,
+                MaximumValue = 100,
+                MinimumValue = -100
+            };
+        var configCreateRequest = new EntityConfigurationCreateRequest()
+        {
+            MachineName = "test",
+            Name = new List<LocalizedStringCreateRequest>() { new() { CultureInfoId = cultureInfoId, String = "test" } },
+            Attributes = new List<AttributeConfigurationCreateUpdateRequest>()
+            {
+                numberAttribute
+            }
+        };
+
+        var created = await _eavService.CreateEntityConfiguration(configCreateRequest, CancellationToken.None);
+        var attributeResult = created.Attributes.First().As<NumberAttributeConfigurationViewModel>();
+        
+        attributeResult.MachineName.Should().Be(numberAttribute.MachineName);
+        attributeResult.Description.First().CultureInfoId.Should().Be(cultureInfoId);
+        attributeResult.Description.First().String.Should().Be(numberAttribute.Description.First().String);
+        attributeResult.Name.First().CultureInfoId.Should().Be(cultureInfoId);
+        attributeResult.Name.First().String.Should().Be(numberAttribute.Name.First().String);
+        attributeResult.DefaultValue.Should().Be(15);
+        attributeResult.MaximumValue.Should().Be(100);
+        attributeResult.MinimumValue.Should().Be(-100);
+        attributeResult.IsRequired.Should().Be(true);
+    }
+    
     private IProjectionRepository GetProjectionRepository(ProjectionDocumentSchema schema)
     {
         return new InMemoryProjectionRepository(schema);

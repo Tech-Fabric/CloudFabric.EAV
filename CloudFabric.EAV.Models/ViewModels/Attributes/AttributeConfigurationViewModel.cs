@@ -9,6 +9,8 @@ namespace CloudFabric.EAV.Models.ViewModels.Attributes
     [JsonConverter(typeof(PolymorphicJsonConverter<AttributeConfigurationViewModel>))]
     public abstract class AttributeConfigurationViewModel
     {
+        public bool IsRequired { get; set; }
+        
         public List<LocalizedStringViewModel> Name { get; set; }
 
         public List<LocalizedStringViewModel> Description { get; set; }

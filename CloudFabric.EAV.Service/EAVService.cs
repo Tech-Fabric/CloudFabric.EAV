@@ -1,10 +1,5 @@
-using System;
-using System.Collections.Concurrent;
-using System.Net;
-using System.Security.Cryptography.X509Certificates;
-using System.Threading;
 using AutoMapper;
-using AutoMapper.Internal.Mappers;
+
 using CloudFabric.EAV.Domain.Models;
 using CloudFabric.EAV.Domain.Models.Base;
 using CloudFabric.EAV.Models.RequestModels;
@@ -13,7 +8,8 @@ using CloudFabric.EAV.Models.ViewModels.EAV;
 using CloudFabric.EventSourcing.Domain;
 using CloudFabric.EventSourcing.EventStore;
 using CloudFabric.EventSourcing.EventStore.Persistence;
-using CloudFabric.Projections;
+
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 
 namespace CloudFabric.EAV.Service;
@@ -42,7 +38,9 @@ public class EAVService : IEAVService
         _userInfo = userInfo;
     }
 
-    public async Task<EntityConfigurationViewModel?> GetEntityConfiguration(Guid id, string partitionKey)
+    #region EntityConfiguration
+
+    public async Task<EntityConfigurationViewModel> GetEntityConfiguration(Guid id, string partitionKey)
     {
         var entityConfiguration = await _entityConfigurationRepository.LoadAsync(id.ToString(), partitionKey);
 
@@ -51,12 +49,14 @@ public class EAVService : IEAVService
 
     //public async Task<List<EntityConfigurationViewModel>> ListEntityConfigurations(int take, int skip = 0)
     //{
-        
+
 
     //    return _mapper.Map<List<EntityConfigurationViewModel>>(records);
     //}
 
-    public async Task<EntityConfigurationViewModel> CreateEntityConfiguration(Guid userId, EntityConfigurationCreateRequest entityConfigurationCreateRequest, CancellationToken cancellationToken)
+    public async Task<EntityConfigurationViewModel> CreateEntityConfiguration(
+        EntityConfigurationCreateRequest entityConfigurationCreateRequest, CancellationToken cancellationToken
+    )
     {
         var entityConfiguration = new EntityConfiguration(
             Guid.NewGuid(),
@@ -65,11 +65,11 @@ public class EAVService : IEAVService
             _mapper.Map<List<AttributeConfiguration>>(entityConfigurationCreateRequest.Attributes)
         );
         var created = await _entityConfigurationRepository.SaveAsync(_userInfo, entityConfiguration, cancellationToken);
-        
+
         return _mapper.Map<EntityConfigurationViewModel>(entityConfiguration);
     }
 
-    public async Task<EntityConfigurationViewModel> UpdateEntityConfiguration(Guid userId, EntityConfigurationUpdateRequest entity, CancellationToken cancellationToken)
+    public async Task<EntityConfigurationViewModel> UpdateEntityConfiguration(EntityConfigurationUpdateRequest entity, CancellationToken cancellationToken)
     {
         var entityConfiguration = await _entityConfigurationRepository.LoadAsync(entity.Id.ToString(), entity.PartitionKey, cancellationToken);
 
@@ -78,12 +78,9 @@ public class EAVService : IEAVService
             throw new NotFoundException();
         }
 
-        foreach (var name in entity.Name)
+        foreach (var name in entity.Name.Where(name => !entityConfiguration.Name.Any(x => x.CultureInfoId == name.CultureInfoId && x.String == name.String)))
         {
-            if (!entityConfiguration.Name.Any(x => x.CultureInfoId == name.CultureInfoId && x.String == name.String))
-            {
-                entityConfiguration.UpdateName(name.String, name.CultureInfoId);
-            }
+            entityConfiguration.UpdateName(name.String, name.CultureInfoId);
         }
 
         var attributesToRemove = entityConfiguration.Attributes
@@ -118,6 +115,8 @@ public class EAVService : IEAVService
         return _mapper.Map<EntityConfigurationViewModel>(entityConfiguration);
     }
 
+    #endregion
+
     // public async Task<List<EntityInstanceViewModel>> ListEntityInstances(string entityConfigurationMachineName, int take, int skip = 0)
     // {
     //     var records = await _entityInstanceRepository
@@ -142,7 +141,9 @@ public class EAVService : IEAVService
     //     return _mapper.Map<List<EntityInstanceViewModel>>(records);
     // }
 
-    public async Task<EntityInstanceViewModel> CreateEntityInstance(Guid userId, EntityInstanceCreateRequest entity)
+    #region EntityInstance
+
+    public async Task<(EntityInstanceViewModel, ProblemDetails)> CreateEntityInstance(EntityInstanceCreateRequest entity)
     {
         var entityInstance = new EntityInstance(
             Guid.NewGuid(),
@@ -150,23 +151,38 @@ public class EAVService : IEAVService
             _mapper.Map<List<AttributeInstance>>(entity.Attributes)
         );
 
-        var entityConfiguration = await GetEntityConfiguration(entityInstance.EntityConfigurationId, entityInstance.EntityConfigurationId.ToString());
+        //var entityConfiguration = await GetEntityConfiguration(entityInstance.EntityConfigurationId, EntityConfiguration.ENTITY_CONFIGURATION_PARTITION_KEY);
 
+        var entityConfiguration = await _entityConfigurationRepository.LoadAsync(
+            entityInstance.EntityConfigurationId.ToString(), entityInstance.EntityConfigurationId.ToString()
+        );
         if (entityConfiguration == null)
         {
-            throw new Exception($"Entity configuration not found. Id: {entityInstance.EntityConfigurationId}");
+            return (null, new ValidationErrorResponse("EntityConfigurationId", "Configuration not found"))!;
         }
-        
+        var validationErrors = new Dictionary<string, string[]>();
         foreach (var a in entityConfiguration.Attributes)
         {
             var attributeValue = entityInstance.Attributes.FirstOrDefault(attr => a.MachineName == attr.ConfigurationAttributeMachineName);
-
-            
+            var attrValidationErrors = a.Validate(attributeValue);
+            if (attrValidationErrors is { Count: > 0 })
+            {
+                validationErrors.Add(a.MachineName, attrValidationErrors.ToArray());
+            }
         }
 
-        var created = await _entityInstanceRepository.SaveAsync(_userInfo, entityInstance);
+        if (validationErrors.Count > 0)
+        {
+            return (null, new ValidationErrorResponse(validationErrors))!;
+        }
 
-        return _mapper.Map<EntityInstanceViewModel>(entityInstance);
+        var saved = await _entityInstanceRepository.SaveAsync(_userInfo, entityInstance);
+        if (!saved)
+        {
+            //TODO: What do we want to do with internal exceptions and unsuccessful flow?
+            throw new Exception("Entity was not saved");
+        }
+        return (_mapper.Map<EntityInstanceViewModel>(entityInstance), null);
     }
 
     public async Task<EntityInstanceViewModel> GetEntityInstance(Guid id, string partitionKey)
@@ -180,4 +196,6 @@ public class EAVService : IEAVService
     {
         throw new NotImplementedException();
     }
+    
+    #endregion
 }

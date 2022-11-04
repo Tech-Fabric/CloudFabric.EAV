@@ -8,7 +8,7 @@ namespace CloudFabric.EAV.Tests.Factories;
 
 public class EntityInstanceFactory
 {
-    public static EntityInstanceCreateRequest CreateBoardGameEntityInstanceCreateRequest(Guid entityConfigurationId)
+    public static EntityInstanceCreateRequest CreateValidBoardGameEntityInstanceCreateRequest(Guid entityConfigurationId)
     {
         return new EntityInstanceCreateRequest()
         {
@@ -48,6 +48,16 @@ public class EntityInstanceFactory
                             String = "БлаБлаБла"
                         }
                     },
+                },
+                new NumberAttributeInstanceCreateUpdateRequest()
+                {
+                    ConfigurationAttributeMachineName = "players_min",
+                    Value = 1
+                },
+                new NumberAttributeInstanceCreateUpdateRequest()
+                {
+                    ConfigurationAttributeMachineName = "players_max",
+                    Value = 4
                 },
                 new ArrayAttributeInstanceCreateUpdateRequest()
                 {
