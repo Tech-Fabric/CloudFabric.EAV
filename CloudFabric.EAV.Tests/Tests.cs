@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -10,6 +11,8 @@ using CloudFabric.EAV.Domain.Models;
 using CloudFabric.EAV.Domain.Projections.EntityConfigurationProjection;
 using CloudFabric.EAV.Models.RequestModels;
 using CloudFabric.EAV.Models.RequestModels.Attributes;
+using CloudFabric.EAV.Models.ViewModels;
+using CloudFabric.EAV.Models.ViewModels.EAV;
 using CloudFabric.EAV.Service;
 using CloudFabric.EAV.Tests.Factories;
 using CloudFabric.EventSourcing.Domain;
@@ -20,6 +23,8 @@ using CloudFabric.Projections;
 using CloudFabric.Projections.InMemory;
 using CloudFabric.Projections.Queries;
 using FluentAssertions;
+
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -69,17 +74,42 @@ public class Tests
 
         var configuration = await _eavService.GetEntityConfiguration(createdConfiguration.Id, createdConfiguration.PartitionKey);
 
-        var entityInstance = EntityInstanceFactory.CreateValidBoardGameEntityInstanceCreateRequest(createdConfiguration.Id);
+        var entityInstanceCreateRequest = EntityInstanceFactory.CreateValidBoardGameEntityInstanceCreateRequest(createdConfiguration.Id);
 
-        var createdInstance = await _eavService.CreateEntityInstance(entityInstance);
+        var (createdInstance, validationErrors)  = await _eavService.CreateEntityInstance(entityInstanceCreateRequest);
 
+        validationErrors.Should().BeNull();
         createdInstance.Id.Should().NotBeEmpty();
         createdInstance.EntityConfigurationId.Should().Be(configuration.Id);
     }
-
-    public async Task CreateInstance_MissingRequiredField()
+    
+    [TestMethod]
+    public async Task CreateInstance_InvalidConfigurationId()
     {
+        var entityInstanceCreateRequest = EntityInstanceFactory.CreateValidBoardGameEntityInstanceCreateRequest(Guid.NewGuid());
+        (EntityInstanceViewModel result, ProblemDetails validationErrors) =  await _eavService.CreateEntityInstance(entityInstanceCreateRequest);
+        result.Should().BeNull();
+        validationErrors.Should().BeOfType<ValidationErrorResponse>();
+        validationErrors.As<ValidationErrorResponse>().Errors.Should().ContainKey("EntityConfigurationId");
+        validationErrors.As<ValidationErrorResponse>().Errors["EntityConfigurationId"].First().Should().Be("Configuration not found");
+    }
+
+    public async Task CreateInstance_MissingRequiredAttribute()
+    {
+        var configurationCreateRequest = EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
+
+        var createdConfiguration = await _eavService.CreateEntityConfiguration(configurationCreateRequest, CancellationToken.None
+        );
+
+        var configuration = await _eavService.GetEntityConfiguration(createdConfiguration.Id, createdConfiguration.PartitionKey);
+        var requiredAttributeMachineName = configuration.Attributes.First(a => a.IsRequired).MachineName;
+        var entityInstanceCreateRequest = EntityInstanceFactory.CreateValidBoardGameEntityInstanceCreateRequest(createdConfiguration.Id);
+        entityInstanceCreateRequest.Attributes = entityInstanceCreateRequest.Attributes.Where(a => a.ConfigurationAttributeMachineName != requiredAttributeMachineName).ToList();
+        (EntityInstanceViewModel createdInstance, ProblemDetails validationErrors)  = await _eavService.CreateEntityInstance(entityInstanceCreateRequest);
+        createdInstance.Should().BeNull();
         
+        validationErrors.As<ValidationErrorResponse>().Errors.Should().ContainKey(requiredAttributeMachineName);
+        validationErrors.As<ValidationErrorResponse>().Errors[requiredAttributeMachineName].First().Should().Be("Attribute is Required");
     }
 
     [TestMethod]

@@ -1,15 +1,15 @@
 using AutoMapper;
-using CloudFabric.EAV.Domain.Enums;
+
 using CloudFabric.EAV.Domain.Models;
 using CloudFabric.EAV.Domain.Models.Base;
 using CloudFabric.EAV.Models.RequestModels;
-using CloudFabric.EAV.Models.RequestModels.Attributes;
 using CloudFabric.EAV.Models.ViewModels;
-using CloudFabric.EAV.Models.ViewModels.Attributes;
 using CloudFabric.EAV.Models.ViewModels.EAV;
 using CloudFabric.EventSourcing.Domain;
 using CloudFabric.EventSourcing.EventStore;
 using CloudFabric.EventSourcing.EventStore.Persistence;
+
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 
 namespace CloudFabric.EAV.Service;
@@ -143,7 +143,7 @@ public class EAVService : IEAVService
 
     #region EntityInstance
 
-    public async Task<EntityInstanceViewModel> CreateEntityInstance(EntityInstanceCreateRequest entity)
+    public async Task<(EntityInstanceViewModel, ProblemDetails)> CreateEntityInstance(EntityInstanceCreateRequest entity)
     {
         var entityInstance = new EntityInstance(
             Guid.NewGuid(),
@@ -158,28 +158,31 @@ public class EAVService : IEAVService
         );
         if (entityConfiguration == null)
         {
-            throw new ArgumentNullException(nameof(entityConfiguration));
+            return (null, new ValidationErrorResponse("EntityConfigurationId", "Configuration not found"))!;
         }
-        var validationErrors = new Dictionary<string, List<string>>();
+        var validationErrors = new Dictionary<string, string[]>();
         foreach (var a in entityConfiguration.Attributes)
         {
             var attributeValue = entityInstance.Attributes.FirstOrDefault(attr => a.MachineName == attr.ConfigurationAttributeMachineName);
             var attrValidationErrors = a.Validate(attributeValue);
             if (attrValidationErrors is { Count: > 0 })
             {
-                validationErrors.Add(a.MachineName, attrValidationErrors);
+                validationErrors.Add(a.MachineName, attrValidationErrors.ToArray());
             }
         }
 
         if (validationErrors.Count > 0)
         {
-            // TODO: throw standardized exception
-            throw new Exception(validationErrors.ToString());
+            return (null, new ValidationErrorResponse(validationErrors))!;
         }
 
-        var created = await _entityInstanceRepository.SaveAsync(_userInfo, entityInstance);
-
-        return _mapper.Map<EntityInstanceViewModel>(entityInstance);
+        var saved = await _entityInstanceRepository.SaveAsync(_userInfo, entityInstance);
+        if (!saved)
+        {
+            //TODO: What do we want to do with internal exceptions and unsuccessful flow?
+            throw new Exception("Entity was not saved");
+        }
+        return (_mapper.Map<EntityInstanceViewModel>(entityInstance), null);
     }
 
     public async Task<EntityInstanceViewModel> GetEntityInstance(Guid id, string partitionKey)
