@@ -8,7 +8,6 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
 {
     public class NumberAttributeConfiguration : AttributeConfiguration
     {
-        private const float _fltMin = 1.175494E-38f;
         public float DefaultValue { get; set; }
         public float? MinimumValue { get; set; }
         public float? MaximumValue { get; set; }
@@ -40,6 +39,7 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
         {
             return this.Equals(obj as NumberAttributeConfiguration);
         }
+        
         private bool Equals(NumberAttributeConfiguration other)
         {
             return base.Equals(other) 
@@ -48,6 +48,7 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
                    && Nullable.Equals(MaximumValue, other.MaximumValue) 
                    && ValueType == other.ValueType;
         }
+        
         public override int GetHashCode()
         {
             return HashCode.Combine(DefaultValue, MinimumValue, MaximumValue, (int)ValueType);
