@@ -6,9 +6,8 @@ using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using AutoMapper;
-using CloudFabric.EAV.Domain.Enums;
+
 using CloudFabric.EAV.Domain.Models;
-using CloudFabric.EAV.Domain.Models.Base;
 using CloudFabric.EAV.Domain.Projections.EntityConfigurationProjection;
 using CloudFabric.EAV.Models.RequestModels;
 using CloudFabric.EAV.Models.RequestModels.Attributes;
@@ -24,9 +23,6 @@ using CloudFabric.Projections;
 using CloudFabric.Projections.InMemory;
 using CloudFabric.Projections.Queries;
 using FluentAssertions;
-
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
 
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
