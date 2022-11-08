@@ -21,6 +21,9 @@ using CloudFabric.Projections;
 using CloudFabric.Projections.InMemory;
 using CloudFabric.Projections.Queries;
 using FluentAssertions;
+
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -189,7 +192,8 @@ public class Tests
                 }
             },
             MachineName = newAttributeMachineName,
-            MinimumValue = 1
+            MinimumValue = 1,
+            Description = new List<LocalizedStringCreateRequest>()
         };
         
         configRequest.Attributes.Add(newAttributeRequest);
@@ -207,12 +211,7 @@ public class Tests
         newAttrIndex.Should().BePositive();
         var newAttribute = updatedConfig.Attributes[newAttrIndex];
         newAttribute.Should().NotBeNull();
-        newAttribute.ValueType.Should().Be(EavAttributeType.Number);
-        newAttribute.IsRequired.Should().Be(true);
-        newAttribute.Name.Count.Should().Be(newAttributeRequest.Name.Count);
-        newAttribute.As<NumberAttributeConfigurationViewModel>().DefaultValue.Should().Be(newAttributeRequest.DefaultValue);
-        newAttribute.As<NumberAttributeConfigurationViewModel>().MaximumValue.Should().BeNull();
-        newAttribute.As<NumberAttributeConfigurationViewModel>().MinimumValue.Should().Be(newAttributeRequest.MinimumValue);
+        newAttribute.Should().BeEquivalentTo(newAttributeRequest, opt => opt.ComparingRecordsByValue());
     }
     
     [TestMethod]
@@ -222,7 +221,7 @@ public class Tests
         const string newName = "newName";
         var configRequest = EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
         var createdConfig = await _eavService.CreateEntityConfiguration(configRequest, CancellationToken.None);
-        configRequest.Name = new List<LocalizedStringCreateRequest>()
+        var newNameRequest = new List<LocalizedStringCreateRequest>()
         {
             new LocalizedStringCreateRequest()
             {
@@ -230,6 +229,7 @@ public class Tests
                 String = newName
             },
         };
+        configRequest.Name = newNameRequest;
         var updateRequest = new EntityConfigurationUpdateRequest()
         {
             Attributes = configRequest.Attributes,
@@ -239,12 +239,8 @@ public class Tests
             PartitionKey = createdConfig.PartitionKey
         };
         var updatedConfig = await _eavService.UpdateEntityConfiguration(updateRequest, CancellationToken.None);
-        updatedConfig.Name.First().String.Should().Be(newName);
-        updatedConfig.Name.First().CultureInfoId.Should().Be(cultureId);
-        updatedConfig.Attributes.Should().BeEquivalentTo(createdConfig.Attributes);
-        updatedConfig.Id.Should().Be(createdConfig.Id);
-        updatedConfig.MachineName.Should().Be(createdConfig.MachineName);
-        updatedConfig.PartitionKey.Should().Be(createdConfig.PartitionKey);
+        updatedConfig.Name.First(n => n.CultureInfoId == cultureId).String.Should().Be(newName);
+        updatedConfig.Should().BeEquivalentTo(createdConfig, opt => opt.Excluding(o => o.Name));
     }
 
     [TestMethod]
@@ -310,16 +306,7 @@ public class Tests
 
         var created = await _eavService.CreateEntityConfiguration(configCreateRequest, CancellationToken.None);
         var attributeResult = created.Attributes.First().As<NumberAttributeConfigurationViewModel>();
-        
-        attributeResult.MachineName.Should().Be(numberAttribute.MachineName);
-        attributeResult.Description.First().CultureInfoId.Should().Be(cultureInfoId);
-        attributeResult.Description.First().String.Should().Be(numberAttribute.Description.First().String);
-        attributeResult.Name.First().CultureInfoId.Should().Be(cultureInfoId);
-        attributeResult.Name.First().String.Should().Be(numberAttribute.Name.First().String);
-        attributeResult.DefaultValue.Should().Be(15);
-        attributeResult.MaximumValue.Should().Be(100);
-        attributeResult.MinimumValue.Should().Be(-100);
-        attributeResult.IsRequired.Should().Be(true);
+        attributeResult.Should().BeEquivalentTo(numberAttribute, opt => opt.ComparingRecordsByValue());
     }
     
     private IProjectionRepository GetProjectionRepository(ProjectionDocumentSchema schema)
