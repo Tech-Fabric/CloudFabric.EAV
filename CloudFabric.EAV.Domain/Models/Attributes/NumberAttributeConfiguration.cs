@@ -8,7 +8,7 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
 {
     public class NumberAttributeConfiguration : AttributeConfiguration
     {
-        internal const float FLT_MIN = 1.175494E-38f;
+        private const float _fltMin = 1.175494E-38f;
         public float DefaultValue { get; set; }
         public float? MinimumValue { get; set; }
         public float? MaximumValue { get; set; }
@@ -40,7 +40,7 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
         {
             return obj is NumberAttributeConfiguration numObj 
                    && base.Equals(numObj) 
-                   && Math.Abs(DefaultValue - numObj.DefaultValue) < FLT_MIN 
+                   && Math.Abs(DefaultValue - numObj.DefaultValue) < _fltMin 
                    && MinimumValue == numObj.MinimumValue //TODO: check for null and float comp
                    && MaximumValue == numObj.MaximumValue;
         }

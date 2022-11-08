@@ -150,13 +150,78 @@ public class Tests
     }
     
     [TestMethod]
+    public async Task UpdateEntityConfiguration_RemoveAttribute_Success()
+    {
+        var configRequest = EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
+        var createdConfig = await _eavService.CreateEntityConfiguration(configRequest, CancellationToken.None);
+        const string playersMinMachineName = "players_min";
+        var updateRequest = new EntityConfigurationUpdateRequest()
+        {
+            Attributes = configRequest.Attributes.Where(a => a.MachineName != playersMinMachineName).ToList(),
+            Id = createdConfig.Id,
+            MachineName = configRequest.MachineName,
+            Name = configRequest.Name,
+            PartitionKey = createdConfig.PartitionKey
+        };
+        var updatedConfig = await _eavService.UpdateEntityConfiguration(updateRequest, CancellationToken.None);
+        updatedConfig.Attributes.FindIndex(a => a.MachineName == playersMinMachineName).Should().BeNegative();
+    }
+    
+    [TestMethod]
+    public async Task UpdateEntityConfiguration_AddedNewAttribute_Success()
+    {
+        var cultureId = CultureInfo.GetCultureInfo("EN-us").LCID;
+
+        var configRequest = EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
+        var createdConfig = await _eavService.CreateEntityConfiguration(configRequest, CancellationToken.None);
+        const string newAttributeMachineName = "avg_time_mins";
+
+        var newAttributeRequest = new NumberAttributeConfigurationCreateUpdateRequest()
+        {
+            DefaultValue = 4,
+            IsRequired = true,
+            Name = new List<LocalizedStringCreateRequest>()
+            {
+                new LocalizedStringCreateRequest()
+                {
+                    CultureInfoId = cultureId,
+                    String = "Average Time"
+                }
+            },
+            MachineName = newAttributeMachineName,
+            MinimumValue = 1
+        };
+        
+        configRequest.Attributes.Add(newAttributeRequest);
+        
+        var updateRequest = new EntityConfigurationUpdateRequest()
+        {
+            Attributes = configRequest.Attributes,
+            Id = createdConfig.Id,
+            MachineName = configRequest.MachineName,
+            Name = configRequest.Name,
+            PartitionKey = createdConfig.PartitionKey
+        };
+        var updatedConfig = await _eavService.UpdateEntityConfiguration(updateRequest, CancellationToken.None);
+        var newAttrIndex = updatedConfig.Attributes.FindIndex(a => a.MachineName == newAttributeMachineName);
+        newAttrIndex.Should().BePositive();
+        var newAttribute = updatedConfig.Attributes[newAttrIndex];
+        newAttribute.Should().NotBeNull();
+        newAttribute.ValueType.Should().Be(EavAttributeType.Number);
+        newAttribute.IsRequired.Should().Be(true);
+        newAttribute.Name.Count.Should().Be(newAttributeRequest.Name.Count);
+        newAttribute.As<NumberAttributeConfigurationViewModel>().DefaultValue.Should().Be(newAttributeRequest.DefaultValue);
+        newAttribute.As<NumberAttributeConfigurationViewModel>().MaximumValue.Should().BeNull();
+        newAttribute.As<NumberAttributeConfigurationViewModel>().MinimumValue.Should().Be(newAttributeRequest.MinimumValue);
+    }
+    
+    [TestMethod]
     public async Task UpdateEntityConfiguration_ChangeName_Success()
     {
         var cultureId = CultureInfo.GetCultureInfo("EN-us").LCID;
         const string newName = "newName";
         var configRequest = EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
         var createdConfig = await _eavService.CreateEntityConfiguration(configRequest, CancellationToken.None);
-        var nameAttrIndex = configRequest.Attributes.FindIndex(a => a.MachineName == "name");
         configRequest.Name = new List<LocalizedStringCreateRequest>()
         {
             new LocalizedStringCreateRequest()
@@ -176,7 +241,7 @@ public class Tests
         var updatedConfig = await _eavService.UpdateEntityConfiguration(updateRequest, CancellationToken.None);
         updatedConfig.Name.First().String.Should().Be(newName);
         updatedConfig.Name.First().CultureInfoId.Should().Be(cultureId);
-        updatedConfig.Attributes.Should().Equal(createdConfig.Attributes);
+        updatedConfig.Attributes.Should().BeEquivalentTo(createdConfig.Attributes);
         updatedConfig.Id.Should().Be(createdConfig.Id);
         updatedConfig.MachineName.Should().Be(createdConfig.MachineName);
         updatedConfig.PartitionKey.Should().Be(createdConfig.PartitionKey);
