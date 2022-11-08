@@ -41,15 +41,19 @@ namespace CloudFabric.EAV.Domain.Models
             }
             return obj.GetType() == GetType() && Equals(obj as AttributeConfiguration);
         }
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(IsRequired, Name, Description, MachineName, (int)ValueType);
+        }
 
         private bool Equals(AttributeConfiguration obj)
         {
             return obj != null 
                    && (Name.SequenceEqual(obj.Name) 
                        && Description.SequenceEqual(obj.Description) 
-                       && IsRequired == obj.IsRequired 
-                       && MachineName == obj.MachineName
-                       && ValueType == obj.ValueType);
+                       && IsRequired.Equals(obj.IsRequired) 
+                       && MachineName.Equals(obj.MachineName)
+                       && ValueType.Equals(obj.ValueType));
         }
     }
 }

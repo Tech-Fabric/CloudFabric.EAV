@@ -38,11 +38,19 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
 
         public override bool Equals(object obj)
         {
-            return obj is NumberAttributeConfiguration numObj 
-                   && base.Equals(numObj) 
-                   && Math.Abs(DefaultValue - numObj.DefaultValue) < _fltMin 
-                   && MinimumValue == numObj.MinimumValue //TODO: check for null and float comp
-                   && MaximumValue == numObj.MaximumValue;
+            return this.Equals(obj as NumberAttributeConfiguration);
+        }
+        private bool Equals(NumberAttributeConfiguration other)
+        {
+            return base.Equals(other) 
+                   && DefaultValue.Equals(other.DefaultValue) 
+                   && Nullable.Equals(MinimumValue, other.MinimumValue) 
+                   && Nullable.Equals(MaximumValue, other.MaximumValue) 
+                   && ValueType == other.ValueType;
+        }
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(DefaultValue, MinimumValue, MaximumValue, (int)ValueType);
         }
     }
 }
