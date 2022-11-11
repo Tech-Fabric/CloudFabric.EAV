@@ -5,6 +5,7 @@ using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
+
 using AutoMapper;
 
 using CloudFabric.EAV.Domain.Models;
@@ -22,6 +23,7 @@ using CloudFabric.EventSourcing.EventStore.Postgresql;
 using CloudFabric.Projections;
 using CloudFabric.Projections.InMemory;
 using CloudFabric.Projections.Queries;
+
 using FluentAssertions;
 
 using Microsoft.AspNetCore.Mvc;
@@ -42,24 +44,25 @@ public class Tests
     {
         var loggerFactory = new LoggerFactory();
         _logger = loggerFactory.CreateLogger<EAVService>();
-        
-        var configuration = new MapperConfiguration(cfg => 
+
+        var configuration = new MapperConfiguration(cfg =>
         {
             cfg.AddMaps(Assembly.GetAssembly(typeof(EAVService)));
         });
         var mapper = configuration.CreateMapper();
 
-        _eventStore = new PostgresqlEventStore("Host=localhost;Username=cloudfabric_eventsourcing_test;Password=cloudfabric_eventsourcing_test;Database=cloudfabric_eventsourcing_test;Maximum Pool Size=1000", "eav_tests_event_store");
+        _eventStore = new PostgresqlEventStore("Host=localhost;Username=cloudfabric_eventsourcing_test;Password=cloudfabric_eventsourcing_test;Database=cloudfabric_eventsourcing_test;Maximum Pool Size=1000",
+            "eav_tests_event_store");
         await _eventStore.Initialize();
-        
+
         var entityConfigurationRepository = new AggregateRepository<EntityConfiguration>(_eventStore);
         var entityInstanceRepository = new AggregateRepository<EntityInstance>(_eventStore);
-        
+
         _eavService = new EAVService(
             _logger,
             mapper,
             entityConfigurationRepository,
-            entityInstanceRepository, 
+            entityInstanceRepository,
             new EventUserInfo("test")
         );
     }
@@ -69,25 +72,26 @@ public class Tests
     {
         var configurationCreateRequest = EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
 
-        var createdConfiguration = await _eavService.CreateEntityConfiguration(configurationCreateRequest, CancellationToken.None
+        EntityConfigurationViewModel createdConfiguration = await _eavService.CreateEntityConfiguration(configurationCreateRequest,
+            CancellationToken.None
         );
 
         var configuration = await _eavService.GetEntityConfiguration(createdConfiguration.Id, createdConfiguration.PartitionKey);
 
         var entityInstanceCreateRequest = EntityInstanceFactory.CreateValidBoardGameEntityInstanceCreateRequest(createdConfiguration.Id);
 
-        var (createdInstance, validationErrors)  = await _eavService.CreateEntityInstance(entityInstanceCreateRequest);
+        (EntityInstanceViewModel createdInstance, ProblemDetails validationErrors) = await _eavService.CreateEntityInstance(entityInstanceCreateRequest);
 
         validationErrors.Should().BeNull();
         createdInstance.Id.Should().NotBeEmpty();
         createdInstance.EntityConfigurationId.Should().Be(configuration.Id);
     }
-    
+
     [TestMethod]
     public async Task CreateInstance_InvalidConfigurationId()
     {
         var entityInstanceCreateRequest = EntityInstanceFactory.CreateValidBoardGameEntityInstanceCreateRequest(Guid.NewGuid());
-        (EntityInstanceViewModel result, ProblemDetails validationErrors) =  await _eavService.CreateEntityInstance(entityInstanceCreateRequest);
+        (EntityInstanceViewModel result, ProblemDetails validationErrors) = await _eavService.CreateEntityInstance(entityInstanceCreateRequest);
         result.Should().BeNull();
         validationErrors.Should().BeOfType<ValidationErrorResponse>();
         validationErrors.As<ValidationErrorResponse>().Errors.Should().ContainKey("EntityConfigurationId");
@@ -98,16 +102,17 @@ public class Tests
     {
         var configurationCreateRequest = EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
 
-        var createdConfiguration = await _eavService.CreateEntityConfiguration(configurationCreateRequest, CancellationToken.None
+        EntityConfigurationViewModel createdConfiguration = await _eavService.CreateEntityConfiguration(configurationCreateRequest,
+            CancellationToken.None
         );
 
         var configuration = await _eavService.GetEntityConfiguration(createdConfiguration.Id, createdConfiguration.PartitionKey);
         var requiredAttributeMachineName = configuration.Attributes.First(a => a.IsRequired).MachineName;
         var entityInstanceCreateRequest = EntityInstanceFactory.CreateValidBoardGameEntityInstanceCreateRequest(createdConfiguration.Id);
         entityInstanceCreateRequest.Attributes = entityInstanceCreateRequest.Attributes.Where(a => a.ConfigurationAttributeMachineName != requiredAttributeMachineName).ToList();
-        (EntityInstanceViewModel createdInstance, ProblemDetails validationErrors)  = await _eavService.CreateEntityInstance(entityInstanceCreateRequest);
+        (EntityInstanceViewModel createdInstance, ProblemDetails validationErrors) = await _eavService.CreateEntityInstance(entityInstanceCreateRequest);
         createdInstance.Should().BeNull();
-        
+
         validationErrors.As<ValidationErrorResponse>().Errors.Should().ContainKey(requiredAttributeMachineName);
         validationErrors.As<ValidationErrorResponse>().Errors[requiredAttributeMachineName].First().Should().Be("Attribute is Required");
     }
@@ -116,7 +121,8 @@ public class Tests
     public async Task CreateEntityConfiguration_Success()
     {
         var configurationCreateRequest = EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
-        var createdConfiguration = await _eavService.CreateEntityConfiguration(configurationCreateRequest, CancellationToken.None
+        EntityConfigurationViewModel createdConfiguration = await _eavService.CreateEntityConfiguration(configurationCreateRequest,
+            CancellationToken.None
         );
         createdConfiguration.Should().NotBeNull();
         createdConfiguration.Id.Should().NotBeEmpty();
@@ -132,10 +138,11 @@ public class Tests
     [TestMethod]
     public async Task GetEntityConfiguration_Success()
     {
-        
+
         var configurationCreateRequest = EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
 
-        var createdConfiguration = await _eavService.CreateEntityConfiguration(configurationCreateRequest, CancellationToken.None
+        EntityConfigurationViewModel createdConfiguration = await _eavService.CreateEntityConfiguration(configurationCreateRequest,
+            CancellationToken.None
         );
 
         var configuration = await _eavService.GetEntityConfiguration(createdConfiguration.Id, createdConfiguration.PartitionKey);
@@ -177,7 +184,7 @@ public class Tests
         updatedConfig.MachineName.Should().Be(createdConfig.MachineName);
         updatedConfig.PartitionKey.Should().Be(createdConfig.PartitionKey);
     }
-    
+
     [TestMethod]
     public async Task UpdateEntityConfiguration_RemoveAttribute_Success()
     {
@@ -195,7 +202,7 @@ public class Tests
         var updatedConfig = await _eavService.UpdateEntityConfiguration(updateRequest, CancellationToken.None);
         updatedConfig.Attributes.FindIndex(a => a.MachineName == playersMinMachineName).Should().BeNegative();
     }
-    
+
     [TestMethod]
     public async Task UpdateEntityConfiguration_AddedNewAttribute_Success()
     {
@@ -221,9 +228,9 @@ public class Tests
             MinimumValue = 1,
             Description = new List<LocalizedStringCreateRequest>()
         };
-        
+
         configRequest.Attributes.Add(newAttributeRequest);
-        
+
         var updateRequest = new EntityConfigurationUpdateRequest()
         {
             Attributes = configRequest.Attributes,
@@ -239,7 +246,7 @@ public class Tests
         newAttribute.Should().NotBeNull();
         newAttribute.Should().BeEquivalentTo(newAttributeRequest, opt => opt.ComparingRecordsByValue());
     }
-    
+
     [TestMethod]
     public async Task UpdateEntityConfiguration_ChangeName_Success()
     {
@@ -313,8 +320,22 @@ public class Tests
             new NumberAttributeConfigurationCreateUpdateRequest()
             {
                 MachineName = "testAttr",
-                Description = new List<LocalizedStringCreateRequest>() { new() { CultureInfoId = cultureInfoId, String = "testAttrDesc" } },
-                Name = new List<LocalizedStringCreateRequest>() { new() { CultureInfoId = cultureInfoId, String = "testAttrName" } },
+                Description = new List<LocalizedStringCreateRequest>
+                {
+                    new LocalizedStringCreateRequest
+                    {
+                        CultureInfoId = cultureInfoId,
+                        String = "testAttrDesc"
+                    }
+                },
+                Name = new List<LocalizedStringCreateRequest>
+                {
+                    new LocalizedStringCreateRequest
+                    {
+                        CultureInfoId = cultureInfoId,
+                        String = "testAttrName"
+                    }
+                },
                 DefaultValue = 15,
                 IsRequired = true,
                 MaximumValue = 100,
@@ -323,7 +344,14 @@ public class Tests
         var configCreateRequest = new EntityConfigurationCreateRequest()
         {
             MachineName = "test",
-            Name = new List<LocalizedStringCreateRequest>() { new() { CultureInfoId = cultureInfoId, String = "test" } },
+            Name = new List<LocalizedStringCreateRequest>
+            {
+                new LocalizedStringCreateRequest
+                {
+                    CultureInfoId = cultureInfoId,
+                    String = "test"
+                }
+            },
             Attributes = new List<AttributeConfigurationCreateUpdateRequest>()
             {
                 numberAttribute
@@ -334,7 +362,38 @@ public class Tests
         var attributeResult = created.Attributes.First().As<NumberAttributeConfigurationViewModel>();
         attributeResult.Should().BeEquivalentTo(numberAttribute, opt => opt.ComparingRecordsByValue());
     }
-    
+
+    [TestMethod]
+    public async Task UpdateInstance_UpdateAttribute_Success()
+    {
+
+    }
+
+    public async Task UpdateInstance_UpdateAttribute_FailValidation()
+    {
+
+    }
+
+
+    public async Task UpdateInstance_AddAttribute_Success()
+    {
+
+    }
+
+    public async Task UpdateInstance_AddAttribute_IgnoreExtraAttribute()
+    {
+
+    }
+
+    public async Task UpdateInstance_RemoveAttribute_Success()
+    {
+
+    }
+
+    public async Task UpdateInstance_RemoveAttribute_FailValidation()
+    {
+
+    }
     private IProjectionRepository GetProjectionRepository(ProjectionDocumentSchema schema)
     {
         return new InMemoryProjectionRepository(schema);

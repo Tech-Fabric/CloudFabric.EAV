@@ -3,6 +3,7 @@ using AutoMapper;
 using CloudFabric.EAV.Domain.Models;
 using CloudFabric.EAV.Domain.Models.Base;
 using CloudFabric.EAV.Models.RequestModels;
+using CloudFabric.EAV.Models.RequestModels.Attributes;
 using CloudFabric.EAV.Models.ViewModels;
 using CloudFabric.EAV.Models.ViewModels.EAV;
 using CloudFabric.EventSourcing.Domain;
@@ -16,10 +17,10 @@ namespace CloudFabric.EAV.Service;
 
 public class EAVService : IEAVService
 {
-    private readonly ILogger<EAVService> _logger;
-    private readonly IMapper _mapper;
     private readonly AggregateRepository<EntityConfiguration> _entityConfigurationRepository;
     private readonly AggregateRepository<EntityInstance> _entityInstanceRepository;
+    private readonly ILogger<EAVService> _logger;
+    private readonly IMapper _mapper;
 
     private readonly EventUserInfo _userInfo;
 
@@ -55,7 +56,8 @@ public class EAVService : IEAVService
     //}
 
     public async Task<EntityConfigurationViewModel> CreateEntityConfiguration(
-        EntityConfigurationCreateRequest entityConfigurationCreateRequest, CancellationToken cancellationToken
+        EntityConfigurationCreateRequest entityConfigurationCreateRequest,
+        CancellationToken cancellationToken
     )
     {
         var entityConfiguration = new EntityConfiguration(
@@ -64,7 +66,7 @@ public class EAVService : IEAVService
             entityConfigurationCreateRequest.MachineName,
             _mapper.Map<List<AttributeConfiguration>>(entityConfigurationCreateRequest.Attributes)
         );
-        var created = await _entityConfigurationRepository.SaveAsync(_userInfo, entityConfiguration, cancellationToken);
+        await _entityConfigurationRepository.SaveAsync(_userInfo, entityConfiguration, cancellationToken);
 
         return _mapper.Map<EntityConfigurationViewModel>(entityConfiguration);
     }
@@ -78,6 +80,7 @@ public class EAVService : IEAVService
             throw new NotFoundException();
         }
 
+        // Update config name
         foreach (var name in entity.Name.Where(name => !entityConfiguration.Name.Any(x => x.CultureInfoId == name.CultureInfoId && x.String == name.String)))
         {
             entityConfiguration.UpdateName(name.String, name.CultureInfoId);
@@ -114,7 +117,7 @@ public class EAVService : IEAVService
             }
         }
 
-        var created = await _entityConfigurationRepository.SaveAsync(_userInfo, entityConfiguration, cancellationToken);
+        await _entityConfigurationRepository.SaveAsync(_userInfo, entityConfiguration, cancellationToken);
 
         return _mapper.Map<EntityConfigurationViewModel>(entityConfiguration);
     }
@@ -158,7 +161,8 @@ public class EAVService : IEAVService
         //var entityConfiguration = await GetEntityConfiguration(entityInstance.EntityConfigurationId, EntityConfiguration.ENTITY_CONFIGURATION_PARTITION_KEY);
 
         var entityConfiguration = await _entityConfigurationRepository.LoadAsync(
-            entityInstance.EntityConfigurationId.ToString(), entityInstance.EntityConfigurationId.ToString()
+            entityInstance.EntityConfigurationId.ToString(),
+            entityInstance.EntityConfigurationId.ToString()
         );
         if (entityConfiguration == null)
         {
@@ -186,7 +190,7 @@ public class EAVService : IEAVService
             //TODO: What do we want to do with internal exceptions and unsuccessful flow?
             throw new Exception("Entity was not saved");
         }
-        return (_mapper.Map<EntityInstanceViewModel>(entityInstance), null);
+        return (_mapper.Map<EntityInstanceViewModel>(entityInstance), null)!;
     }
 
     public async Task<EntityInstanceViewModel> GetEntityInstance(Guid id, string partitionKey)
@@ -196,10 +200,84 @@ public class EAVService : IEAVService
         return _mapper.Map<EntityInstanceViewModel>(entityInstance);
     }
 
-    public Task UpdateEntityInstance(Guid userId, EntityInstanceUpdateRequest entity)
+    public async Task<(EntityInstanceViewModel, ProblemDetails)> UpdateEntityInstance(Guid userId, string partitionKey, EntityInstanceUpdateRequest updateRequest, CancellationToken cancellationToken)
     {
-        throw new NotImplementedException();
+
+        EntityInstance? entityInstance = await _entityInstanceRepository.LoadAsync(updateRequest.EntityConfigurationId.ToString(), partitionKey, cancellationToken);
+        if (entityInstance == null)
+        {
+            throw new NotFoundException("Entity Instance was not found");
+        }
+        EntityConfiguration? entityConfiguration = await _entityConfigurationRepository.LoadAsync(
+            entityInstance.EntityConfigurationId.ToString(),
+            entityInstance.EntityConfigurationId.ToString(),
+            cancellationToken
+        );
+        if (entityConfiguration == null)
+        {
+            throw new NotFoundException("Entity Configuration was not found");
+        }
+        var validationErrors = new Dictionary<string, string[]>();
+
+        // Remove attributes
+        IEnumerable<AttributeInstance> attributesToRemove = entityInstance.Attributes
+            .ExceptBy(
+                updateRequest.Attributes.Select(x => x.ConfigurationAttributeMachineName),
+                x => x.ConfigurationAttributeMachineName
+            );
+
+        foreach (AttributeInstance? attribute in attributesToRemove)
+        {
+            AttributeConfiguration? attrConfiguration = entityConfiguration.Attributes.First(c => c.MachineName == attribute.ConfigurationAttributeMachineName);
+            List<string>? errors = attrConfiguration.Validate(null);
+            if (errors == null || errors.Count == 0)
+            {
+                entityInstance.RemoveAttributeInstance(attribute.ConfigurationAttributeMachineName);
+            }
+            else
+            {
+                validationErrors.Add(attribute.ConfigurationAttributeMachineName, errors.ToArray());
+            }
+        }
+
+        // Add or update attributes
+        foreach (AttributeInstanceCreateUpdateRequest? newAttributeRequest in updateRequest.Attributes)
+        {
+            AttributeConfiguration? attrConfig = entityConfiguration.Attributes.First(c => c.MachineName == newAttributeRequest.ConfigurationAttributeMachineName);
+            AttributeInstance? newAttribute = _mapper.Map<AttributeInstance>(newAttributeRequest);
+            List<string> errors = attrConfig.Validate(newAttribute);
+
+            if (errors.Count == 0)
+            {
+                AttributeInstance? currentAttribute = entityInstance.Attributes.FirstOrDefault(x => x.ConfigurationAttributeMachineName == newAttributeRequest.ConfigurationAttributeMachineName);
+                if (currentAttribute != null)
+                {
+                    if (!newAttribute.Equals(currentAttribute))
+                    {
+                        entityInstance.UpdateAttributeInstance(newAttribute);
+                    }
+                }
+                else
+                {
+                    entityInstance.AddAttributeInstance(
+                        _mapper.Map<AttributeInstance>(newAttributeRequest)
+                    );
+                }
+            }
+            else
+            {
+                return (null, new ValidationErrorResponse(validationErrors))!;
+            }
+        }
+
+        var saved = await _entityInstanceRepository.SaveAsync(_userInfo, entityInstance, cancellationToken);
+        if (!saved)
+        {
+            //TODO: Throw a error when ready
+        }
+        return (_mapper.Map<EntityInstanceViewModel>(entityInstance), null)!;
+
     }
-    
+
     #endregion
 }
