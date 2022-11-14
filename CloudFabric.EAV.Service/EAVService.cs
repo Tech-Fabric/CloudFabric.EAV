@@ -94,18 +94,22 @@ public class EAVService : IEAVService
             entityConfiguration.RemoveAttribute(attribute);
         }
 
-        foreach (var attribute in entity.Attributes)
+        foreach (var newAttributeRequest in entity.Attributes)
         {
-            if (entityConfiguration.Attributes.Any(x => x.MachineName == attribute.MachineName))
+            var currentAttribute = entityConfiguration.Attributes.FirstOrDefault(x => x.MachineName == newAttributeRequest.MachineName);
+            if (currentAttribute != null)
             {
-                entityConfiguration.UpdateAttribute(
-                    _mapper.Map<AttributeConfiguration>(attribute)
-                );
+                var newAttribute = _mapper.Map<AttributeConfiguration>(newAttributeRequest);
+                if (!newAttribute.Equals(currentAttribute))
+                {
+                    entityConfiguration.UpdateAttribute(
+                        _mapper.Map<AttributeConfiguration>(newAttributeRequest));
+                }
             }
             else
             {
                 entityConfiguration.AddAttribute(
-                    _mapper.Map<AttributeConfiguration>(attribute)
+                    _mapper.Map<AttributeConfiguration>(newAttributeRequest)
                 );
             }
         }

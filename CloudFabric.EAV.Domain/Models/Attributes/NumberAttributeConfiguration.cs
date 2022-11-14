@@ -34,5 +34,24 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
             }
             return errors;
         }
+
+        public override bool Equals(object obj)
+        {
+            return this.Equals(obj as NumberAttributeConfiguration);
+        }
+        
+        private bool Equals(NumberAttributeConfiguration other)
+        {
+            return base.Equals(other) 
+                   && DefaultValue.Equals(other.DefaultValue) 
+                   && Nullable.Equals(MinimumValue, other.MinimumValue) 
+                   && Nullable.Equals(MaximumValue, other.MaximumValue) 
+                   && ValueType == other.ValueType;
+        }
+        
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(DefaultValue, MinimumValue, MaximumValue, (int)ValueType);
+        }
     }
 }

@@ -68,12 +68,13 @@ namespace CloudFabric.EAV.Domain.Models
         
         public void On(EntityConfigurationNameUpdated @event)
         {
-            var name = Name.FirstOrDefault(n => n.CultureInfoId == @event.CultureInfoId);
+            var newCollection = new List<LocalizedString>(Name);
+            var nameIndex = newCollection.FindIndex(s => s.CultureInfoId == @event.CultureInfoId);
+            var name = newCollection.FirstOrDefault(n => n.CultureInfoId == @event.CultureInfoId);
 
-            var newCollection = new List<LocalizedString>();
-            if (name == null)
+            if (nameIndex == -1)
             {
-                newCollection.Add(new LocalizedString()
+                newCollection.Add(new LocalizedString
                 {
                     CultureInfoId = @event.CultureInfoId,
                     String = @event.NewName
@@ -81,7 +82,11 @@ namespace CloudFabric.EAV.Domain.Models
             }
             else
             {
-                name.String = @event.NewName;
+                newCollection[nameIndex] = new LocalizedString
+                {
+                    CultureInfoId = @event.CultureInfoId,
+                    String = @event.NewName
+                };
             }
 
             Name = newCollection.AsReadOnly();
@@ -92,6 +97,25 @@ namespace CloudFabric.EAV.Domain.Models
             var newCollection = new List<AttributeConfiguration>(Attributes);
             newCollection.Add(@event.Attribute);
             Attributes = newCollection.AsReadOnly();
+        }
+
+        public void On(EntityConfigurationAttributeUpdated @event)
+        {
+            var newCollection = new List<AttributeConfiguration>(Attributes);
+            var attrIndex = newCollection.FindIndex(a => a.MachineName == @event.Attribute.MachineName);
+            if (attrIndex != -1)
+            {
+                newCollection[attrIndex] = @event.Attribute;
+            }
+            Attributes = newCollection.AsReadOnly();
+        }
+
+        public void On(EntityConfigurationAttributeRemoved @event)
+        {
+            Attributes = Attributes
+                .Where(a => a.MachineName != @event.AttributeMachineName)
+                .ToList()
+                .AsReadOnly();
         }
         #endregion
     }

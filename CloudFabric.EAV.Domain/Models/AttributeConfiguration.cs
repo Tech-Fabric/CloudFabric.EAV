@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.Json.Serialization;
 using CloudFabric.EAV.Domain.Enums;
 using CloudFabric.EAV.Domain.Models.Base;
@@ -26,6 +28,32 @@ namespace CloudFabric.EAV.Domain.Models
             }
 
             return new List<string>();
+        }
+
+        public override bool Equals(object obj){
+            if (ReferenceEquals(null, obj))
+            {
+                return false;
+            }
+            if (ReferenceEquals(this, obj))
+            {
+                return true;
+            }
+            return obj.GetType() == GetType() && Equals(obj as AttributeConfiguration);
+        }
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(IsRequired, Name, Description, MachineName, (int)ValueType);
+        }
+
+        private bool Equals(AttributeConfiguration obj)
+        {
+            return obj != null 
+                   && (Name.SequenceEqual(obj.Name) 
+                       && Description.SequenceEqual(obj.Description) 
+                       && IsRequired.Equals(obj.IsRequired) 
+                       && MachineName.Equals(obj.MachineName)
+                       && ValueType.Equals(obj.ValueType));
         }
     }
 }
