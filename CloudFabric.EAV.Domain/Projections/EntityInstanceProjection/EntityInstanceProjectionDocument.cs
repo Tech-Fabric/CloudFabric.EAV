@@ -12,6 +12,6 @@ public class EntityInstanceProjectionDocument : ProjectionDocument
     [ProjectionDocumentProperty(IsFilterable = true)]
     public Guid EntityConfigurationId { get; set; }
 
-    [ProjectionDocumentProperty(IsNested = true)]
+    [ProjectionDocumentProperty(IsNestedArray = true)]
     public List<AttributeInstance> Attributes { get; set; }
 }
