@@ -94,36 +94,27 @@ ARG COVERAGE_REPORT_TITLE
 ARG COVERAGE_REPORT_TAG
 ARG COVERAGE_REPORT_GENERATOR_HISTORY_DIRECTORY
 
-RUN reportgenerator "-reports:/artifacts/tests/*/coverage.cobertura.xml" -targetdir:/artifacts/code-coverage "-reporttypes:HtmlInline_AzurePipelines_Light;SonarQube;TextSummary" "-title:$COVERAGE_REPORT_TITLE" "-tag:$COVERAGE_REPORT_TAG" "-license:$COVERAGE_REPORT_GENERATOR_LICENSE" "-historydir:$COVERAGE_REPORT_GENERATOR_HISTORY_DIRECTORY"
+#RUN reportgenerator "-reports:/artifacts/tests/*/coverage.cobertura.xml" -targetdir:/artifacts/code-coverage "-reporttypes:HtmlInline_AzurePipelines_Light;SonarQube;TextSummary" "-title:$COVERAGE_REPORT_TITLE" "-tag:$COVERAGE_REPORT_TAG" "-license:$COVERAGE_REPORT_GENERATOR_LICENSE" "-historydir:$COVERAGE_REPORT_GENERATOR_HISTORY_DIRECTORY"
 
 # End Sonar Scanner
 RUN if [ -n "$SONAR_TOKEN" ] ; then dotnet sonarscanner end /d:sonar.login="$SONAR_TOKEN" ; fi
 
 ARG PACKAGE_VERSION
 
-RUN dotnet restore /src/CloudFabric.EAV.Domain/CloudFabric.EAV.Domain.csproj
-RUN dotnet restore /src/CloudFabric.EAV.Json/CloudFabric.EAV.Json.csproj
-RUN dotnet restore /src/CloudFabric.EAV.Models/CloudFabric.EAV.Models.csproj
-RUN dotnet restore /src/CloudFabric.EAV.Service/CloudFabric.EAV.Service.csproj
-RUN dotnet restore /src/CloudFabric.EAV.Tests/CloudFabric.EAV.Tests.csproj
-
 RUN sed -i "s|<Version>.*</Version>|<Version>$PACKAGE_VERSION</Version>|g" /src/CloudFabric.EAV.Domain/CloudFabric.EAV.Domain.csproj && \
     sed -i "s|<Version>.*</Version>|<Version>$PACKAGE_VERSION</Version>|g" /src/CloudFabric.EAV.Json/CloudFabric.EAV.Json.csproj && \
     sed -i "s|<Version>.*</Version>|<Version>$PACKAGE_VERSION</Version>|g" /src/CloudFabric.EAV.Models/CloudFabric.EAV.Models.csproj && \
     sed -i "s|<Version>.*</Version>|<Version>$PACKAGE_VERSION</Version>|g" /src/CloudFabric.EAV.Service/CloudFabric.EAV.Service.csproj && \
-    sed -i "s|<Version>.*</Version>|<Version>$PACKAGE_VERSION</Version>|g" /src/CloudFabric.EAV.Tests/CloudFabric.EAV.Tests.csproj && \
     dotnet pack /src/CloudFabric.EAV.Domain/CloudFabric.EAV.Domain.csproj -o /artifacts/nugets -p:IncludeSymbols=true -p:SymbolPackageFormat=snupkg && \
     dotnet pack /src/CloudFabric.EAV.Json/CloudFabric.EAV.Json.csproj -o /artifacts/nugets -p:IncludeSymbols=true -p:SymbolPackageFormat=snupkg && \
     dotnet pack /src/CloudFabric.EAV.Models/CloudFabric.EAV.Models.csproj -o /artifacts/nugets -p:IncludeSymbols=true -p:SymbolPackageFormat=snupkg && \
-    dotnet pack /src/CloudFabric.EAV.Service/CloudFabric.EAV.Service.csproj -o /artifacts/nugets -p:IncludeSymbols=true -p:SymbolPackageFormat=snupkg && \
-    dotnet pack /src/CloudFabric.EAV.Tests/CloudFabric.EAV.Tests.csproj -o /artifacts/nugets -p:IncludeSymbols=true -p:SymbolPackageFormat=snupkg
+    dotnet pack /src/CloudFabric.EAV.Service/CloudFabric.EAV.Service.csproj -o /artifacts/nugets -p:IncludeSymbols=true -p:SymbolPackageFormat=snupkg
 
 ARG NUGET_API_KEY
 RUN if [ -n "$NUGET_API_KEY" ] ; then dotnet nuget push /artifacts/nugets/CloudFabric.EAV.Domain.$PACKAGE_VERSION.nupkg --skip-duplicate -k $NUGET_API_KEY -s https://api.nuget.org/v3/index.json ; fi
 RUN if [ -n "$NUGET_API_KEY" ] ; then dotnet nuget push /artifacts/nugets/CloudFabric.EAV.Json.$PACKAGE_VERSION.nupkg --skip-duplicate -k $NUGET_API_KEY -s https://api.nuget.org/v3/index.json ; fi
 RUN if [ -n "$NUGET_API_KEY" ] ; then dotnet nuget push /artifacts/nugets/CloudFabric.EAV.Models.$PACKAGE_VERSION.nupkg --skip-duplicate -k $NUGET_API_KEY -s https://api.nuget.org/v3/index.json ; fi
 RUN if [ -n "$NUGET_API_KEY" ] ; then dotnet nuget push /artifacts/nugets/CloudFabric.EAV.Service.$PACKAGE_VERSION.nupkg --skip-duplicate -k $NUGET_API_KEY -s https://api.nuget.org/v3/index.json ; fi
-RUN if [ -n "$NUGET_API_KEY" ] ; then dotnet nuget push /artifacts/nugets/CloudFabric.EAV.Tests.$PACKAGE_VERSION.nupkg --skip-duplicate -k $NUGET_API_KEY -s https://api.nuget.org/v3/index.json ; fi
 
 #---------------------------------------------------------------------
 # /Build artifacts

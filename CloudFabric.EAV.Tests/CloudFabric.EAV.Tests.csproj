@@ -1,14 +1,20 @@
 <Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
         <TargetFramework>net6.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <PackageId>CloudFabric.EAV.Tests</PackageId>
+        <Version>0.0.1</Version>
+        <Authors>CloudFabric Developers</Authors>
+        <Company>CloudFabric</Company>
     </PropertyGroup>
 
     <ItemGroup>
         <PackageReference Include="AutoMapper" Version="11.0.1" />
-        <PackageReference Include="CloudFabric.EventSourcing.Domain" Version="0.0.3" />
-        <PackageReference Include="CloudFabric.EventSourcing.EventStore.Postgresql" Version="0.0.3" />
-        <PackageReference Include="CloudFabric.Projections" Version="0.0.3" />
-        <PackageReference Include="CloudFabric.Projections.InMemory" Version="0.0.3" />
+        <PackageReference Include="CloudFabric.EventSourcing.Domain" Version="0.0.6" />
+        <PackageReference Include="CloudFabric.EventSourcing.EventStore.Postgresql" Version="0.0.6" />
+        <PackageReference Include="CloudFabric.Projections" Version="0.0.6" />
+        <PackageReference Include="CloudFabric.Projections.InMemory" Version="0.0.6" />
         <PackageReference Include="coverlet.msbuild" Version="3.1.2">
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
             <PrivateAssets>all</PrivateAssets>

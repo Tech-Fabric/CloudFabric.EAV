@@ -60,7 +60,7 @@ public class Tests
             mapper,
             entityConfigurationRepository,
             entityInstanceRepository, 
-            new EventUserInfo("test")
+            new EventUserInfo(Guid.NewGuid())
         );
     }
 
