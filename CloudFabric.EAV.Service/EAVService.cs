@@ -200,10 +200,10 @@ public class EAVService : IEAVService
         return _mapper.Map<EntityInstanceViewModel>(entityInstance);
     }
 
-    public async Task<(EntityInstanceViewModel, ProblemDetails)> UpdateEntityInstance(Guid userId, string partitionKey, EntityInstanceUpdateRequest updateRequest, CancellationToken cancellationToken)
+    public async Task<(EntityInstanceViewModel, ProblemDetails)> UpdateEntityInstance(string partitionKey, EntityInstanceUpdateRequest updateRequest, CancellationToken cancellationToken)
     {
 
-        EntityInstance? entityInstance = await _entityInstanceRepository.LoadAsync(updateRequest.EntityConfigurationId.ToString(), partitionKey, cancellationToken);
+        EntityInstance? entityInstance = await _entityInstanceRepository.LoadAsync(updateRequest.Id.ToString(), partitionKey, cancellationToken);
         if (entityInstance == null)
         {
             throw new NotFoundException("Entity Instance was not found");
@@ -243,7 +243,11 @@ public class EAVService : IEAVService
         // Add or update attributes
         foreach (AttributeInstanceCreateUpdateRequest? newAttributeRequest in updateRequest.Attributes)
         {
-            AttributeConfiguration? attrConfig = entityConfiguration.Attributes.First(c => c.MachineName == newAttributeRequest.ConfigurationAttributeMachineName);
+            AttributeConfiguration? attrConfig = entityConfiguration.Attributes.FirstOrDefault(c => c.MachineName == newAttributeRequest.ConfigurationAttributeMachineName);
+            if (attrConfig == null)
+            {
+                continue;
+            }
             AttributeInstance? newAttribute = _mapper.Map<AttributeInstance>(newAttributeRequest);
             List<string> errors = attrConfig.Validate(newAttribute);
 
@@ -266,8 +270,13 @@ public class EAVService : IEAVService
             }
             else
             {
-                return (null, new ValidationErrorResponse(validationErrors))!;
+                validationErrors.Add(newAttribute.ConfigurationAttributeMachineName, errors.ToArray());
             }
+        }
+
+        if (validationErrors.Count != 0)
+        {
+            return (null, new ValidationErrorResponse(validationErrors))!;
         }
 
         var saved = await _entityInstanceRepository.SaveAsync(_userInfo, entityInstance, cancellationToken);
