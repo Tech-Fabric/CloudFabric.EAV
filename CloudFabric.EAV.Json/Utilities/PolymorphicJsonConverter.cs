@@ -5,8 +5,8 @@ namespace CloudFabric.EAV.Json.Utilities
 {
     public class PolymorphicJsonConverter<T> : JsonConverter<T>
     {
-        public static readonly string TYPE_NAME_JSON_PROPERTY_NAME = "TypeName";
-        public static readonly string TYPE_VALUE_JSON_PROPERTY_NAME = "TypeValue";
+        public static readonly string TYPE_NAME_JSON_PROPERTY_NAME = "typeName";
+        public static readonly string TYPE_VALUE_JSON_PROPERTY_NAME = "typeValue";
 
         public override bool CanConvert(Type type)
         {
@@ -65,6 +65,8 @@ namespace CloudFabric.EAV.Json.Utilities
             JsonSerializerOptions options
         )
         {
+            options.PropertyNamingPolicy ??= JsonNamingPolicy.CamelCase;
+
             if (reader.TokenType != JsonTokenType.StartObject)
             {
                 throw new JsonException();
@@ -110,7 +112,9 @@ namespace CloudFabric.EAV.Json.Utilities
                     var jsonPropertyName = reader.GetString();
                     reader.Read();
 
-                    var propertyType = properties.FirstOrDefault(p => p.Name == jsonPropertyName);
+                    var propertyType = properties.FirstOrDefault(
+                        p => options.PropertyNamingPolicy.ConvertName(p.Name) == jsonPropertyName
+                    );
 
                     if (propertyType != null)
                     {
@@ -165,6 +169,8 @@ namespace CloudFabric.EAV.Json.Utilities
 
         protected void WriteElement(Utf8JsonWriter writer, object value, JsonSerializerOptions options)
         {
+            options.PropertyNamingPolicy ??= JsonNamingPolicy.CamelCase;
+
             writer.WriteStartObject();
 
             writer.WriteString(TYPE_NAME_JSON_PROPERTY_NAME, value.GetType().FullName);
@@ -174,7 +180,9 @@ namespace CloudFabric.EAV.Json.Utilities
             var properties = value.GetType().GetProperties();
             foreach (var prop in properties)
             {
-                writer.WritePropertyName(prop.Name);
+                writer.WritePropertyName(
+                    options.PropertyNamingPolicy.ConvertName(prop.Name)
+                );
 
                 if (typeof(T).IsAssignableFrom(prop.PropertyType))
                 {
