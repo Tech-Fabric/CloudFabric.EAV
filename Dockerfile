@@ -10,7 +10,7 @@ RUN dotnet tool install --global coverlet.console
 RUN dotnet tool install --global dotnet-reportgenerator-globaltool
 
 # sonarcloud
-ARG SONAR_PROJECT_KEY=Tech-Fabric_CloudFabric.EventSourcing
+ARG SONAR_PROJECT_KEY=Tech-Fabric_CloudFabric.EAV
 ARG SONAR_OGRANIZAION_KEY=tech-fabric
 ARG SONAR_HOST_URL=https://sonarcloud.io
 ARG SONAR_TOKEN
