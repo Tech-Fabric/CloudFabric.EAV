@@ -10,7 +10,7 @@ namespace CloudFabric.EAV.Domain.Models;
 
 public class EntityInstance : AggregateBase
 {
-    public override string PartitionKey => Id;
+    public override string PartitionKey => Id.ToString();
 
     public Guid EntityConfigurationId { get; protected set; }
 
@@ -27,24 +27,24 @@ public class EntityInstance : AggregateBase
 
     public void AddAttributeInstance(AttributeInstance attribute)
     {
-        Apply(new AttributeInstanceAdded(Guid.Parse(Id), attribute));
+        Apply(new AttributeInstanceAdded(Id, attribute));
     }
 
     public void UpdateAttributeInstance(AttributeInstance attribute)
     {
-        Apply(new AttributeInstanceUpdated(Guid.Parse(Id), attribute));
+        Apply(new AttributeInstanceUpdated(Id, attribute));
     }
 
     public void RemoveAttributeInstance(string attributeMachineName)
     {
-        Apply(new AttributeInstanceRemoved(Guid.Parse(Id), attributeMachineName));
+        Apply(new AttributeInstanceRemoved(Id, attributeMachineName));
     }
 
     #region Event Handlers
 
     public void On(EntityInstanceCreated @event)
     {
-        Id = @event.Id.ToString();
+        Id = @event.Id;
         EntityConfigurationId = @event.EntityConfigurationId;
         Attributes = new List<AttributeInstance>(@event.Attributes).AsReadOnly();
     }
@@ -59,11 +59,11 @@ public class EntityInstance : AggregateBase
     public void On(AttributeInstanceUpdated @event)
     {
         var attribute = Attributes?.FirstOrDefault(x => x.ConfigurationAttributeMachineName == @event.AttributeInstance.ConfigurationAttributeMachineName);
-        
+
         if (attribute != null)
         {
             var newCollection = new List<AttributeInstance>(Attributes);
-            
+
             newCollection.Remove(attribute);
             newCollection.Add(@event.AttributeInstance);
 
@@ -78,7 +78,7 @@ public class EntityInstance : AggregateBase
         if (attribute != null)
         {
             var newCollection = new List<AttributeInstance>(Attributes);
-            
+
             newCollection.Remove(attribute);
 
             Attributes = newCollection.AsReadOnly();

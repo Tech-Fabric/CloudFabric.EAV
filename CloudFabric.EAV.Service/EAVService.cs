@@ -43,7 +43,7 @@ public class EAVService : IEAVService
 
     public async Task<EntityConfigurationViewModel> GetEntityConfiguration(Guid id, string partitionKey)
     {
-        var entityConfiguration = await _entityConfigurationRepository.LoadAsync(id.ToString(), partitionKey);
+        var entityConfiguration = await _entityConfigurationRepository.LoadAsync(id, partitionKey);
 
         return _mapper.Map<EntityConfigurationViewModel>(entityConfiguration);
     }
@@ -73,7 +73,7 @@ public class EAVService : IEAVService
 
     public async Task<EntityConfigurationViewModel> UpdateEntityConfiguration(EntityConfigurationUpdateRequest entity, CancellationToken cancellationToken)
     {
-        var entityConfiguration = await _entityConfigurationRepository.LoadAsync(entity.Id.ToString(), entity.PartitionKey, cancellationToken);
+        var entityConfiguration = await _entityConfigurationRepository.LoadAsync(entity.Id, entity.PartitionKey, cancellationToken);
 
         if (entityConfiguration == null)
         {
@@ -161,7 +161,7 @@ public class EAVService : IEAVService
         //var entityConfiguration = await GetEntityConfiguration(entityInstance.EntityConfigurationId, EntityConfiguration.ENTITY_CONFIGURATION_PARTITION_KEY);
 
         var entityConfiguration = await _entityConfigurationRepository.LoadAsync(
-            entityInstance.EntityConfigurationId.ToString(),
+            entityInstance.EntityConfigurationId,
             entityInstance.EntityConfigurationId.ToString()
         );
         if (entityConfiguration == null)
@@ -195,7 +195,7 @@ public class EAVService : IEAVService
 
     public async Task<EntityInstanceViewModel> GetEntityInstance(Guid id, string partitionKey)
     {
-        var entityInstance = await _entityInstanceRepository.LoadAsync(id.ToString(), partitionKey);
+        var entityInstance = await _entityInstanceRepository.LoadAsync(id, partitionKey);
 
         return _mapper.Map<EntityInstanceViewModel>(entityInstance);
     }
@@ -203,13 +203,13 @@ public class EAVService : IEAVService
     public async Task<(EntityInstanceViewModel, ProblemDetails)> UpdateEntityInstance(string partitionKey, EntityInstanceUpdateRequest updateRequest, CancellationToken cancellationToken)
     {
 
-        EntityInstance? entityInstance = await _entityInstanceRepository.LoadAsync(updateRequest.Id.ToString(), partitionKey, cancellationToken);
+        EntityInstance? entityInstance = await _entityInstanceRepository.LoadAsync(updateRequest.Id, partitionKey, cancellationToken);
         if (entityInstance == null)
         {
             throw new NotFoundException("Entity Instance was not found");
         }
         EntityConfiguration? entityConfiguration = await _entityConfigurationRepository.LoadAsync(
-            entityInstance.EntityConfigurationId.ToString(),
+            entityInstance.EntityConfigurationId,
             entityInstance.EntityConfigurationId.ToString(),
             cancellationToken
         );

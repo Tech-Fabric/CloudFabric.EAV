@@ -1,0 +1,38 @@
+name: Build, test and publish packages
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+env:
+  PACKAGE_VERSION: 0.0.4
+
+jobs:
+
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set Version Variable
+      run: echo "PACKAGE_VERSION=$([ "$GITHUB_REF" = "refs/heads/main" ] && echo "$PACKAGE_VERSION" || echo "$PACKAGE_VERSION-$GITHUB_HEAD_REF-$(date '+%Y%d%m%H%M%S')")" >> $GITHUB_ENV
+    - name: Print Version Variable
+      run: echo "$PACKAGE_VERSION"
+    - name: Print GITHUB_HEAD_REF
+      run: echo "$GITHUB_HEAD_REF"
+    - name: Print GITHUB_REF
+      run: echo "$GITHUB_REF"
+    - name: Build the Docker image
+      run: docker build . --file Dockerfile --build-arg SONAR_TOKEN=${{ secrets.SONAR_TOKEN }} --build-arg GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }} --build-arg PACKAGE_VERSION=$PACKAGE_VERSION --build-arg NUGET_API_KEY=${{ secrets.NUGET_API_KEY }} --tag artifacts:$(date +%s)
+    - name: Copy artifacts
+      run: containerId=$(docker create $(docker images --format='{{.ID}}' | head -1)) && docker cp $containerId:/artifacts/ ./artifacts
+    - name: Codecov
+      uses: codecov/codecov-action@v3.1.0
+      with:
+        # Comma-separated list of files to upload
+        files: # optional
+        # Directory to search for coverage reports.
+        directory: ./artifacts
