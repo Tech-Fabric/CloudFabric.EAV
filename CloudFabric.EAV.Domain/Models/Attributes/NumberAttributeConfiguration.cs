@@ -1,8 +1,5 @@
-using System;
-using System.Collections.Generic;
 using CloudFabric.EAV.Domain.Enums;
 using CloudFabric.EAV.Domain.Models.Base;
-using CloudFabric.EventSourcing.EventStore;
 
 namespace CloudFabric.EAV.Domain.Models.Attributes
 {
@@ -13,6 +10,7 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
         public float? MaximumValue { get; set; }
 
         public override EavAttributeType ValueType { get; } = EavAttributeType.Number;
+        
         public override List<string> Validate(AttributeInstance instance)
         {
             var errors = base.Validate(instance);
@@ -33,6 +31,22 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
                 errors.Add($"Value should be less or equal than {MaximumValue}");
             }
             return errors;
+        }
+        
+        public NumberAttributeConfiguration(
+            Guid id, 
+            string machineName, 
+            List<LocalizedString> name,
+            float defaultValue,
+            List<LocalizedString> description = null, 
+            bool isRequired = false,
+            float? minimumValue = null,
+            float? maximumValue = null
+        ) : base(id, machineName, name, EavAttributeType.Number, description, isRequired)
+        {
+            DefaultValue = defaultValue;
+            MinimumValue = minimumValue;
+            MaximumValue = maximumValue;
         }
 
         public override bool Equals(object obj)

@@ -64,7 +64,7 @@ public class EntityConfigurationProjectionBuilder : ProjectionBuilder,
                 var attributes = document[nameof(EntityConfigurationProjectionDocument.Attributes)] as List<AttributeConfiguration>;
                 attributes ??= new();
 
-                attributes.Add(@event.Attribute);
+                //attributes.Add(@event.Attribute);
             }
         );
     }
@@ -75,13 +75,13 @@ public class EntityConfigurationProjectionBuilder : ProjectionBuilder,
             @event.PartitionKey,
             (document) =>
             {
-                var attributes = document[nameof(EntityConfigurationProjectionDocument.Attributes)] as List<AttributeConfiguration>;
-                var attributeToRemove = attributes?.FirstOrDefault(x => x.MachineName == @event.AttributeMachineName);
-
-                if (attributeToRemove != null)
-                {
-                    attributes.Remove(attributeToRemove);
-                }
+                // var attributes = document[nameof(EntityConfigurationProjectionDocument.Attributes)] as List<AttributeConfiguration>;
+                // var attributeToRemove = attributes?.FirstOrDefault(x => x. == @event..AttributeMachineName);
+                //
+                // if (attributeToRemove != null)
+                // {
+                //     attributes.Remove(attributeToRemove);
+                // }
             }
         );
     }

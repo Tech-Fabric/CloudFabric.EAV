@@ -1,6 +1,3 @@
-using System.Collections.Generic;
-using CloudFabric.EAV.Models.RequestModels.Attributes;
-
 namespace CloudFabric.EAV.Models.RequestModels
 {
     public class EntityConfigurationCreateRequest
@@ -9,7 +6,6 @@ namespace CloudFabric.EAV.Models.RequestModels
         
         public string MachineName { get; set; }
 
-        //[JsonConverter(typeof(PolymorphicJsonConverter<List<AttributeConfigurationCreateUpdateRequest>>))]
-        public List<AttributeConfigurationCreateUpdateRequest> Attributes { get; set; }
+        public List<EntityAttributeConfigurationCreateUpdateRequest> Attributes { get; set; }
     }
 }

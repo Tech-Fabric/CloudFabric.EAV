@@ -1,5 +1,5 @@
-using System.Collections.Generic;
 using System.Globalization;
+
 using CloudFabric.EAV.Domain.Enums;
 using CloudFabric.EAV.Models.RequestModels;
 using CloudFabric.EAV.Models.RequestModels.Attributes;
@@ -18,7 +18,7 @@ public static class EntityConfigurationFactory
                 new LocalizedStringCreateRequest() { CultureInfoId = CultureInfo.GetCultureInfo("RU-ru").LCID, String = "Настольная Игра" }
             },
             MachineName = "BoardGame",
-            Attributes = new List<AttributeConfigurationCreateUpdateRequest>()
+            Attributes = new List<EntityAttributeConfigurationCreateUpdateRequest>()
             {
                 new LocalizedTextAttributeConfigurationCreateUpdateRequest() {
                     MachineName = "name",
@@ -84,7 +84,7 @@ public static class EntityConfigurationFactory
                 new LocalizedStringCreateRequest() { CultureInfoId = CultureInfo.GetCultureInfo("RU-ru").LCID, String = "Шина" }
             },
             MachineName = "CarTire",
-            Attributes = new List<AttributeConfigurationCreateUpdateRequest>()
+            Attributes = new List<EntityAttributeConfigurationCreateUpdateRequest>()
             {
                 new LocalizedTextAttributeConfigurationCreateUpdateRequest() {
                     MachineName = "brand",

@@ -1,6 +1,6 @@
-using System;
-
 using CloudFabric.EAV.Domain.Enums;
+using CloudFabric.EAV.Domain.Events.Configuration.Attributes;
+using CloudFabric.EAV.Domain.Models.Base;
 
 namespace CloudFabric.EAV.Domain.Models.Attributes
 {
@@ -8,8 +8,33 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
     {
         public override EavAttributeType ValueType { get; } = EavAttributeType.Array;
 
-        public EavAttributeType ItemsType { get; set; }
+        public EavAttributeType ItemsType { get; protected set; }
 
-        public AttributeConfiguration ItemsAttributeConfiguration { get; set; }
+        public Guid ItemsAttributeConfigurationId { get; protected set; }
+
+        public ArrayAttributeConfiguration(
+            Guid id, 
+            string machineName, 
+            List<LocalizedString> name,
+            EavAttributeType itemsType,
+            Guid itemsAttributeConfigurationId,
+            List<LocalizedString> description = null, 
+            bool isRequired = false
+        ) : base(id, machineName, name, EavAttributeType.Array, description, isRequired) {
+            Update(itemsType, itemsAttributeConfigurationId);
+        }
+
+        public void Update(EavAttributeType newItemsType, Guid newItemsAttributeConfiguration)
+        {
+            Apply(new ArrayAttributeConfigurationUpdated(newItemsType, newItemsAttributeConfiguration));
+        }
+        
+        #region EventHandlers
+        public void On(ArrayAttributeConfigurationUpdated @event)
+        {
+            ItemsType = @event.ItemsType;
+            ItemsAttributeConfigurationId = @event.ItemsAttributeConfigurationId;
+        }
+        #endregion
     }
 }

@@ -1,26 +1,31 @@
+using System.Text.Json.Serialization;
+
 using CloudFabric.EAV.Domain.Enums;
 using CloudFabric.EAV.Json.Utilities;
 
-using System.Collections.Generic;
-using System.Text.Json.Serialization;
+namespace CloudFabric.EAV.Models.RequestModels;
 
-namespace CloudFabric.EAV.Models.RequestModels.Attributes
+[JsonConverter(typeof(PolymorphicJsonConverter<EntityAttributeConfigurationCreateUpdateRequest>))]
+public abstract class EntityAttributeConfigurationCreateUpdateRequest
 {
-    [JsonConverter(typeof(PolymorphicJsonConverter<AttributeConfigurationCreateUpdateRequest>))]
-    public abstract class AttributeConfigurationCreateUpdateRequest
-    {
-        public List<LocalizedStringCreateRequest> Name { get; set; }
+}
 
-        public List<LocalizedStringCreateRequest> Description { get; set; }
+[JsonConverter(typeof(PolymorphicJsonConverter<AttributeConfigurationCreateUpdateRequest>))]
+public class EntityAttributeConfigurationCreateUpdateReferenceRequest : EntityAttributeConfigurationCreateUpdateRequest
+{
+    public Guid AttributeConfigurationId { get; set; }
+}
 
-        public string MachineName { get; set; }
+[JsonConverter(typeof(PolymorphicJsonConverter<AttributeConfigurationCreateUpdateRequest>))]
+public abstract class AttributeConfigurationCreateUpdateRequest : EntityAttributeConfigurationCreateUpdateRequest
+{
+    public List<LocalizedStringCreateRequest> Name { get; set; }
 
-        public abstract EavAttributeType ValueType { get; } 
-        public bool IsRequired { get; set; }
-    }
+    public List<LocalizedStringCreateRequest> Description { get; set; }
+
+    public string MachineName { get; set; }
+
+    public abstract EavAttributeType ValueType { get; }
     
-    public class AttributeConfigurationValidationRequest
-    {
-        public bool IsRequired { get; set; }
-    }
+    public bool IsRequired { get; set; }
 }

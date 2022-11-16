@@ -1,26 +1,31 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
+using System.Collections.ObjectModel;
+using System.Globalization;
 using System.Text.Json.Serialization;
+
 using CloudFabric.EAV.Domain.Enums;
+using CloudFabric.EAV.Domain.Events.Configuration.Attribute;
 using CloudFabric.EAV.Domain.Models.Base;
 using CloudFabric.EAV.Json.Utilities;
+using CloudFabric.EventSourcing.Domain;
 
 namespace CloudFabric.EAV.Domain.Models
 {
     [JsonConverter(typeof(PolymorphicJsonConverter<AttributeConfiguration>))]
-    public abstract class AttributeConfiguration
+    public abstract class AttributeConfiguration : AggregateBase
     {
-        public bool IsRequired { get; set; }
-        public List<LocalizedString> Name { get; protected set; }
-
-        public List<LocalizedString> Description { get; protected set; }
+        public override string PartitionKey { get => Id.ToString(); }
 
         public string MachineName { get; protected set; }
 
+        public ReadOnlyCollection<LocalizedString> Name { get; protected set; }
+
+        public ReadOnlyCollection<LocalizedString> Description { get; protected set; }
+
+        public bool IsRequired { get; protected set; }
+
         public abstract EavAttributeType ValueType { get; }
 
-        public virtual List<string> Validate(AttributeInstance instance)
+        public virtual List<string> Validate(AttributeInstance? instance)
         {
             if (IsRequired && instance == null)
             {
@@ -28,6 +33,50 @@ namespace CloudFabric.EAV.Domain.Models
             }
 
             return new List<string>();
+        }
+
+        public AttributeConfiguration(
+            Guid id, string machineName,
+            List<LocalizedString> name,
+            EavAttributeType valueType,
+            List<LocalizedString> description = null,
+            bool isRequired = false
+        )
+        {
+            Apply(new AttributeConfigurationCreated(id, machineName, name, valueType, description, isRequired));
+        }
+
+        public void UpdateName(string newName)
+        {
+            Apply(new AttributeConfigurationNameUpdated(Id,
+                    newName,
+                    CultureInfo.GetCultureInfo("EN-us").LCID
+                )
+            );
+        }
+
+        public void UpdateName(string newName, int cultureInfoId)
+        {
+            Apply(new AttributeConfigurationNameUpdated(Id, newName, cultureInfoId));
+        }
+
+        public void UpdateDescription(string newDescription)
+        {
+            Apply(new AttributeConfigurationDescriptionUpdated(Id,
+                    newDescription,
+                    CultureInfo.GetCultureInfo("EN-us").LCID
+                )
+            );
+        }
+
+        public void UpdateDescription(string newDescription, int cultureInfoId)
+        {
+            Apply(new AttributeConfigurationDescriptionUpdated(Id, newDescription, cultureInfoId));
+        }
+
+        public void UpdateIsRequiredFlag(bool newIsRequiredFlag)
+        {
+            Apply(new AttributeConfigurationIsRequiredFlagUpdated(Id, newIsRequiredFlag));
         }
 
         public override bool Equals(object obj){
@@ -55,5 +104,67 @@ namespace CloudFabric.EAV.Domain.Models
                        && MachineName.Equals(obj.MachineName)
                        && ValueType.Equals(obj.ValueType));
         }
+
+        #region EventHandlers
+
+        public void On(AttributeConfigurationCreated @event)
+        {
+            Id = @event.Id;
+            MachineName = @event.MachineName;
+            Name = new List<LocalizedString>(@event.Name).AsReadOnly();
+            Description = @event.Description == null
+                ? new List<LocalizedString>().AsReadOnly()
+                : new List<LocalizedString>(@event.Description).AsReadOnly();
+            IsRequired = @event.IsRequired;
+        }
+
+        public void On(AttributeConfigurationNameUpdated @event)
+        {
+            var name = Name.FirstOrDefault(n => n.CultureInfoId == @event.CultureInfoId);
+
+            var newCollection = new List<LocalizedString>();
+            if (name == null)
+            {
+                newCollection.Add(new LocalizedString()
+                    {
+                        CultureInfoId = @event.CultureInfoId, String = @event.NewName
+                    }
+                );
+            }
+            else
+            {
+                name.String = @event.NewName;
+            }
+
+            Name = newCollection.AsReadOnly();
+        }
+
+        public void On(AttributeConfigurationDescriptionUpdated @event)
+        {
+            var description = Description.FirstOrDefault(n => n.CultureInfoId == @event.CultureInfoId);
+
+            var newCollection = new List<LocalizedString>();
+            if (description == null)
+            {
+                newCollection.Add(new LocalizedString()
+                    {
+                        CultureInfoId = @event.CultureInfoId, String = @event.NewDescription
+                    }
+                );
+            }
+            else
+            {
+                description.String = @event.NewDescription;
+            }
+
+            Name = newCollection.AsReadOnly();
+        }
+
+        public void On(AttributeConfigurationIsRequiredFlagUpdated @event)
+        {
+            IsRequired = @event.NewIsRequired;
+        }
+
+        #endregion
     }
 }
