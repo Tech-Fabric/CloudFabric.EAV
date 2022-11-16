@@ -173,9 +173,7 @@ public class Tests
         {
             Attributes = configRequest.Attributes,
             Id = createdConfig.Id,
-            MachineName = configRequest.MachineName,
-            Name = configRequest.Name,
-            PartitionKey = createdConfig.PartitionKey
+            Name = configRequest.Name
         };
         var updatedConfig = await _eavService.UpdateEntityConfiguration(updateRequest, CancellationToken.None);
         updatedConfig.Attributes.First(a => a.MachineName == "name").As<LocalizedTextAttributeConfigurationViewModel>().Name.First().String.Should().Be(newName);
@@ -195,9 +193,7 @@ public class Tests
         {
             Attributes = configRequest.Attributes.Where(a => a.MachineName != playersMinMachineName).ToList(),
             Id = createdConfig.Id,
-            MachineName = configRequest.MachineName,
-            Name = configRequest.Name,
-            PartitionKey = createdConfig.PartitionKey
+            Name = configRequest.Name
         };
         var updatedConfig = await _eavService.UpdateEntityConfiguration(updateRequest, CancellationToken.None);
         updatedConfig.Attributes.FindIndex(a => a.MachineName == playersMinMachineName).Should().BeNegative();
@@ -235,9 +231,7 @@ public class Tests
         {
             Attributes = configRequest.Attributes,
             Id = createdConfig.Id,
-            MachineName = configRequest.MachineName,
-            Name = configRequest.Name,
-            PartitionKey = createdConfig.PartitionKey
+            Name = configRequest.Name
         };
         var updatedConfig = await _eavService.UpdateEntityConfiguration(updateRequest, CancellationToken.None);
         var newAttrIndex = updatedConfig.Attributes.FindIndex(a => a.MachineName == newAttributeMachineName);
@@ -267,9 +261,7 @@ public class Tests
         {
             Attributes = configRequest.Attributes,
             Id = createdConfig.Id,
-            MachineName = configRequest.MachineName,
-            Name = configRequest.Name,
-            PartitionKey = createdConfig.PartitionKey
+            Name = configRequest.Name
         };
         var updatedConfig = await _eavService.UpdateEntityConfiguration(updateRequest, CancellationToken.None);
         updatedConfig.Name.First(n => n.CultureInfoId == cultureId).String.Should().Be(newName);

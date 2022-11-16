@@ -16,19 +16,28 @@ namespace CloudFabric.EAV.Domain.Models
 
         public string MachineName { get; protected set; }
 
-
         public ReadOnlyCollection<AttributeConfiguration> Attributes { get; protected set; }
 
         public override string PartitionKey => Id.ToString();
+        
+        public Guid? TenantId { get; protected set; }
+
+        public ReadOnlyDictionary<string, object> Metadata { get; protected set; }
 
         public EntityConfiguration(List<IEvent> events) : base(events)
         {
 
         }
 
-        public EntityConfiguration(Guid id, List<LocalizedString> name, string machineName, List<AttributeConfiguration> attributes)
+        public EntityConfiguration(Guid id,
+            List<LocalizedString> name,
+            string machineName,
+            List<AttributeConfiguration> attributes,
+            Guid? tenantId = null,
+            Dictionary<string, object> metadata = null
+        )
         {
-            Apply(new EntityConfigurationCreated(id, name, machineName, attributes));
+            Apply(new EntityConfigurationCreated(id, name, machineName, attributes, tenantId, metadata));
         }
 
         public void UpdateName(string newName)
@@ -56,13 +65,21 @@ namespace CloudFabric.EAV.Domain.Models
             Apply(new EntityConfigurationAttributeRemoved(Id, attributeConfiguration.MachineName));
         }
 
+        public void UpdateMetadata(Dictionary<string, object> newMetadata)
+        {
+            Apply(new EntityConfigurationMetadataUpdated(Id, newMetadata));
+        }
+
         #region EventHandlers
+        
         public void On(EntityConfigurationCreated @event)
         {
             Id = @event.Id;
             Name = new List<LocalizedString>(@event.Name).AsReadOnly();
             MachineName = @event.MachineName;
             Attributes = new List<AttributeConfiguration>(@event.Attributes).AsReadOnly();
+            TenantId = @event.TenantId;
+            Metadata = new ReadOnlyDictionary<string, object>(@event.Metadata ?? new());
         }
 
         public void On(EntityConfigurationNameUpdated @event)
@@ -116,6 +133,12 @@ namespace CloudFabric.EAV.Domain.Models
                 .ToList()
                 .AsReadOnly();
         }
+
+        public void On(EntityConfigurationMetadataUpdated @event)
+        {
+            Metadata = new ReadOnlyDictionary<string, object>(@event.Metadata ?? new());
+        }
+        
         #endregion
     }
 }

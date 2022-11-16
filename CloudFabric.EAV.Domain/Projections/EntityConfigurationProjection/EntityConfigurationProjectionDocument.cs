@@ -17,4 +17,8 @@ public class EntityConfigurationProjectionDocument : ProjectionDocument
 
     [ProjectionDocumentProperty(IsNestedArray = true)]
     public List<AttributeConfiguration> Attributes { get; set; }
+    
+    public Guid? TenantId { get; protected set; }
+
+    public Dictionary<string, object> Metadata { get; protected set; }
 }

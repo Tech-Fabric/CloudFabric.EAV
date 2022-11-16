@@ -2,6 +2,7 @@ using AutoMapper;
 
 using CloudFabric.EAV.Domain.Models;
 using CloudFabric.EAV.Domain.Models.Base;
+using CloudFabric.EAV.Domain.Projections.EntityConfigurationProjection;
 using CloudFabric.EAV.Models.RequestModels;
 using CloudFabric.EAV.Models.RequestModels.Attributes;
 using CloudFabric.EAV.Models.ViewModels;
@@ -9,6 +10,8 @@ using CloudFabric.EAV.Models.ViewModels.EAV;
 using CloudFabric.EventSourcing.Domain;
 using CloudFabric.EventSourcing.EventStore;
 using CloudFabric.EventSourcing.EventStore.Persistence;
+using CloudFabric.Projections;
+using CloudFabric.Projections.Queries;
 
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -19,6 +22,7 @@ public class EAVService : IEAVService
 {
     private readonly AggregateRepository<EntityConfiguration> _entityConfigurationRepository;
     private readonly AggregateRepository<EntityInstance> _entityInstanceRepository;
+    private readonly IProjectionRepository _entityConfigurationProjectionRepository;
     private readonly ILogger<EAVService> _logger;
     private readonly IMapper _mapper;
 
@@ -29,13 +33,14 @@ public class EAVService : IEAVService
         IMapper mapper,
         AggregateRepository<EntityConfiguration> entityConfigurationRepository,
         AggregateRepository<EntityInstance> entityInstanceRepository,
-        EventUserInfo userInfo
-    )
+        IProjectionRepository entityConfigurationProjectionRepository,
+        EventUserInfo userInfo)
     {
         _logger = logger;
         _mapper = mapper;
         _entityConfigurationRepository = entityConfigurationRepository;
         _entityInstanceRepository = entityInstanceRepository;
+        _entityConfigurationProjectionRepository = entityConfigurationProjectionRepository;
         _userInfo = userInfo;
     }
 
@@ -48,12 +53,26 @@ public class EAVService : IEAVService
         return _mapper.Map<EntityConfigurationViewModel>(entityConfiguration);
     }
 
-    //public async Task<List<EntityConfigurationViewModel>> ListEntityConfigurations(int take, int skip = 0)
-    //{
-
-
-    //    return _mapper.Map<List<EntityConfigurationViewModel>>(records);
-    //}
+    public async Task<List<EntityConfigurationViewModel>> ListEntityConfigurations(
+        ProjectionQuery query, 
+        string partitionKey, 
+        CancellationToken cancellationToken
+    )
+    {
+        var records = await _entityConfigurationProjectionRepository.Query(query, partitionKey, cancellationToken);    
+        
+        List<EntityConfigurationViewModel>> result = records.Select(document => new EntityConfigurationViewModel
+        {
+            Id = document[nameof(EntityConfigurationProjectionDocument.Id)],
+            Name = document[nameof(EntityConfigurationProjectionDocument.Name)],
+            PartitionKey = document[nameof(EntityConfigurationProjectionDocument.PartitionKey)],
+            Attributes = document[nameof(EntityConfigurationProjectionDocument.Attributes)],
+            MachineName = document[nameof(EntityConfigurationProjectionDocument.MachineName)],
+            TenantId = document[nameof(EntityConfigurationProjectionDocument.TenantId)],
+            Metadata = document[nameof(EntityConfigurationProjectionDocument.Metadata)]
+        })
+        return _mapper.Map<List<EntityConfigurationViewModel>>(records);
+    }
 
     public async Task<EntityConfigurationViewModel> CreateEntityConfiguration(
         EntityConfigurationCreateRequest entityConfigurationCreateRequest,
@@ -64,7 +83,9 @@ public class EAVService : IEAVService
             Guid.NewGuid(),
             _mapper.Map<List<LocalizedString>>(entityConfigurationCreateRequest.Name),
             entityConfigurationCreateRequest.MachineName,
-            _mapper.Map<List<AttributeConfiguration>>(entityConfigurationCreateRequest.Attributes)
+            _mapper.Map<List<AttributeConfiguration>>(entityConfigurationCreateRequest.Attributes),
+            entityConfigurationCreateRequest.TenantId,
+            entityConfigurationCreateRequest.Metadata
         );
         await _entityConfigurationRepository.SaveAsync(_userInfo, entityConfiguration, cancellationToken);
 
@@ -73,7 +94,7 @@ public class EAVService : IEAVService
 
     public async Task<EntityConfigurationViewModel> UpdateEntityConfiguration(EntityConfigurationUpdateRequest entity, CancellationToken cancellationToken)
     {
-        var entityConfiguration = await _entityConfigurationRepository.LoadAsync(entity.Id, entity.PartitionKey, cancellationToken);
+        var entityConfiguration = await _entityConfigurationRepository.LoadAsync(entity.Id, entity.Id.ToString(), cancellationToken);
 
         if (entityConfiguration == null)
         {
@@ -116,6 +137,8 @@ public class EAVService : IEAVService
                 );
             }
         }
+
+        entityConfiguration.UpdateMetadata(entity.Metadata);
 
         await _entityConfigurationRepository.SaveAsync(_userInfo, entityConfiguration, cancellationToken);
 

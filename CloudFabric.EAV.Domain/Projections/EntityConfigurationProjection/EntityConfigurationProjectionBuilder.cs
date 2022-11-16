@@ -25,7 +25,9 @@ public class EntityConfigurationProjectionBuilder : ProjectionBuilder,
             { nameof(EntityConfigurationProjectionDocument.Id), @event.Id.ToString() },
             { nameof(EntityConfigurationProjectionDocument.Name), @event.Name },
             { nameof(EntityConfigurationProjectionDocument.MachineName), @event.MachineName },
-            { nameof(EntityConfigurationProjectionDocument.Attributes), @event.Attributes }
+            { nameof(EntityConfigurationProjectionDocument.Attributes), @event.Attributes },
+            { nameof(EntityConfigurationProjectionDocument.TenantId), @event.TenantId },
+            { nameof(EntityConfigurationProjectionDocument.Metadata), @event.Metadata },
         },
         @event.PartitionKey);
     }
@@ -82,6 +84,17 @@ public class EntityConfigurationProjectionBuilder : ProjectionBuilder,
                 {
                     attributes.Remove(attributeToRemove);
                 }
+            }
+        );
+    }
+    
+    public async Task On(EntityConfigurationMetadataUpdated @event)
+    {
+        await UpdateDocument(@event.Id,
+            @event.PartitionKey,
+            (document) =>
+            {
+                document[nameof(EntityConfigurationProjectionDocument.Metadata)] = @event.Metadata;
             }
         );
     }
