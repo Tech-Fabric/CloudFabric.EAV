@@ -7,6 +7,7 @@ using CloudFabric.EAV.Domain.Events.Configuration.Attribute;
 using CloudFabric.EAV.Domain.Models.Base;
 using CloudFabric.EAV.Json.Utilities;
 using CloudFabric.EventSourcing.Domain;
+using CloudFabric.EventSourcing.EventStore;
 
 namespace CloudFabric.EAV.Domain.Models
 {
@@ -33,6 +34,10 @@ namespace CloudFabric.EAV.Domain.Models
             }
 
             return new List<string>();
+        }
+
+        public AttributeConfiguration(IEnumerable<IEvent> events) : base(events)
+        {
         }
 
         public AttributeConfiguration(
@@ -79,17 +84,21 @@ namespace CloudFabric.EAV.Domain.Models
             Apply(new AttributeConfigurationIsRequiredFlagUpdated(Id, newIsRequiredFlag));
         }
 
-        public override bool Equals(object obj){
+        public override bool Equals(object obj)
+        {
             if (ReferenceEquals(null, obj))
             {
                 return false;
             }
+
             if (ReferenceEquals(this, obj))
             {
                 return true;
             }
+
             return obj.GetType() == GetType() && Equals(obj as AttributeConfiguration);
         }
+
         public override int GetHashCode()
         {
             return HashCode.Combine(IsRequired, Name, Description, MachineName, (int)ValueType);
@@ -97,10 +106,10 @@ namespace CloudFabric.EAV.Domain.Models
 
         private bool Equals(AttributeConfiguration obj)
         {
-            return obj != null 
-                   && (Name.SequenceEqual(obj.Name) 
-                       && Description.SequenceEqual(obj.Description) 
-                       && IsRequired.Equals(obj.IsRequired) 
+            return obj != null
+                   && (Name.SequenceEqual(obj.Name)
+                       && Description.SequenceEqual(obj.Description)
+                       && IsRequired.Equals(obj.IsRequired)
                        && MachineName.Equals(obj.MachineName)
                        && ValueType.Equals(obj.ValueType));
         }

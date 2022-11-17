@@ -1,6 +1,7 @@
 using CloudFabric.EAV.Domain.Enums;
 using CloudFabric.EAV.Domain.Events.Configuration.Attributes;
 using CloudFabric.EAV.Domain.Models.Base;
+using CloudFabric.EventSourcing.EventStore;
 
 namespace CloudFabric.EAV.Domain.Models.Attributes
 {
@@ -12,15 +13,20 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
 
         public Guid ItemsAttributeConfigurationId { get; protected set; }
 
+        public ArrayAttributeConfiguration(IEnumerable<IEvent> events) : base(events)
+        {
+        }
+
         public ArrayAttributeConfiguration(
-            Guid id, 
-            string machineName, 
+            Guid id,
+            string machineName,
             List<LocalizedString> name,
             EavAttributeType itemsType,
             Guid itemsAttributeConfigurationId,
-            List<LocalizedString> description = null, 
+            List<LocalizedString> description = null,
             bool isRequired = false
-        ) : base(id, machineName, name, EavAttributeType.Array, description, isRequired) {
+        ) : base(id, machineName, name, EavAttributeType.Array, description, isRequired)
+        {
             Update(itemsType, itemsAttributeConfigurationId);
         }
 
@@ -28,13 +34,15 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
         {
             Apply(new ArrayAttributeConfigurationUpdated(newItemsType, newItemsAttributeConfiguration));
         }
-        
+
         #region EventHandlers
+
         public void On(ArrayAttributeConfigurationUpdated @event)
         {
             ItemsType = @event.ItemsType;
             ItemsAttributeConfigurationId = @event.ItemsAttributeConfigurationId;
         }
+
         #endregion
     }
 }

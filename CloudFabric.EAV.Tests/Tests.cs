@@ -43,8 +43,8 @@ public class Tests
     {
         var loggerFactory = new LoggerFactory();
         _logger = loggerFactory.CreateLogger<EAVService>();
-        
-        var configuration = new MapperConfiguration(cfg => 
+
+        var configuration = new MapperConfiguration(cfg =>
         {
             cfg.AddMaps(Assembly.GetAssembly(typeof(EAVService)));
         });
@@ -114,14 +114,15 @@ public class Tests
     {
         var configurationCreateRequest = EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
 
-        var createdConfiguration = await _eavService.CreateEntityConfiguration(configurationCreateRequest, CancellationToken.None
+        EntityConfigurationViewModel createdConfiguration = await _eavService.CreateEntityConfiguration(configurationCreateRequest,
+            CancellationToken.None
         );
 
         var configuration = await _eavService.GetEntityConfiguration(createdConfiguration.Id, createdConfiguration.PartitionKey);
 
         var entityInstanceCreateRequest = EntityInstanceFactory.CreateValidBoardGameEntityInstanceCreateRequest(createdConfiguration.Id);
 
-        var (createdInstance, validationErrors)  = await _eavService.CreateEntityInstance(entityInstanceCreateRequest);
+        (EntityInstanceViewModel createdInstance, ProblemDetails validationErrors) = await _eavService.CreateEntityInstance(entityInstanceCreateRequest);
 
         validationErrors.Should().BeNull();
         createdInstance.Id.Should().NotBeEmpty();
@@ -132,7 +133,7 @@ public class Tests
     public async Task CreateInstance_InvalidConfigurationId()
     {
         var entityInstanceCreateRequest = EntityInstanceFactory.CreateValidBoardGameEntityInstanceCreateRequest(Guid.NewGuid());
-        (EntityInstanceViewModel result, ProblemDetails validationErrors) =  await _eavService.CreateEntityInstance(entityInstanceCreateRequest);
+        (EntityInstanceViewModel result, ProblemDetails validationErrors) = await _eavService.CreateEntityInstance(entityInstanceCreateRequest);
         result.Should().BeNull();
         validationErrors.Should().BeOfType<ValidationErrorResponse>();
         validationErrors.As<ValidationErrorResponse>().Errors.Should().ContainKey("EntityConfigurationId");
@@ -143,16 +144,17 @@ public class Tests
     {
         var configurationCreateRequest = EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
 
-        var createdConfiguration = await _eavService.CreateEntityConfiguration(configurationCreateRequest, CancellationToken.None
+        EntityConfigurationViewModel createdConfiguration = await _eavService.CreateEntityConfiguration(configurationCreateRequest,
+            CancellationToken.None
         );
 
         var configuration = await _eavService.GetEntityConfiguration(createdConfiguration.Id, createdConfiguration.PartitionKey);
         var requiredAttributeMachineName = "players_min";
         var entityInstanceCreateRequest = EntityInstanceFactory.CreateValidBoardGameEntityInstanceCreateRequest(createdConfiguration.Id);
         entityInstanceCreateRequest.Attributes = entityInstanceCreateRequest.Attributes.Where(a => a.ConfigurationAttributeMachineName != requiredAttributeMachineName).ToList();
-        (EntityInstanceViewModel createdInstance, ProblemDetails validationErrors)  = await _eavService.CreateEntityInstance(entityInstanceCreateRequest);
+        (EntityInstanceViewModel createdInstance, ProblemDetails validationErrors) = await _eavService.CreateEntityInstance(entityInstanceCreateRequest);
         createdInstance.Should().BeNull();
-        
+
         validationErrors.As<ValidationErrorResponse>().Errors.Should().ContainKey(requiredAttributeMachineName);
         validationErrors.As<ValidationErrorResponse>().Errors[requiredAttributeMachineName].First().Should().Be("Attribute is Required");
     }
@@ -161,7 +163,8 @@ public class Tests
     public async Task CreateEntityConfiguration_Success()
     {
         var configurationCreateRequest = EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
-        var createdConfiguration = await _eavService.CreateEntityConfiguration(configurationCreateRequest, CancellationToken.None
+        EntityConfigurationViewModel createdConfiguration = await _eavService.CreateEntityConfiguration(configurationCreateRequest,
+            CancellationToken.None
         );
         createdConfiguration.Should().NotBeNull();
         createdConfiguration.Id.Should().NotBeEmpty();
@@ -179,8 +182,9 @@ public class Tests
     {
         var configurationCreateRequest = EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
 
-        var createdConfiguration = await _eavService.CreateEntityConfiguration(
-            configurationCreateRequest, CancellationToken.None
+        EntityConfigurationViewModel createdConfiguration = await _eavService.CreateEntityConfiguration(
+            configurationCreateRequest,
+            CancellationToken.None
         );
 
         var configuration = await _eavService.GetEntityConfiguration(
@@ -189,66 +193,65 @@ public class Tests
         
         configuration.Should().BeEquivalentTo(createdConfiguration);
     }
-
-    //[TestMethod]
-    // public async Task UpdateEntityConfiguration_ChangeLocalizedStringAttribute_Success()
+    //
+    // [TestMethod]
+    //  public async Task UpdateEntityConfiguration_ChangeLocalizedStringAttribute_Success()
+    //  {
+    //      var cultureId = CultureInfo.GetCultureInfo("EN-us").LCID;
+    //      const string newName = "newName";
+    //      var configRequest = EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
+    //      
+    //      var createdConfig = await _eavService.CreateEntityConfiguration(configRequest, CancellationToken.None);
+    //
+    //      var allAttributes = await _eavService.ListAttributes(100);
+    //      
+    //      var nameAttrIndex = configRequest.Attributes.FindIndex(a => a.MachineName == "name");
+    //      configRequest.Attributes[nameAttrIndex] = new LocalizedTextAttributeConfigurationCreateUpdateRequest()
+    //      {
+    //          MachineName = "name",
+    //          Name = new List<LocalizedStringCreateRequest>()
+    //          {
+    //              new LocalizedStringCreateRequest()
+    //              {
+    //                  CultureInfoId = cultureId,
+    //                  String = newName
+    //              },
+    //          },
+    //      };
+    //      var updateRequest = new EntityConfigurationUpdateRequest()
+    //      {
+    //          Attributes = configRequest.Attributes,
+    //          Id = createdConfig.Id,
+    //          MachineName = configRequest.MachineName,
+    //          Name = configRequest.Name,
+    //          PartitionKey = createdConfig.PartitionKey
+    //      };
+    //      var updatedConfig = await _eavService.UpdateEntityConfiguration(updateRequest, CancellationToken.None);
+    //      updatedConfig.Attributes.First(a => a.MachineName == "name").As<LocalizedTextAttributeConfigurationViewModel>().Name.First().String.Should().Be(newName);
+    //      updatedConfig.Attributes.First(a => a.MachineName == "name").As<LocalizedTextAttributeConfigurationViewModel>().Name.First().CultureInfoId.Should().Be(cultureId);
+    //      updatedConfig.Id.Should().Be(createdConfig.Id);
+    //      updatedConfig.MachineName.Should().Be(createdConfig.MachineName);
+    //      updatedConfig.PartitionKey.Should().Be(createdConfig.PartitionKey);
+    //  }
+    //
+    // [TestMethod]
+    // public async Task UpdateEntityConfiguration_RemoveAttribute_Success()
     // {
-    //     var cultureId = CultureInfo.GetCultureInfo("EN-us").LCID;
-    //     const string newName = "newName";
     //     var configRequest = EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
     //     var createdConfig = await _eavService.CreateEntityConfiguration(configRequest, CancellationToken.None);
-    //     var nameAttrIndex = configRequest.Attributes.FindIndex(a => a.MachineName == "name");
-    //     configRequest.Attributes[nameAttrIndex] = new LocalizedTextAttributeConfigurationCreateUpdateRequest()
-    //     {
-    //         MachineName = "name",
-    //         Name = new List<LocalizedStringCreateRequest>()
-    //         {
-    //             new LocalizedStringCreateRequest()
-    //             {
-    //                 CultureInfoId = cultureId,
-    //                 String = newName
-    //             },
-    //         },
-    //     };
+    //     const string playersMinMachineName = "players_min";
     //     var updateRequest = new EntityConfigurationUpdateRequest()
     //     {
-    //         Attributes = configRequest.Attributes,
+    //         Attributes = configRequest.Attributes.Where(a => a.MachineName != playersMinMachineName).ToList(),
     //         Id = createdConfig.Id,
     //         MachineName = configRequest.MachineName,
-    //         Name = configRequest.Name
+    //         Name = configRequest.Name,
+    //         PartitionKey = createdConfig.PartitionKey
     //     };
     //     var updatedConfig = await _eavService.UpdateEntityConfiguration(updateRequest, CancellationToken.None);
-    //     //updatedConfig.Attributes.First(a => a.MachineName == "name").As<LocalizedTextAttributeConfigurationViewModel>().Name.First().String.Should().Be(newName);
-    //     //updatedConfig.Attributes.First(a => a.MachineName == "name").As<LocalizedTextAttributeConfigurationViewModel>().Name.First().CultureInfoId.Should().Be(cultureId);
-    //     updatedConfig.Id.Should().Be(createdConfig.Id);
-    //     updatedConfig.MachineName.Should().Be(createdConfig.MachineName);
-    //     updatedConfig.PartitionKey.Should().Be(createdConfig.PartitionKey);
+    //     updatedConfig.Attributes.FindIndex(a => a.MachineName == playersMinMachineName).Should().BeNegative();
     // }
-    
-    [TestMethod]
-    public async Task UpdateEntityConfiguration_RemoveAttribute_Success()
-    {
-        var configRequest = EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
-        var createdConfig = await _eavService.CreateEntityConfiguration(configRequest, CancellationToken.None);
-        const string playersMinMachineName = "players_min";
-        
-        // var updateRequest = new EntityConfigurationUpdateRequest()
-        // {
-        //     Attributes = new List<EntityAttributeConfigurationCreateUpdateReferenceRequest>(
-        //         createdConfig.Attributes.Take(1).Select(a => new EntityAttributeConfigurationCreateUpdateReferenceRequest()
-        //         {
-        //             AttributeConfigurationId = a.AttributeConfigurationId
-        //         })
-        //     ),
-        //     Id = createdConfig.Id,
-        //     MachineName = configRequest.MachineName,
-        //     Name = configRequest.Name
-        // };
-        // var updatedConfig = await _eavService.UpdateEntityConfiguration(updateRequest, CancellationToken.None);
-        // updatedConfig.Attributes.Count.Should().Be(1);
-        //updatedConfig.Attributes.FindIndex(a => a.MachineName == playersMinMachineName).Should().BeNegative();
-    }
-    
+
     [TestMethod]
     public async Task UpdateEntityConfiguration_AddedNewAttribute_Success()
     {
@@ -274,9 +277,9 @@ public class Tests
             MinimumValue = 1,
             Description = new List<LocalizedStringCreateRequest>()
         };
-        
+
         configRequest.Attributes.Add(newAttributeRequest);
-        
+
         var updateRequest = new EntityConfigurationUpdateRequest()
         {
             Attributes = configRequest.Attributes,
@@ -291,7 +294,7 @@ public class Tests
         //newAttribute.Should().NotBeNull();
         //newAttribute.Should().BeEquivalentTo(newAttributeRequest, opt => opt.ComparingRecordsByValue());
     }
-    
+
     [TestMethod]
     public async Task UpdateEntityConfiguration_ChangeName_Success()
     {
@@ -351,8 +354,7 @@ public class Tests
         );
 
         configurationItems.Count.Should().Be(1);
-
-
+        
         await projectionsEngine.StopAsync();
     }
 
@@ -360,21 +362,42 @@ public class Tests
     public async Task TestCreateNumberAttribute_Success()
     {
         var cultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID;
-        var numberAttribute =
-            new NumberAttributeConfigurationCreateUpdateRequest()
+        var numberAttribute = new NumberAttributeConfigurationCreateUpdateRequest()
+        {
+            MachineName = "testAttr",
+            Description = new List<LocalizedStringCreateRequest>
             {
-                MachineName = "testAttr",
-                Description = new List<LocalizedStringCreateRequest>() { new() { CultureInfoId = cultureInfoId, String = "testAttrDesc" } },
-                Name = new List<LocalizedStringCreateRequest>() { new() { CultureInfoId = cultureInfoId, String = "testAttrName" } },
-                DefaultValue = 15,
-                IsRequired = true,
-                MaximumValue = 100,
-                MinimumValue = -100
-            };
+                new LocalizedStringCreateRequest
+                {
+                    CultureInfoId = cultureInfoId,
+                    String = "testAttrDesc"
+                }
+            },
+            Name = new List<LocalizedStringCreateRequest>
+            {
+                new LocalizedStringCreateRequest
+                {
+                    CultureInfoId = cultureInfoId,
+                    String = "testAttrName"
+                }
+            },
+            DefaultValue = 15,
+            IsRequired = true,
+            MaximumValue = 100,
+            MinimumValue = -100
+        };
+        
         var configCreateRequest = new EntityConfigurationCreateRequest()
         {
             MachineName = "test",
-            Name = new List<LocalizedStringCreateRequest>() { new() { CultureInfoId = cultureInfoId, String = "test" } },
+            Name = new List<LocalizedStringCreateRequest>
+            {
+                new LocalizedStringCreateRequest
+                {
+                    CultureInfoId = cultureInfoId,
+                    String = "test"
+                }
+            },
             Attributes = new List<EntityAttributeConfigurationCreateUpdateRequest>()
             {
                 numberAttribute
@@ -384,6 +407,190 @@ public class Tests
         var created = await _eavService.CreateEntityConfiguration(configCreateRequest, CancellationToken.None);
         var attributeResult = created.Attributes.First().As<NumberAttributeConfigurationViewModel>();
         attributeResult.Should().BeEquivalentTo(numberAttribute, opt => opt.ComparingRecordsByValue());
+    }
+
+    [TestMethod]
+    public async Task UpdateInstance_UpdateAttribute_Success()
+    {
+        const string changedAttributeName = "players_max";
+
+        EntityConfigurationCreateRequest configurationCreateRequest = EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
+        EntityConfigurationViewModel createdConfiguration = await _eavService.CreateEntityConfiguration(configurationCreateRequest,
+            CancellationToken.None
+        );
+
+        EntityInstanceCreateRequest entityInstanceCreateRequest = EntityInstanceFactory.CreateValidBoardGameEntityInstanceCreateRequest(createdConfiguration.Id);
+
+        List<AttributeInstanceCreateUpdateRequest> attributesRequest = entityInstanceCreateRequest.Attributes;
+        (EntityInstanceViewModel createdInstance, _) = await _eavService.CreateEntityInstance(entityInstanceCreateRequest);
+
+        var playerMaxIndex = attributesRequest.FindIndex(a => a.ConfigurationAttributeMachineName == changedAttributeName);
+        attributesRequest[playerMaxIndex] = new NumberAttributeInstanceCreateUpdateRequest
+        {
+            ConfigurationAttributeMachineName = changedAttributeName,
+            Value = 10
+        };
+        var updateRequest = new EntityInstanceUpdateRequest
+        {
+            EntityConfigurationId = createdConfiguration.Id,
+            Attributes = attributesRequest,
+            Id = createdInstance.Id
+        };
+
+        (EntityInstanceViewModel updatedInstance, _) = await _eavService.UpdateEntityInstance(createdInstance.Id.ToString(), updateRequest, CancellationToken.None);
+        updatedInstance.Attributes.First(a => a.ConfigurationAttributeMachineName == changedAttributeName).As<NumberAttributeInstanceViewModel>().Value.Should().Be(10);
+    }
+    
+    [TestMethod]
+    public async Task UpdateInstance_UpdateAttribute_FailValidation()
+    {
+        const string changedAttributeName = "players_max";
+
+        EntityConfigurationCreateRequest configurationCreateRequest = EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
+        EntityConfigurationViewModel createdConfiguration = await _eavService.CreateEntityConfiguration(configurationCreateRequest,
+            CancellationToken.None
+        );
+
+        EntityInstanceCreateRequest entityInstanceCreateRequest = EntityInstanceFactory.CreateValidBoardGameEntityInstanceCreateRequest(createdConfiguration.Id);
+
+        List<AttributeInstanceCreateUpdateRequest> attributesRequest = entityInstanceCreateRequest.Attributes;
+        (EntityInstanceViewModel createdInstance, _) = await _eavService.CreateEntityInstance(entityInstanceCreateRequest);
+
+        var playerMaxIndex = attributesRequest.FindIndex(a => a.ConfigurationAttributeMachineName == changedAttributeName);
+        attributesRequest[playerMaxIndex] = new NumberAttributeInstanceCreateUpdateRequest
+        {
+            ConfigurationAttributeMachineName = changedAttributeName,
+            Value = 20
+        };
+        var updateRequest = new EntityInstanceUpdateRequest
+        {
+            EntityConfigurationId = createdConfiguration.Id,
+            Attributes = attributesRequest,
+            Id = createdInstance.Id
+        };
+
+        (EntityInstanceViewModel updatedInstance, ProblemDetails validationErrors) = await _eavService.UpdateEntityInstance(createdInstance.Id.ToString(), updateRequest, CancellationToken.None);
+        updatedInstance.Should().BeNull();
+        validationErrors.As<ValidationErrorResponse>().Errors.Should().ContainKey(changedAttributeName);
+    }
+
+    [TestMethod]
+    public async Task UpdateInstance_AddAttribute_Success()
+    {
+        const string changedAttributeName = "avg_time_mins";
+
+        EntityConfigurationCreateRequest configurationCreateRequest = EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
+        EntityConfigurationViewModel createdConfiguration = await _eavService.CreateEntityConfiguration(configurationCreateRequest,
+            CancellationToken.None
+        );
+
+        EntityInstanceCreateRequest entityInstanceCreateRequest = EntityInstanceFactory.CreateValidBoardGameEntityInstanceCreateRequest(createdConfiguration.Id);
+
+        List<AttributeInstanceCreateUpdateRequest> attributesRequest = entityInstanceCreateRequest.Attributes;
+        (EntityInstanceViewModel createdInstance, _) = await _eavService.CreateEntityInstance(entityInstanceCreateRequest);
+
+        attributesRequest.Add(new NumberAttributeInstanceCreateUpdateRequest
+        {
+            ConfigurationAttributeMachineName = changedAttributeName,
+            Value = 30
+        });
+
+        var updateRequest = new EntityInstanceUpdateRequest
+        {
+            EntityConfigurationId = createdConfiguration.Id,
+            Attributes = attributesRequest,
+            Id = createdInstance.Id
+        };
+
+        (EntityInstanceViewModel updatedInstance, _) = await _eavService.UpdateEntityInstance(createdInstance.Id.ToString(), updateRequest, CancellationToken.None);
+        updatedInstance.Attributes.First(a => a.ConfigurationAttributeMachineName == changedAttributeName).As<NumberAttributeInstanceViewModel>().Value.Should().Be(30);
+    }
+
+    [TestMethod]
+    public async Task UpdateInstance_AddAttribute_IgnoreAttributeNotInConfig()
+    {
+        const string changedAttributeName = "min_time_mins";
+
+        EntityConfigurationCreateRequest configurationCreateRequest = EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
+        EntityConfigurationViewModel createdConfiguration = await _eavService.CreateEntityConfiguration(configurationCreateRequest,
+            CancellationToken.None
+        );
+
+        EntityInstanceCreateRequest entityInstanceCreateRequest = EntityInstanceFactory.CreateValidBoardGameEntityInstanceCreateRequest(createdConfiguration.Id);
+
+        List<AttributeInstanceCreateUpdateRequest> attributesRequest = entityInstanceCreateRequest.Attributes;
+        (EntityInstanceViewModel createdInstance, _) = await _eavService.CreateEntityInstance(entityInstanceCreateRequest);
+
+        attributesRequest.Add(new NumberAttributeInstanceCreateUpdateRequest
+        {
+            ConfigurationAttributeMachineName = changedAttributeName,
+            Value = 30
+        });
+
+        var updateRequest = new EntityInstanceUpdateRequest
+        {
+            EntityConfigurationId = createdConfiguration.Id,
+            Attributes = attributesRequest,
+            Id = createdInstance.Id
+        };
+
+        (EntityInstanceViewModel updatedInstance, _) = await _eavService.UpdateEntityInstance(createdInstance.Id.ToString(), updateRequest, CancellationToken.None);
+        updatedInstance.Attributes.FirstOrDefault(a => a.ConfigurationAttributeMachineName == changedAttributeName).Should().BeNull();
+    }
+
+    [TestMethod]
+    public async Task UpdateInstance_RemoveAttribute_Success()
+    {
+        const string changedAttributeName = "description";
+
+        EntityConfigurationCreateRequest configurationCreateRequest = EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
+        EntityConfigurationViewModel createdConfiguration = await _eavService.CreateEntityConfiguration(configurationCreateRequest,
+            CancellationToken.None
+        );
+
+        EntityInstanceCreateRequest entityInstanceCreateRequest = EntityInstanceFactory.CreateValidBoardGameEntityInstanceCreateRequest(createdConfiguration.Id);
+
+        List<AttributeInstanceCreateUpdateRequest> attributesRequest = entityInstanceCreateRequest.Attributes;
+        (EntityInstanceViewModel createdInstance, _) = await _eavService.CreateEntityInstance(entityInstanceCreateRequest);
+
+        attributesRequest = attributesRequest.Where(a => a.ConfigurationAttributeMachineName != changedAttributeName).ToList();
+        var updateRequest = new EntityInstanceUpdateRequest
+        {
+            EntityConfigurationId = createdConfiguration.Id,
+            Attributes = attributesRequest,
+            Id = createdInstance.Id
+        };
+
+        (EntityInstanceViewModel updatedInstance, _) = await _eavService.UpdateEntityInstance(createdInstance.Id.ToString(), updateRequest, CancellationToken.None);
+        updatedInstance.Attributes.FirstOrDefault(a => a.ConfigurationAttributeMachineName == changedAttributeName).Should().BeNull();
+    }
+
+    [TestMethod]
+    public async Task UpdateInstance_RemoveAttribute_FailValidation()
+    {
+        const string changedAttributeName = "players_max";
+
+        EntityConfigurationCreateRequest configurationCreateRequest = EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
+        EntityConfigurationViewModel createdConfiguration = await _eavService.CreateEntityConfiguration(configurationCreateRequest,
+            CancellationToken.None
+        );
+
+        EntityInstanceCreateRequest entityInstanceCreateRequest = EntityInstanceFactory.CreateValidBoardGameEntityInstanceCreateRequest(createdConfiguration.Id);
+
+        List<AttributeInstanceCreateUpdateRequest> attributesRequest = entityInstanceCreateRequest.Attributes;
+        (EntityInstanceViewModel createdInstance, _) = await _eavService.CreateEntityInstance(entityInstanceCreateRequest);
+
+        attributesRequest = attributesRequest.Where(a => a.ConfigurationAttributeMachineName != changedAttributeName).ToList();
+        var updateRequest = new EntityInstanceUpdateRequest
+        {
+            EntityConfigurationId = createdConfiguration.Id,
+            Attributes = attributesRequest,
+            Id = createdInstance.Id
+        };
+
+        (EntityInstanceViewModel updatedInstance, ProblemDetails errors) = await _eavService.UpdateEntityInstance(createdInstance.Id.ToString(), updateRequest, CancellationToken.None);
+        updatedInstance.Should().BeNull();
+        errors.As<ValidationErrorResponse>().Errors.Should().ContainKey(changedAttributeName);
     }
 
     [TestMethod]

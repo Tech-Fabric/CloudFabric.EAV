@@ -1,5 +1,6 @@
 using CloudFabric.EAV.Domain.Enums;
 using CloudFabric.EAV.Domain.Models.Base;
+using CloudFabric.EventSourcing.EventStore;
 
 namespace CloudFabric.EAV.Domain.Models.Attributes
 {
@@ -10,16 +11,21 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
         public float? MaximumValue { get; set; }
 
         public override EavAttributeType ValueType { get; } = EavAttributeType.Number;
-        
         public override List<string> Validate(AttributeInstance instance)
         {
             var errors = base.Validate(instance);
+
+            if (instance == null)
+            {
+                return errors;
+            }
+
             if (instance is not NumberAttributeInstance numberInstance)
             {
                 errors.Add("Cannot validate attribute. Expected attribute type: Number)");
                 return errors;
             }
-            
+
             var floatValue = numberInstance.Value;
             if (floatValue < MinimumValue)
             {
@@ -31,6 +37,11 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
                 errors.Add($"Value should be less or equal than {MaximumValue}");
             }
             return errors;
+        }
+
+        public NumberAttributeConfiguration(IEnumerable<IEvent> events) : base(events)
+        {
+            
         }
         
         public NumberAttributeConfiguration(
@@ -53,16 +64,16 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
         {
             return this.Equals(obj as NumberAttributeConfiguration);
         }
-        
+
         private bool Equals(NumberAttributeConfiguration other)
         {
-            return base.Equals(other) 
-                   && DefaultValue.Equals(other.DefaultValue) 
-                   && Nullable.Equals(MinimumValue, other.MinimumValue) 
-                   && Nullable.Equals(MaximumValue, other.MaximumValue) 
+            return base.Equals(other)
+                   && DefaultValue.Equals(other.DefaultValue)
+                   && Nullable.Equals(MinimumValue, other.MinimumValue)
+                   && Nullable.Equals(MaximumValue, other.MaximumValue)
                    && ValueType == other.ValueType;
         }
-        
+
         public override int GetHashCode()
         {
             return HashCode.Combine(DefaultValue, MinimumValue, MaximumValue, (int)ValueType);
