@@ -1,13 +1,16 @@
-using System;
 using System.Globalization;
+
+using CloudFabric.Projections.Attributes;
 
 namespace CloudFabric.EAV.Domain.Models.Base;
 
 public class LocalizedString: IEquatable<LocalizedString>
 {
+    [ProjectionDocumentProperty(IsFilterable = true)]
     public int CultureInfoId { get; set; }
 
 #pragma warning disable CA1720 // Identifier contains type name
+    [ProjectionDocumentProperty]
     public string String { get; set; }
 #pragma warning restore CA1720 // Identifier contains type name
 

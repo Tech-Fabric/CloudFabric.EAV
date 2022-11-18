@@ -10,9 +10,9 @@ namespace CloudFabric.EAV.Domain.Projections.EntityConfigurationProjection;
 
 public class EntityConfigurationProjectionBuilder : ProjectionBuilder<EntityConfigurationProjectionDocument>,
     IHandleEvent<EntityConfigurationCreated>,
-    IHandleEvent<EntityConfigurationNameUpdated>
-    // IHandleEvent<EntityConfigurationAttributeAdded>,
-    // IHandleEvent<EntityConfigurationAttributeRemoved>
+    IHandleEvent<EntityConfigurationNameUpdated>,
+    IHandleEvent<EntityConfigurationAttributeAdded>,
+    IHandleEvent<EntityConfigurationAttributeRemoved>
 {
     public EntityConfigurationProjectionBuilder(IProjectionRepository<EntityConfigurationProjectionDocument> repository) : base(repository)
     {
@@ -58,34 +58,34 @@ public class EntityConfigurationProjectionBuilder : ProjectionBuilder<EntityConf
         );
     }
 
-    // public async Task On(EntityConfigurationAttributeAdded @event)
-    // {
-    //     await UpdateDocument(@event.EntityConfigurationId,
-    //         @event.PartitionKey,
-    //         (document) =>
-    //         {
-    //             var attributes = document[nameof(EntityConfigurationProjectionDocument.Attributes)] as List<AttributeConfiguration>;
-    //             attributes ??= new();
-    //
-    //             attributes.Add(@event.Attribute);
-    //         }
-    //     );
-    // }
-    //
-    // public async Task On(EntityConfigurationAttributeRemoved @event)
-    // {
-    //     await UpdateDocument(@event.EntityConfigurationId,
-    //         @event.PartitionKey,
-    //         (document) =>
-    //         {
-    //             var attributes = document[nameof(EntityConfigurationProjectionDocument.Attributes)] as List<AttributeConfiguration>;
-    //             var attributeToRemove = attributes?.FirstOrDefault(x => x.MachineName == @event.AttributeMachineName);
-    //
-    //             if (attributeToRemove != null)
-    //             {
-    //                 attributes.Remove(attributeToRemove);
-    //             }
-    //         }
-    //     );
-    // }
+    public async Task On(EntityConfigurationAttributeAdded @event)
+    {
+        await UpdateDocument(@event.EntityConfigurationId,
+            @event.PartitionKey,
+            (document) =>
+            {
+                var attributes = document[nameof(EntityConfigurationProjectionDocument.Attributes)] as List<AttributeConfiguration>;
+                attributes ??= new();
+
+                //attributes.Add(@event.Attribute);
+            }
+        );
+    }
+
+    public async Task On(EntityConfigurationAttributeRemoved @event)
+    {
+        await UpdateDocument(@event.EntityConfigurationId,
+            @event.PartitionKey,
+            (document) =>
+            {
+                // var attributes = document[nameof(EntityConfigurationProjectionDocument.Attributes)] as List<AttributeConfiguration>;
+                // var attributeToRemove = attributes?.FirstOrDefault(x => x. == @event..AttributeMachineName);
+                //
+                // if (attributeToRemove != null)
+                // {
+                //     attributes.Remove(attributeToRemove);
+                // }
+            }
+        );
+    }
 }

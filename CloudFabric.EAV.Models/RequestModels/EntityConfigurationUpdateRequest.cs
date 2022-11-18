@@ -11,9 +11,9 @@ namespace CloudFabric.EAV.Models.RequestModels
         public Guid Id { get; set; }
 
         public List<LocalizedStringCreateRequest> Name { get; set; }
-
-        public List<AttributeConfigurationCreateUpdateRequest> Attributes { get; set; }
-
+        
+        public List<EntityAttributeConfigurationCreateUpdateRequest> Attributes { get; set; }
+        
         public Dictionary<string, object> Metadata { get; set; }
     }
 }

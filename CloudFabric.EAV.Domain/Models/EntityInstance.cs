@@ -1,7 +1,5 @@
-using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Linq;
+
 using CloudFabric.EAV.Domain.Events.Instance.Entity;
 using CloudFabric.EventSourcing.Domain;
 using CloudFabric.EventSourcing.EventStore;
@@ -59,11 +57,11 @@ public class EntityInstance : AggregateBase
     public void On(AttributeInstanceUpdated @event)
     {
         var attribute = Attributes?.FirstOrDefault(x => x.ConfigurationAttributeMachineName == @event.AttributeInstance.ConfigurationAttributeMachineName);
-
+        
         if (attribute != null)
         {
             var newCollection = new List<AttributeInstance>(Attributes);
-
+            
             newCollection.Remove(attribute);
             newCollection.Add(@event.AttributeInstance);
 
@@ -78,7 +76,7 @@ public class EntityInstance : AggregateBase
         if (attribute != null)
         {
             var newCollection = new List<AttributeInstance>(Attributes);
-
+            
             newCollection.Remove(attribute);
 
             Attributes = newCollection.AsReadOnly();
