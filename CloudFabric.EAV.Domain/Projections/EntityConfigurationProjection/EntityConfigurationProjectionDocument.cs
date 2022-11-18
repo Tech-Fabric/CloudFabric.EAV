@@ -10,15 +10,11 @@ namespace CloudFabric.EAV.Domain.Projections.EntityConfigurationProjection;
 public class EntityConfigurationProjectionDocument : ProjectionDocument
 {
     [ProjectionDocumentProperty(IsNestedArray = true, IsSearchable = true)]
-    public List<LocalizedString> Name { get; set; }
+    public List<LocalizedStringProjectionModel> Name { get; set; }
 
     [ProjectionDocumentProperty(IsFilterable = true)]
     public string MachineName { get; set; }
 
-    [ProjectionDocumentProperty(IsNestedArray = true)]
-    public List<AttributeConfiguration> Attributes { get; set; }
-    
-    public Guid? TenantId { get; protected set; }
-
-    public Dictionary<string, object> Metadata { get; protected set; }
+    [ProjectionDocumentProperty(IsFilterable = true)]
+    public Guid? TenantId { get; set; }
 }

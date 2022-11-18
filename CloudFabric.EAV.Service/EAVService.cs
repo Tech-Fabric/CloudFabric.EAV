@@ -22,7 +22,7 @@ public class EAVService : IEAVService
 {
     private readonly AggregateRepository<EntityConfiguration> _entityConfigurationRepository;
     private readonly AggregateRepository<EntityInstance> _entityInstanceRepository;
-    private readonly IProjectionRepository _entityConfigurationProjectionRepository;
+    private readonly IProjectionRepository<EntityConfigurationProjectionDocument> _entityConfigurationProjectionRepository;
     private readonly ILogger<EAVService> _logger;
     private readonly IMapper _mapper;
 
@@ -33,7 +33,7 @@ public class EAVService : IEAVService
         IMapper mapper,
         AggregateRepository<EntityConfiguration> entityConfigurationRepository,
         AggregateRepository<EntityInstance> entityInstanceRepository,
-        IProjectionRepository entityConfigurationProjectionRepository,
+        IProjectionRepository<EntityConfigurationProjectionDocument> entityConfigurationProjectionRepository,
         EventUserInfo userInfo)
     {
         _logger = logger;
@@ -59,18 +59,7 @@ public class EAVService : IEAVService
         CancellationToken cancellationToken
     )
     {
-        var records = await _entityConfigurationProjectionRepository.Query(query, partitionKey, cancellationToken);    
-        
-        List<EntityConfigurationViewModel>> result = records.Select(document => new EntityConfigurationViewModel
-        {
-            Id = document[nameof(EntityConfigurationProjectionDocument.Id)],
-            Name = document[nameof(EntityConfigurationProjectionDocument.Name)],
-            PartitionKey = document[nameof(EntityConfigurationProjectionDocument.PartitionKey)],
-            Attributes = document[nameof(EntityConfigurationProjectionDocument.Attributes)],
-            MachineName = document[nameof(EntityConfigurationProjectionDocument.MachineName)],
-            TenantId = document[nameof(EntityConfigurationProjectionDocument.TenantId)],
-            Metadata = document[nameof(EntityConfigurationProjectionDocument.Metadata)]
-        })
+        var records = await _entityConfigurationProjectionRepository.Query(query, partitionKey, cancellationToken);
         return _mapper.Map<List<EntityConfigurationViewModel>>(records);
     }
 

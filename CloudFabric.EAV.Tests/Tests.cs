@@ -22,6 +22,7 @@ using CloudFabric.EventSourcing.EventStore.Persistence;
 using CloudFabric.EventSourcing.EventStore.Postgresql;
 using CloudFabric.Projections;
 using CloudFabric.Projections.InMemory;
+using CloudFabric.Projections.Postgresql;
 using CloudFabric.Projections.Queries;
 
 using FluentAssertions;
@@ -63,6 +64,7 @@ public class Tests
             mapper,
             entityConfigurationRepository,
             entityInstanceRepository,
+            GetProjectionRepository<EntityConfigurationProjectionDocument>(),
             new EventUserInfo(Guid.NewGuid())
         );
     }
@@ -278,7 +280,7 @@ public class Tests
         var projectionsEngine = new ProjectionsEngine(GetProjectionRebuildStateRepository());
         projectionsEngine.SetEventsObserver(entityConfigurationEventsObserver);
 
-        var entityConfigurationProjectionRepository = GetProjectionRepository(ProjectionDocumentSchemaFactory.FromTypeWithAttributes<EntityConfigurationProjectionDocument>());
+        var entityConfigurationProjectionRepository = GetProjectionRepository<EntityConfigurationProjectionDocument>();
         var ordersListProjectionBuilder = new EntityConfigurationProjectionBuilder(entityConfigurationProjectionRepository);
         projectionsEngine.AddProjectionBuilder(ordersListProjectionBuilder);
 
@@ -294,8 +296,10 @@ public class Tests
         );
 
         // verify projection is created
-        var configurationItems = await entityConfigurationProjectionRepository.Query(
-            ProjectionQuery.Where<EntityConfigurationProjectionDocument>(x => x.MachineName == "BoardGame")
+        var configurationItems = await _eavService.ListEntityConfigurations(
+            ProjectionQuery.Where<EntityConfigurationProjectionDocument>(x => x.MachineName == "BoardGame"),
+            createdConfiguration.PartitionKey,
+            CancellationToken.None
         );
 
         configurationItems.Count.Should().Be(1);
@@ -543,14 +547,15 @@ public class Tests
         updatedInstance.Should().BeNull();
         errors.As<ValidationErrorResponse>().Errors.Should().ContainKey(changedAttributeName);
     }
-    private IProjectionRepository GetProjectionRepository(ProjectionDocumentSchema schema)
+    
+    private IProjectionRepository<T> GetProjectionRepository<T>() where T : ProjectionDocument
     {
-        return new InMemoryProjectionRepository(schema);
+        return new PostgresqlProjectionRepository<T>("Host=localhost;Username=cloudfabric_eventsourcing_test;Password=cloudfabric_eventsourcing_test;Database=cloudfabric_eventsourcing_test;Maximum Pool Size=1000");
     }
 
     private IProjectionRepository<ProjectionRebuildState> GetProjectionRebuildStateRepository()
     {
-        return new InMemoryProjectionRepository<ProjectionRebuildState>();
+        return new PostgresqlProjectionRepository<ProjectionRebuildState>("Host=localhost;Username=cloudfabric_eventsourcing_test;Password=cloudfabric_eventsourcing_test;Database=cloudfabric_eventsourcing_test;Maximum Pool Size=1000");
     }
 
     private IEventsObserver GetEventStoreEventsObserver()

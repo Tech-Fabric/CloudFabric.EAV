@@ -8,26 +8,28 @@ using CloudFabric.Projections;
 
 namespace CloudFabric.EAV.Domain.Projections.EntityConfigurationProjection;
 
-public class EntityConfigurationProjectionBuilder : ProjectionBuilder,
+public class EntityConfigurationProjectionBuilder : ProjectionBuilder<EntityConfigurationProjectionDocument>,
     IHandleEvent<EntityConfigurationCreated>,
-    IHandleEvent<EntityConfigurationNameUpdated>,
-    IHandleEvent<EntityConfigurationAttributeAdded>,
-    IHandleEvent<EntityConfigurationAttributeRemoved>
+    IHandleEvent<EntityConfigurationNameUpdated>
+    // IHandleEvent<EntityConfigurationAttributeAdded>,
+    // IHandleEvent<EntityConfigurationAttributeRemoved>
 {
-    public EntityConfigurationProjectionBuilder(IProjectionRepository repository) : base(repository)
+    public EntityConfigurationProjectionBuilder(IProjectionRepository<EntityConfigurationProjectionDocument> repository) : base(repository)
     {
     }
 
     public async Task On(EntityConfigurationCreated @event)
     {
-        await UpsertDocument(new Dictionary<string, object?>()
+        await UpsertDocument(new EntityConfigurationProjectionDocument
         {
-            { nameof(EntityConfigurationProjectionDocument.Id), @event.Id.ToString() },
-            { nameof(EntityConfigurationProjectionDocument.Name), @event.Name },
-            { nameof(EntityConfigurationProjectionDocument.MachineName), @event.MachineName },
-            { nameof(EntityConfigurationProjectionDocument.Attributes), @event.Attributes },
-            { nameof(EntityConfigurationProjectionDocument.TenantId), @event.TenantId },
-            { nameof(EntityConfigurationProjectionDocument.Metadata), @event.Metadata },
+            Id = @event.Id,
+            Name = @event.Name?.Select(x => new LocalizedStringProjectionModel
+            {
+                CultureInfoId = x.CultureInfoId,
+                String = x.String
+            }).ToList(),
+            MachineName = @event.MachineName,
+            TenantId = @event.TenantId
         },
         @event.PartitionKey);
     }
@@ -38,12 +40,11 @@ public class EntityConfigurationProjectionBuilder : ProjectionBuilder,
             @event.PartitionKey,
             (document) =>
             {
-                var localizedName = document[nameof(EntityConfigurationProjectionDocument.Name)] as List<LocalizedString>;
-                var name = localizedName?.FirstOrDefault(n => n.CultureInfoId == @event.CultureInfoId);
+                var name = document.Name?.FirstOrDefault(n => n.CultureInfoId == @event.CultureInfoId);
 
                 if (name == null)
                 {
-                    localizedName.Add(new LocalizedString()
+                    document.Name.Add(new LocalizedStringProjectionModel
                     {
                         CultureInfoId = @event.CultureInfoId,
                         String = @event.NewName
@@ -57,45 +58,34 @@ public class EntityConfigurationProjectionBuilder : ProjectionBuilder,
         );
     }
 
-    public async Task On(EntityConfigurationAttributeAdded @event)
-    {
-        await UpdateDocument(@event.EntityConfigurationId,
-            @event.PartitionKey,
-            (document) =>
-            {
-                var attributes = document[nameof(EntityConfigurationProjectionDocument.Attributes)] as List<AttributeConfiguration>;
-                attributes ??= new();
-
-                attributes.Add(@event.Attribute);
-            }
-        );
-    }
-
-    public async Task On(EntityConfigurationAttributeRemoved @event)
-    {
-        await UpdateDocument(@event.EntityConfigurationId,
-            @event.PartitionKey,
-            (document) =>
-            {
-                var attributes = document[nameof(EntityConfigurationProjectionDocument.Attributes)] as List<AttributeConfiguration>;
-                var attributeToRemove = attributes?.FirstOrDefault(x => x.MachineName == @event.AttributeMachineName);
-
-                if (attributeToRemove != null)
-                {
-                    attributes.Remove(attributeToRemove);
-                }
-            }
-        );
-    }
-    
-    public async Task On(EntityConfigurationMetadataUpdated @event)
-    {
-        await UpdateDocument(@event.Id,
-            @event.PartitionKey,
-            (document) =>
-            {
-                document[nameof(EntityConfigurationProjectionDocument.Metadata)] = @event.Metadata;
-            }
-        );
-    }
+    // public async Task On(EntityConfigurationAttributeAdded @event)
+    // {
+    //     await UpdateDocument(@event.EntityConfigurationId,
+    //         @event.PartitionKey,
+    //         (document) =>
+    //         {
+    //             var attributes = document[nameof(EntityConfigurationProjectionDocument.Attributes)] as List<AttributeConfiguration>;
+    //             attributes ??= new();
+    //
+    //             attributes.Add(@event.Attribute);
+    //         }
+    //     );
+    // }
+    //
+    // public async Task On(EntityConfigurationAttributeRemoved @event)
+    // {
+    //     await UpdateDocument(@event.EntityConfigurationId,
+    //         @event.PartitionKey,
+    //         (document) =>
+    //         {
+    //             var attributes = document[nameof(EntityConfigurationProjectionDocument.Attributes)] as List<AttributeConfiguration>;
+    //             var attributeToRemove = attributes?.FirstOrDefault(x => x.MachineName == @event.AttributeMachineName);
+    //
+    //             if (attributeToRemove != null)
+    //             {
+    //                 attributes.Remove(attributeToRemove);
+    //             }
+    //         }
+    //     );
+    // }
 }
