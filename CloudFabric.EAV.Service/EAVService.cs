@@ -125,7 +125,9 @@ public class EAVService : IEAVService
             Guid.NewGuid(),
             _mapper.Map<List<LocalizedString>>(entityConfigurationCreateRequest.Name),
             entityConfigurationCreateRequest.MachineName,
-            _mapper.Map<List<EntityConfigurationAttributeReference>>(entityConfigurationCreateRequest.Attributes)
+            _mapper.Map<List<EntityConfigurationAttributeReference>>(entityConfigurationCreateRequest.Attributes),
+            entityConfigurationCreateRequest.TenantId,
+            entityConfigurationCreateRequest.Metadata
         );
 
          await _entityConfigurationRepository.SaveAsync(
@@ -194,7 +196,9 @@ public class EAVService : IEAVService
             entityConfiguration.RemoveAttribute(attribute.AttributeConfigurationId);
         }
         
-        entityConfiguration.UpdateMetadata(entityConfiguration.Metadata);
+        entityConfiguration.UpdateMetadata(
+            entityConfiguration.Metadata.ToDictionary(k => k.Key, k => k.Value)
+        );
         
         await _entityConfigurationRepository.SaveAsync(_userInfo, entityConfiguration, cancellationToken);
 

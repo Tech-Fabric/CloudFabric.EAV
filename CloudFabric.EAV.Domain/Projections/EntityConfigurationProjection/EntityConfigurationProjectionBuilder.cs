@@ -23,11 +23,7 @@ public class EntityConfigurationProjectionBuilder : ProjectionBuilder<EntityConf
         await UpsertDocument(new EntityConfigurationProjectionDocument
         {
             Id = @event.Id,
-            Name = @event.Name?.Select(x => new LocalizedStringProjectionModel
-            {
-                CultureInfoId = x.CultureInfoId,
-                String = x.String
-            }).ToList(),
+            Name = @event.Name,
             MachineName = @event.MachineName,
             TenantId = @event.TenantId
         },
@@ -44,7 +40,7 @@ public class EntityConfigurationProjectionBuilder : ProjectionBuilder<EntityConf
 
                 if (name == null)
                 {
-                    document.Name.Add(new LocalizedStringProjectionModel
+                    document.Name.Add(new LocalizedString
                     {
                         CultureInfoId = @event.CultureInfoId,
                         String = @event.NewName
@@ -64,8 +60,8 @@ public class EntityConfigurationProjectionBuilder : ProjectionBuilder<EntityConf
             @event.PartitionKey,
             (document) =>
             {
-                var attributes = document[nameof(EntityConfigurationProjectionDocument.Attributes)] as List<AttributeConfiguration>;
-                attributes ??= new();
+                // var attributes = document.Attributes) as List<AttributeConfiguration>;
+                // attributes ??= new();
 
                 //attributes.Add(@event.Attribute);
             }

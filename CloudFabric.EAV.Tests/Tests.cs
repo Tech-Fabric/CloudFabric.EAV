@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using AutoMapper;
 
 using CloudFabric.EAV.Domain.Models;
+using CloudFabric.EAV.Domain.Projections.AttributeConfigurationProjection;
 using CloudFabric.EAV.Domain.Projections.EntityConfigurationProjection;
 using CloudFabric.EAV.Models.RequestModels;
 using CloudFabric.EAV.Models.RequestModels.Attributes;
@@ -22,6 +23,7 @@ using CloudFabric.EventSourcing.EventStore.Persistence;
 using CloudFabric.EventSourcing.EventStore.Postgresql;
 using CloudFabric.Projections;
 using CloudFabric.Projections.InMemory;
+using CloudFabric.Projections.Postgresql;
 using CloudFabric.Projections.Queries;
 
 using FluentAssertions;
@@ -40,6 +42,7 @@ public class Tests
     private ILogger<EAVService> _logger;
     
     private PostgresqlProjectionRepository<AttributeConfigurationProjectionDocument> _attributeConfigurationProjectionRepository;
+    private PostgresqlProjectionRepository<EntityConfigurationProjectionDocument> _entityConfigurationProjectionRepository;
 
     [TestInitialize]
     public async Task SetUp()
@@ -75,6 +78,7 @@ public class Tests
         projectionsEngine.SetEventsObserver(GetEventStoreEventsObserver());
         
         _attributeConfigurationProjectionRepository = new PostgresqlProjectionRepository<AttributeConfigurationProjectionDocument>(connectionString);
+        _entityConfigurationProjectionRepository = new PostgresqlProjectionRepository<EntityConfigurationProjectionDocument>(connectionString);
 
         var ordersListProjectionBuilder = new AttributeConfigurationProjectionBuilder(
             _attributeConfigurationProjectionRepository
@@ -91,6 +95,7 @@ public class Tests
             entityConfigurationRepository,
             entityInstanceRepository,
             _attributeConfigurationProjectionRepository,
+            _entityConfigurationProjectionRepository,
             new EventUserInfo(Guid.NewGuid())
         );
     }
@@ -288,7 +293,6 @@ public class Tests
         {
             Attributes = configRequest.Attributes,
             Id = createdConfig.Id,
-            MachineName = configRequest.MachineName,
             Name = configRequest.Name
         };
         var updatedConfig = await _eavService.UpdateEntityConfiguration(updateRequest, CancellationToken.None); 
@@ -319,7 +323,6 @@ public class Tests
         {
             Attributes = configRequest.Attributes,
             Id = createdConfig.Id,
-            MachineName = configRequest.MachineName,
             Name = configRequest.Name
         };
         var updatedConfig = await _eavService.UpdateEntityConfiguration(updateRequest, CancellationToken.None);
@@ -337,8 +340,7 @@ public class Tests
         var projectionsEngine = new ProjectionsEngine(GetProjectionRebuildStateRepository());
         projectionsEngine.SetEventsObserver(entityConfigurationEventsObserver);
 
-        var entityConfigurationProjectionRepository = GetProjectionRepository(ProjectionDocumentSchemaFactory.FromTypeWithAttributes<EntityConfigurationProjectionDocument>());
-        var ordersListProjectionBuilder = new EntityConfigurationProjectionBuilder(entityConfigurationProjectionRepository);
+        var ordersListProjectionBuilder = new EntityConfigurationProjectionBuilder(_entityConfigurationProjectionRepository);
         projectionsEngine.AddProjectionBuilder(ordersListProjectionBuilder);
 
 
@@ -353,8 +355,10 @@ public class Tests
         );
 
         // verify projection is created
-        var configurationItems = await entityConfigurationProjectionRepository.Query(
-            ProjectionQuery.Where<EntityConfigurationProjectionDocument>(x => x.MachineName == "BoardGame")
+        var configurationItems = await _eavService.ListEntityConfigurations(
+            ProjectionQuery.Where<EntityConfigurationProjectionDocument>(x => x.MachineName == "BoardGame"),
+            null,
+            CancellationToken.None
         );
 
         configurationItems.Count.Should().Be(1);

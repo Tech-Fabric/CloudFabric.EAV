@@ -33,13 +33,17 @@ namespace CloudFabric.EAV.Domain.Models
             Guid id, 
             List<LocalizedString> name, 
             string machineName, 
-            List<EntityConfigurationAttributeReference> attributes
+            List<EntityConfigurationAttributeReference> attributes,
+            Guid? tenantId,
+            Dictionary<string, object> metadata
         ) {
             Apply(new EntityConfigurationCreated(
                 id, 
                 name, 
                 machineName, 
-                attributes
+                attributes,
+                tenantId,
+                metadata
             ));
         }
 
@@ -78,6 +82,8 @@ namespace CloudFabric.EAV.Domain.Models
             Name = new List<LocalizedString>(@event.Name).AsReadOnly();
             MachineName = @event.MachineName;
             Attributes = new List<EntityConfigurationAttributeReference>(@event.Attributes).AsReadOnly();
+            TenantId = @event.TenantId;
+            Metadata = new ReadOnlyDictionary<string, object>(@event.Metadata ?? new());
         }
         
         public void On(EntityConfigurationNameUpdated @event)

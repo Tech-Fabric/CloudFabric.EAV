@@ -12,7 +12,6 @@ public class LocalizedStringMappingProfile : Profile
     {
         CreateMap<LocalizedString, LocalizedStringCreateRequest>();
         CreateMap<LocalizedString, LocalizedStringViewModel>();
-        CreateMap<LocalizedStringProjectionModel, LocalizedStringViewModel>();
 
         CreateMap<LocalizedStringCreateRequest, LocalizedString>();
 
