@@ -1,4 +1,5 @@
 using CloudFabric.EAV.Domain.Enums;
+using CloudFabric.EAV.Domain.Events.Configuration.Attributes;
 using CloudFabric.EAV.Domain.Models.Base;
 using CloudFabric.EventSourcing.EventStore;
 
@@ -11,7 +12,8 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
         public float? MaximumValue { get; set; }
 
         public override EavAttributeType ValueType { get; } = EavAttributeType.Number;
-        public override List<string> Validate(AttributeInstance instance)
+        
+        public override List<string> Validate(AttributeInstance? instance)
         {
             var errors = base.Validate(instance);
 
@@ -55,9 +57,7 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
             float? maximumValue = null
         ) : base(id, machineName, name, EavAttributeType.Number, description, isRequired)
         {
-            DefaultValue = defaultValue;
-            MinimumValue = minimumValue;
-            MaximumValue = maximumValue;
+            Apply(new NumberAttributeConfigurationUpdated(defaultValue, minimumValue, maximumValue));
         }
 
         public override bool Equals(object obj)
@@ -78,5 +78,16 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
         {
             return HashCode.Combine(DefaultValue, MinimumValue, MaximumValue, (int)ValueType);
         }
+        
+        #region EventHandlers
+
+        public void On(NumberAttributeConfigurationUpdated @event)
+        {
+            DefaultValue = @event.DefaultValue;
+            MinimumValue = @event.MinimumValue;
+            MaximumValue = @event.MaximumValue;
+        }
+
+        #endregion
     }
 }

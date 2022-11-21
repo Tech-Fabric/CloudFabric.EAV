@@ -425,7 +425,6 @@ public class Tests
             .Name.Should().BeEquivalentTo(numberAttribute.Name);
     }
 
-    [Ignore]
     [TestMethod]
     public async Task UpdateInstance_UpdateAttribute_Success()
     {
@@ -465,7 +464,6 @@ public class Tests
             .As<NumberAttributeInstanceViewModel>().Value.Should().Be(10);
     }
 
-    [Ignore]
     [TestMethod]
     public async Task UpdateInstance_UpdateAttribute_FailValidation()
     {
