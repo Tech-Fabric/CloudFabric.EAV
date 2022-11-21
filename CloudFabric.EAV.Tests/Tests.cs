@@ -108,6 +108,7 @@ public class Tests
         try
         {
             await _attributeConfigurationProjectionRepository.DeleteAll();
+            await _entityConfigurationProjectionRepository.DeleteAll();
 
             var rebuildStateRepository = GetProjectionRebuildStateRepository();
             await rebuildStateRepository.DeleteAll();
@@ -356,9 +357,7 @@ public class Tests
 
         // verify projection is created
         var configurationItems = await _eavService.ListEntityConfigurations(
-            ProjectionQuery.Where<EntityConfigurationProjectionDocument>(x => x.MachineName == "BoardGame"),
-            null,
-            CancellationToken.None
+            ProjectionQuery.Where<EntityConfigurationProjectionDocument>(x => x.MachineName == "BoardGame")
         );
 
         configurationItems.Count.Should().Be(1);
@@ -367,55 +366,96 @@ public class Tests
     }
 
     [TestMethod]
-    public async Task TestCreateNumberAttribute_Success()
+    public async Task GetEntityConfigurationProjectionByTenantId_Success()
     {
-        var cultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID;
-        var numberAttribute = new NumberAttributeConfigurationCreateUpdateRequest()
-        {
-            MachineName = "testAttr",
-            Description = new List<LocalizedStringCreateRequest>
-            {
-                new LocalizedStringCreateRequest
-                {
-                    CultureInfoId = cultureInfoId,
-                    String = "testAttrDesc"
-                }
-            },
-            Name = new List<LocalizedStringCreateRequest>
-            {
-                new LocalizedStringCreateRequest
-                {
-                    CultureInfoId = cultureInfoId,
-                    String = "testAttrName"
-                }
-            },
-            DefaultValue = 15,
-            IsRequired = true,
-            MaximumValue = 100,
-            MinimumValue = -100
-        };
-        
-        var configCreateRequest = new EntityConfigurationCreateRequest()
-        {
-            MachineName = "test",
-            Name = new List<LocalizedStringCreateRequest>
-            {
-                new LocalizedStringCreateRequest
-                {
-                    CultureInfoId = cultureInfoId,
-                    String = "test"
-                }
-            },
-            Attributes = new List<EntityAttributeConfigurationCreateUpdateRequest>()
-            {
-                numberAttribute
-            }
-        };
+        // configure projections
+        var entityConfigurationEventsObserver = GetEventStoreEventsObserver();
 
-        var created = await _eavService.CreateEntityConfiguration(configCreateRequest, CancellationToken.None);
-        var attributeResult = created.Attributes.First().As<NumberAttributeConfigurationViewModel>();
-        attributeResult.Should().BeEquivalentTo(numberAttribute, opt => opt.ComparingRecordsByValue());
+        // Projections engine - takes events from events observer and passes them to multiple projection builders
+        var projectionsEngine = new ProjectionsEngine(GetProjectionRebuildStateRepository());
+        projectionsEngine.SetEventsObserver(entityConfigurationEventsObserver);
+
+        var ordersListProjectionBuilder = new EntityConfigurationProjectionBuilder(_entityConfigurationProjectionRepository);
+        projectionsEngine.AddProjectionBuilder(ordersListProjectionBuilder);
+
+
+        await projectionsEngine.StartAsync("TestInstance");
+
+
+        var configurationCreateRequest1 = EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
+        var configurationCreateRequest2 = EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
+
+        var createdConfiguration1 = await _eavService.CreateEntityConfiguration(
+            configurationCreateRequest1,
+            CancellationToken.None
+        );
+        
+        var createdConfiguration2 = await _eavService.CreateEntityConfiguration(
+            configurationCreateRequest2,
+            CancellationToken.None
+        );
+
+        // verify projection is created
+        var configurationItems = await _eavService.ListEntityConfigurations(
+            ProjectionQuery.Where<EntityConfigurationProjectionDocument>(x => x.TenantId == createdConfiguration2.TenantId)
+        );
+
+        configurationItems.Count.Should().Be(1);
+        configurationItems[0].TenantId.Should().Be(createdConfiguration2.TenantId);
+        
+        await projectionsEngine.StopAsync();
     }
+    
+    // [TestMethod]
+    // public async Task TestCreateNumberAttribute_Success()
+    // {
+    //     var cultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID;
+    //     var numberAttribute = new NumberAttributeConfigurationCreateUpdateRequest()
+    //     {
+    //         MachineName = "testAttr",
+    //         Description = new List<LocalizedStringCreateRequest>
+    //         {
+    //             new LocalizedStringCreateRequest
+    //             {
+    //                 CultureInfoId = cultureInfoId,
+    //                 String = "testAttrDesc"
+    //             }
+    //         },
+    //         Name = new List<LocalizedStringCreateRequest>
+    //         {
+    //             new LocalizedStringCreateRequest
+    //             {
+    //                 CultureInfoId = cultureInfoId,
+    //                 String = "testAttrName"
+    //             }
+    //         },
+    //         DefaultValue = 15,
+    //         IsRequired = true,
+    //         MaximumValue = 100,
+    //         MinimumValue = -100
+    //     };
+    //     
+    //     var configCreateRequest = new EntityConfigurationCreateRequest()
+    //     {
+    //         MachineName = "test",
+    //         Name = new List<LocalizedStringCreateRequest>
+    //         {
+    //             new LocalizedStringCreateRequest
+    //             {
+    //                 CultureInfoId = cultureInfoId,
+    //                 String = "test"
+    //             }
+    //         },
+    //         Attributes = new List<EntityAttributeConfigurationCreateUpdateRequest>()
+    //         {
+    //             numberAttribute
+    //         }
+    //     };
+    //
+    //     var created = await _eavService.CreateEntityConfiguration(configCreateRequest, CancellationToken.None);
+    //     var attributeResult = created.Attributes.First().As<NumberAttributeConfigurationViewModel>();
+    //     attributeResult.Should().BeEquivalentTo(numberAttribute, opt => opt.ComparingRecordsByValue());
+    // }
 
     [TestMethod]
     public async Task UpdateInstance_UpdateAttribute_Success()
@@ -449,38 +489,38 @@ public class Tests
         updatedInstance.Attributes.First(a => a.ConfigurationAttributeMachineName == changedAttributeName).As<NumberAttributeInstanceViewModel>().Value.Should().Be(10);
     }
     
-    [TestMethod]
-    public async Task UpdateInstance_UpdateAttribute_FailValidation()
-    {
-        const string changedAttributeName = "players_max";
-
-        EntityConfigurationCreateRequest configurationCreateRequest = EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
-        EntityConfigurationViewModel createdConfiguration = await _eavService.CreateEntityConfiguration(configurationCreateRequest,
-            CancellationToken.None
-        );
-
-        EntityInstanceCreateRequest entityInstanceCreateRequest = EntityInstanceFactory.CreateValidBoardGameEntityInstanceCreateRequest(createdConfiguration.Id);
-
-        List<AttributeInstanceCreateUpdateRequest> attributesRequest = entityInstanceCreateRequest.Attributes;
-        (EntityInstanceViewModel createdInstance, _) = await _eavService.CreateEntityInstance(entityInstanceCreateRequest);
-
-        var playerMaxIndex = attributesRequest.FindIndex(a => a.ConfigurationAttributeMachineName == changedAttributeName);
-        attributesRequest[playerMaxIndex] = new NumberAttributeInstanceCreateUpdateRequest
-        {
-            ConfigurationAttributeMachineName = changedAttributeName,
-            Value = 20
-        };
-        var updateRequest = new EntityInstanceUpdateRequest
-        {
-            EntityConfigurationId = createdConfiguration.Id,
-            Attributes = attributesRequest,
-            Id = createdInstance.Id
-        };
-
-        (EntityInstanceViewModel updatedInstance, ProblemDetails validationErrors) = await _eavService.UpdateEntityInstance(createdInstance.Id.ToString(), updateRequest, CancellationToken.None);
-        updatedInstance.Should().BeNull();
-        validationErrors.As<ValidationErrorResponse>().Errors.Should().ContainKey(changedAttributeName);
-    }
+    // [TestMethod]
+    // public async Task UpdateInstance_UpdateAttribute_FailValidation()
+    // {
+    //     const string changedAttributeName = "players_max";
+    //
+    //     EntityConfigurationCreateRequest configurationCreateRequest = EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
+    //     EntityConfigurationViewModel createdConfiguration = await _eavService.CreateEntityConfiguration(configurationCreateRequest,
+    //         CancellationToken.None
+    //     );
+    //
+    //     EntityInstanceCreateRequest entityInstanceCreateRequest = EntityInstanceFactory.CreateValidBoardGameEntityInstanceCreateRequest(createdConfiguration.Id);
+    //
+    //     List<AttributeInstanceCreateUpdateRequest> attributesRequest = entityInstanceCreateRequest.Attributes;
+    //     (EntityInstanceViewModel createdInstance, _) = await _eavService.CreateEntityInstance(entityInstanceCreateRequest);
+    //
+    //     var playerMaxIndex = attributesRequest.FindIndex(a => a.ConfigurationAttributeMachineName == changedAttributeName);
+    //     attributesRequest[playerMaxIndex] = new NumberAttributeInstanceCreateUpdateRequest
+    //     {
+    //         ConfigurationAttributeMachineName = changedAttributeName,
+    //         Value = 20
+    //     };
+    //     var updateRequest = new EntityInstanceUpdateRequest
+    //     {
+    //         EntityConfigurationId = createdConfiguration.Id,
+    //         Attributes = attributesRequest,
+    //         Id = createdInstance.Id
+    //     };
+    //
+    //     (EntityInstanceViewModel updatedInstance, ProblemDetails validationErrors) = await _eavService.UpdateEntityInstance(createdInstance.Id.ToString(), updateRequest, CancellationToken.None);
+    //     updatedInstance.Should().BeNull();
+    //     validationErrors.As<ValidationErrorResponse>().Errors.Should().ContainKey(changedAttributeName);
+    // }
 
     [TestMethod]
     public async Task UpdateInstance_AddAttribute_Success()
@@ -652,7 +692,10 @@ public class Tests
             CancellationToken.None
         );
 
-        var allAttributes = await _eavService.ListAttributes(10000);
+        var allAttributes = await _eavService.ListAttributes(new ProjectionQuery()
+        {
+            Limit = 1000
+        });
         allAttributes.Count.Should().Be(2);
     }
 

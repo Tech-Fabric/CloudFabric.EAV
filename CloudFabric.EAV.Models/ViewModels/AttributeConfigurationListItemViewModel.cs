@@ -7,4 +7,6 @@ public class AttributeConfigurationListItemViewModel
     public string MachineName { get; set; }
 
     public bool IsRequired { get; set; }
+    
+    public Guid? TenantId { get; set; }
 }

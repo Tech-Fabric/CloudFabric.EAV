@@ -12,4 +12,7 @@ public class EntityInstanceProjectionDocument : ProjectionDocument
 
     [ProjectionDocumentProperty(IsNestedArray = true)]
     public List<AttributeInstance> Attributes { get; set; }
+    
+    [ProjectionDocumentProperty(IsFilterable = true)]
+    public Guid? TenantId { get; set; }
 }

@@ -19,4 +19,7 @@ public class AttributeConfigurationProjectionDocument : ProjectionDocument
 
     [ProjectionDocumentProperty(IsFilterable = true)]
     public bool IsRequired { get; set; }
+    
+    [ProjectionDocumentProperty(IsFilterable = true)]
+    public Guid? TenantId { get; set; }
 }
