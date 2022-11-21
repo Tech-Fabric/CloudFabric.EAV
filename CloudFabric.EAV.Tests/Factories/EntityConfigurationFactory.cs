@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using System.Globalization;
 
 using CloudFabric.EAV.Domain.Enums;
@@ -27,7 +26,7 @@ public static class EntityConfigurationFactory
                 }
             },
             MachineName = "BoardGame",
-            Attributes = new List<AttributeConfigurationCreateUpdateRequest>()
+            Attributes = new List<EntityAttributeConfigurationCreateUpdateRequest>()
             {
                 new LocalizedTextAttributeConfigurationCreateUpdateRequest()
                 {
@@ -169,7 +168,7 @@ public static class EntityConfigurationFactory
                 }
             },
             MachineName = "CarTire",
-            Attributes = new List<AttributeConfigurationCreateUpdateRequest>()
+            Attributes = new List<EntityAttributeConfigurationCreateUpdateRequest>()
             {
                 new LocalizedTextAttributeConfigurationCreateUpdateRequest()
                 {

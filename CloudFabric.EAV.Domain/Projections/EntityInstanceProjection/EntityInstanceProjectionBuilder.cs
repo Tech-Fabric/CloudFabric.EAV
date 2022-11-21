@@ -21,7 +21,7 @@ public class EntityInstanceProjectionBuilder : ProjectionBuilder,
     {
         await UpsertDocument(new Dictionary<string, object?>()
         {
-            { nameof(EntityInstanceProjectionDocument.Id), @event.Id.ToString() },
+            { nameof(EntityInstanceProjectionDocument.Id), @event.Id },
             { nameof(EntityInstanceProjectionDocument.EntityConfigurationId), @event.EntityConfigurationId },
             { nameof(EntityInstanceProjectionDocument.Attributes), @event.Attributes }
         },

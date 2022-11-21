@@ -15,6 +15,6 @@ public class EntityConfigurationProjectionDocument : ProjectionDocument
     [ProjectionDocumentProperty(IsFilterable = true)]
     public string MachineName { get; set; }
 
-    [ProjectionDocumentProperty(IsNestedArray = true)]
-    public List<AttributeConfiguration> Attributes { get; set; }
+    [ProjectionDocumentProperty(IsFilterable = true)]
+    public Guid? TenantId { get; set; }
 }

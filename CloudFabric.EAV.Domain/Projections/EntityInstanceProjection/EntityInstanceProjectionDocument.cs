@@ -1,6 +1,4 @@
 using CloudFabric.EAV.Domain.Models;
-using System.Collections.Generic;
-using System;
 using CloudFabric.Projections;
 using CloudFabric.Projections.Attributes;
 

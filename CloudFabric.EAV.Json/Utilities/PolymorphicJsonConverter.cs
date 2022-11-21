@@ -65,7 +65,7 @@ namespace CloudFabric.EAV.Json.Utilities
             JsonSerializerOptions options
         )
         {
-            options.PropertyNamingPolicy ??= JsonNamingPolicy.CamelCase;
+            var jsonNamingPolicy = options.PropertyNamingPolicy ?? JsonNamingPolicy.CamelCase;
 
             if (reader.TokenType != JsonTokenType.StartObject)
             {
@@ -113,7 +113,7 @@ namespace CloudFabric.EAV.Json.Utilities
                     reader.Read();
 
                     var propertyType = properties.FirstOrDefault(
-                        p => options.PropertyNamingPolicy.ConvertName(p.Name) == jsonPropertyName
+                        p => jsonNamingPolicy.ConvertName(p.Name) == jsonPropertyName
                     );
 
                     if (propertyType != null)
@@ -169,7 +169,7 @@ namespace CloudFabric.EAV.Json.Utilities
 
         protected void WriteElement(Utf8JsonWriter writer, object value, JsonSerializerOptions options)
         {
-            options.PropertyNamingPolicy ??= JsonNamingPolicy.CamelCase;
+            JsonNamingPolicy jsonNamingPolicy = options.PropertyNamingPolicy ?? JsonNamingPolicy.CamelCase;
 
             writer.WriteStartObject();
 
@@ -181,7 +181,7 @@ namespace CloudFabric.EAV.Json.Utilities
             foreach (var prop in properties)
             {
                 writer.WritePropertyName(
-                    options.PropertyNamingPolicy.ConvertName(prop.Name)
+                    jsonNamingPolicy.ConvertName(prop.Name)
                 );
 
                 if (typeof(T).IsAssignableFrom(prop.PropertyType))

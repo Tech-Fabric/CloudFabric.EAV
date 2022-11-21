@@ -16,44 +16,63 @@ namespace CloudFabric.EAV.Domain.Models
 
         public string MachineName { get; protected set; }
 
-
-        public ReadOnlyCollection<AttributeConfiguration> Attributes { get; protected set; }
-
+        public ReadOnlyCollection<EntityConfigurationAttributeReference> Attributes { get; protected set; }
+        
         public override string PartitionKey => Id.ToString();
+        
+        public Guid? TenantId { get; protected set; }
+
+        public ReadOnlyDictionary<string, object> Metadata { get; protected set; }
 
         public EntityConfiguration(List<IEvent> events) : base(events)
         {
 
         }
 
-        public EntityConfiguration(Guid id, List<LocalizedString> name, string machineName, List<AttributeConfiguration> attributes)
-        {
-            Apply(new EntityConfigurationCreated(id, name, machineName, attributes));
+        public EntityConfiguration(
+            Guid id, 
+            List<LocalizedString> name, 
+            string machineName, 
+            List<EntityConfigurationAttributeReference> attributes,
+            Guid? tenantId,
+            Dictionary<string, object> metadata
+        ) {
+            Apply(new EntityConfigurationCreated(
+                id, 
+                name, 
+                machineName, 
+                attributes,
+                tenantId,
+                metadata
+            ));
         }
 
         public void UpdateName(string newName)
         {
             Apply(new EntityConfigurationNameUpdated(Id, newName, CultureInfo.GetCultureInfo("EN-us").LCID));
         }
-
+        
         public void UpdateName(string newName, int cultureInfoId)
         {
             Apply(new EntityConfigurationNameUpdated(Id, newName, cultureInfoId));
         }
 
-        public void AddAttribute(AttributeConfiguration attributeConfiguration)
+        public void AddAttribute(Guid attributeConfigurationId)
         {
-            Apply(new EntityConfigurationAttributeAdded(Id, attributeConfiguration));
+            Apply(new EntityConfigurationAttributeAdded(
+                Id, 
+                new EntityConfigurationAttributeReference() {AttributeConfigurationId = attributeConfigurationId }
+            ));
         }
 
-        public void UpdateAttribute(AttributeConfiguration attributeConfiguration)
+        public void RemoveAttribute(Guid attributeConfigurationId)
         {
-            Apply(new EntityConfigurationAttributeUpdated(Id, attributeConfiguration));
+            Apply(new EntityConfigurationAttributeRemoved(Id, attributeConfigurationId));
         }
 
-        public void RemoveAttribute(AttributeConfiguration attributeConfiguration)
+        public void UpdateMetadata(Dictionary<string, object> newMetadata)
         {
-            Apply(new EntityConfigurationAttributeRemoved(Id, attributeConfiguration.MachineName));
+            Apply(new EntityConfigurationMetadataUpdated(Id, newMetadata));
         }
 
         #region EventHandlers
@@ -62,9 +81,11 @@ namespace CloudFabric.EAV.Domain.Models
             Id = @event.Id;
             Name = new List<LocalizedString>(@event.Name).AsReadOnly();
             MachineName = @event.MachineName;
-            Attributes = new List<AttributeConfiguration>(@event.Attributes).AsReadOnly();
+            Attributes = new List<EntityConfigurationAttributeReference>(@event.Attributes).AsReadOnly();
+            TenantId = @event.TenantId;
+            Metadata = new ReadOnlyDictionary<string, object>(@event.Metadata ?? new());
         }
-
+        
         public void On(EntityConfigurationNameUpdated @event)
         {
             var newCollection = new List<LocalizedString>(Name);
@@ -93,29 +114,24 @@ namespace CloudFabric.EAV.Domain.Models
 
         public void On(EntityConfigurationAttributeAdded @event)
         {
-            var newCollection = new List<AttributeConfiguration>(Attributes);
-            newCollection.Add(@event.Attribute);
-            Attributes = newCollection.AsReadOnly();
-        }
-
-        public void On(EntityConfigurationAttributeUpdated @event)
-        {
-            var newCollection = new List<AttributeConfiguration>(Attributes);
-            var attrIndex = newCollection.FindIndex(a => a.MachineName == @event.Attribute.MachineName);
-            if (attrIndex != -1)
-            {
-                newCollection[attrIndex] = @event.Attribute;
-            }
+            var newCollection = new List<EntityConfigurationAttributeReference>(Attributes);
+            newCollection.Add(@event.attributeReference);
             Attributes = newCollection.AsReadOnly();
         }
 
         public void On(EntityConfigurationAttributeRemoved @event)
         {
             Attributes = Attributes
-                .Where(a => a.MachineName != @event.AttributeMachineName)
+                .Where(a => a.AttributeConfigurationId != @event.AttributeConfigurationId)
                 .ToList()
                 .AsReadOnly();
         }
+
+        public void On(EntityConfigurationMetadataUpdated @event)
+        {
+            Metadata = new ReadOnlyDictionary<string, object>(@event.Metadata ?? new());
+        }
+        
         #endregion
     }
 }
