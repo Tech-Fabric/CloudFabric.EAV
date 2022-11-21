@@ -65,21 +65,19 @@ public class EAVService : IEAVService
         return _mapper.Map<EntityConfigurationViewModel>(entityConfiguration);
     }
 
-    public async Task<List<AttributeConfigurationListItemViewModel>> ListAttributes(int take, int skip = 0)
+    public async Task<List<AttributeConfigurationListItemViewModel>> ListAttributes(ProjectionQuery query, 
+        string? partitionKey = null, 
+        CancellationToken cancellationToken = default
+    )
     {
-        var list = await _attributeConfigurationProjectionRepository.Query(new ProjectionQuery()
-        {
-            Limit = take,
-            Offset = 0
-        });
-        
+        var list = await _attributeConfigurationProjectionRepository.Query(query, partitionKey, cancellationToken);
         return _mapper.Map<List<AttributeConfigurationListItemViewModel>>(list);
     }
     
     public async Task<List<EntityConfigurationViewModel>> ListEntityConfigurations(
         ProjectionQuery query, 
-        string partitionKey, 
-        CancellationToken cancellationToken
+        string? partitionKey = null, 
+        CancellationToken cancellationToken = default
     )
     {
         var records = await _entityConfigurationProjectionRepository.Query(query, partitionKey, cancellationToken);
@@ -256,7 +254,8 @@ public class EAVService : IEAVService
         var entityInstance = new EntityInstance(
             Guid.NewGuid(),
             entity.EntityConfigurationId,
-            _mapper.Map<List<AttributeInstance>>(entity.Attributes)
+            _mapper.Map<List<AttributeInstance>>(entity.Attributes),
+            entity.TenantId
         );
         
         var validationErrors = new Dictionary<string, string[]>();

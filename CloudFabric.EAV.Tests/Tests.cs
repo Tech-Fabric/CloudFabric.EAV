@@ -70,7 +70,7 @@ public class Tests
             connectionString,
             "eav_tests_event_store"
         );
-
+        
         await _eventStore.Initialize();
 
         var attributeConfigurationRepository = new AggregateRepository<AttributeConfiguration>(_eventStore);
@@ -93,7 +93,7 @@ public class Tests
 
         await projectionsEngine.StartAsync("TestInstance");
 
-
+        
         _eavService = new EAVService(
             _logger,
             mapper,
@@ -375,13 +375,52 @@ public class Tests
 
         // verify projection is created
         var configurationItems = await _eavService.ListEntityConfigurations(
-            ProjectionQuery.Where<EntityConfigurationProjectionDocument>(x => x.MachineName == "BoardGame"),
-            null,
-            CancellationToken.None
+            ProjectionQuery.Where<EntityConfigurationProjectionDocument>(x => x.MachineName == "BoardGame")
         );
 
         configurationItems.Count.Should().Be(1);
+        
+        await projectionsEngine.StopAsync();
+    }
 
+    [TestMethod]
+    public async Task GetEntityConfigurationProjectionByTenantId_Success()
+    {
+        // configure projections
+        var entityConfigurationEventsObserver = GetEventStoreEventsObserver();
+
+        // Projections engine - takes events from events observer and passes them to multiple projection builders
+        var projectionsEngine = new ProjectionsEngine(GetProjectionRebuildStateRepository());
+        projectionsEngine.SetEventsObserver(entityConfigurationEventsObserver);
+
+        var ordersListProjectionBuilder = new EntityConfigurationProjectionBuilder(_entityConfigurationProjectionRepository);
+        projectionsEngine.AddProjectionBuilder(ordersListProjectionBuilder);
+
+
+        await projectionsEngine.StartAsync("TestInstance");
+
+
+        var configurationCreateRequest1 = EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
+        var configurationCreateRequest2 = EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
+
+        var createdConfiguration1 = await _eavService.CreateEntityConfiguration(
+            configurationCreateRequest1,
+            CancellationToken.None
+        );
+        
+        var createdConfiguration2 = await _eavService.CreateEntityConfiguration(
+            configurationCreateRequest2,
+            CancellationToken.None
+        );
+
+        // verify projection is created
+        var configurationItems = await _eavService.ListEntityConfigurations(
+            ProjectionQuery.Where<EntityConfigurationProjectionDocument>(x => x.TenantId == createdConfiguration2.TenantId)
+        );
+
+        configurationItems.Count.Should().Be(1);
+        configurationItems[0].TenantId.Should().Be(createdConfiguration2.TenantId);
+        
         await projectionsEngine.StopAsync();
     }
 
@@ -420,7 +459,10 @@ public class Tests
         var created = await _eavService.CreateEntityConfiguration(configCreateRequest, CancellationToken.None);
         created.Attributes.Count.Should().Be(1);
 
-        var allAttributes = await _eavService.ListAttributes(100);
+        var allAttributes = await _eavService.ListAttributes(new ProjectionQuery()
+        {
+            Limit = 100
+        });
         allAttributes.First().As<AttributeConfigurationListItemViewModel>()
             .Name.Should().BeEquivalentTo(numberAttribute.Name);
     }
@@ -667,7 +709,10 @@ public class Tests
             CancellationToken.None
         );
 
-        var allAttributes = await _eavService.ListAttributes(10000);
+        var allAttributes = await _eavService.ListAttributes(new ProjectionQuery()
+        {
+            Limit = 1000
+        });
         allAttributes.Count.Should().Be(2);
     }
 

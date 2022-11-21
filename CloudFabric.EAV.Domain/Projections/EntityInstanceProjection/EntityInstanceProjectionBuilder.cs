@@ -23,7 +23,8 @@ public class EntityInstanceProjectionBuilder : ProjectionBuilder,
         {
             { nameof(EntityInstanceProjectionDocument.Id), @event.Id },
             { nameof(EntityInstanceProjectionDocument.EntityConfigurationId), @event.EntityConfigurationId },
-            { nameof(EntityInstanceProjectionDocument.Attributes), @event.Attributes }
+            { nameof(EntityInstanceProjectionDocument.Attributes), @event.Attributes },
+            { nameof(EntityInstanceProjectionDocument.TenantId), @event.TenantId }
         },
         @event.PartitionKey);
     }

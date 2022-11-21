@@ -26,6 +26,7 @@ public static class EntityConfigurationFactory
                 }
             },
             MachineName = "BoardGame",
+            TenantId = Guid.NewGuid(),
             Attributes = new List<EntityAttributeConfigurationCreateUpdateRequest>()
             {
                 new LocalizedTextAttributeConfigurationCreateUpdateRequest()

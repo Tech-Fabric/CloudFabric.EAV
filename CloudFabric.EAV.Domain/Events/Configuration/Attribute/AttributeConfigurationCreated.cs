@@ -4,4 +4,4 @@ using CloudFabric.EventSourcing.EventStore;
 
 namespace CloudFabric.EAV.Domain.Events.Configuration.Attribute;
 
-public record AttributeConfigurationCreated(Guid Id, string MachineName, List<LocalizedString> Name, EavAttributeType ValueType, List<LocalizedString> Description, bool IsRequired) : Event;
+public record AttributeConfigurationCreated(Guid Id, string MachineName, List<LocalizedString> Name, EavAttributeType ValueType, List<LocalizedString> Description, bool IsRequired, Guid? TenantId) : Event;

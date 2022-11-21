@@ -28,4 +28,6 @@ public abstract class AttributeConfigurationCreateUpdateRequest : EntityAttribut
     public abstract EavAttributeType ValueType { get; }
     
     public bool IsRequired { get; set; }
+    
+    public Guid? TenantId { get; set; }
 }

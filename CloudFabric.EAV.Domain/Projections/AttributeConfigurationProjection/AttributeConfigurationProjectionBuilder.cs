@@ -29,7 +29,8 @@ public class AttributeConfigurationProjectionBuilder : ProjectionBuilder<Attribu
                 IsRequired = @event.IsRequired,
                 Name = @event.Name,
                 MachineName = @event.MachineName,
-                PartitionKey = @event.PartitionKey
+                PartitionKey = @event.PartitionKey,
+                TenantId = @event.TenantId
             },
             @event.PartitionKey
         );

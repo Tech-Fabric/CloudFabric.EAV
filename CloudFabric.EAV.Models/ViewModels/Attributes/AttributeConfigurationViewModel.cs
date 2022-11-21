@@ -12,6 +12,7 @@ namespace CloudFabric.EAV.Models.ViewModels.Attributes;
 public abstract class AttributeConfigurationViewModel
 {
     public Guid Id { get; set; }
+    
     public bool IsRequired { get; set; }
 
     public List<LocalizedStringViewModel> Name { get; set; }
@@ -21,4 +22,6 @@ public abstract class AttributeConfigurationViewModel
     public string MachineName { get; set; }
 
     public EavAttributeType ValueType { get; set; }
+    
+    public Guid? TenantId { get; set; }
 }
