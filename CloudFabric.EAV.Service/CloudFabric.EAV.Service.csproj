@@ -12,8 +12,8 @@
 
   <ItemGroup>
     <PackageReference Include="AutoMapper" Version="11.0.1" />
-    <PackageReference Include="CloudFabric.EventSourcing.Domain" Version="0.0.10" />
-    <PackageReference Include="CloudFabric.Projections.Attributes" Version="0.0.10" />
+    <PackageReference Include="CloudFabric.EventSourcing.Domain" Version="0.0.11" />
+    <PackageReference Include="CloudFabric.Projections.Attributes" Version="0.0.11" />
   </ItemGroup>
 
   <ItemGroup>

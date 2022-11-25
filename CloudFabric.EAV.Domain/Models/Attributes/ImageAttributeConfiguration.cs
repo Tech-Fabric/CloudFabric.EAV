@@ -34,8 +34,9 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
             ImageAttributeValue defaultValue,
             List<ImageThumbnailDefinition> thumbnailsConfiguration = null,
             List<LocalizedString> description = null, 
-            bool isRequired = false
-        ) : base(id, machineName, name, EavAttributeType.Image, description, isRequired) {
+            bool isRequired = false,
+            Guid? tenantId = null
+        ) : base(id, machineName, name, EavAttributeType.Image, description, isRequired, tenantId) {
             Apply(new ImageAttributeConfigurationUpdated(defaultValue, thumbnailsConfiguration));
         }
         

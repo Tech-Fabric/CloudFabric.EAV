@@ -21,8 +21,9 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
             List<LocalizedString> name,
             LocalizedString defaultValue,
             List<LocalizedString> description = null,
-            bool isRequired = false
-        ) : base(id, machineName, name, EavAttributeType.LocalizedText, description, isRequired)
+            bool isRequired = false,
+            Guid? tenantId = null
+        ) : base(id, machineName, name, EavAttributeType.LocalizedText, description, isRequired, tenantId)
         {
             Update(defaultValue);
         }

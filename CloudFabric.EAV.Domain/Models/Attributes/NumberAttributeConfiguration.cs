@@ -54,8 +54,9 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
             List<LocalizedString> description = null, 
             bool isRequired = false,
             float? minimumValue = null,
-            float? maximumValue = null
-        ) : base(id, machineName, name, EavAttributeType.Number, description, isRequired)
+            float? maximumValue = null,
+            Guid? tenantId = null
+        ) : base(id, machineName, name, EavAttributeType.Number, description, isRequired, tenantId)
         {
             Apply(new NumberAttributeConfigurationUpdated(defaultValue, minimumValue, maximumValue));
         }
