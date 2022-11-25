@@ -10,6 +10,7 @@ public static class EntityConfigurationFactory
 {
     public static EntityConfigurationCreateRequest CreateBoardGameEntityConfigurationCreateRequest()
     {
+        var tenantId = Guid.NewGuid();
         return new EntityConfigurationCreateRequest()
         {
             Name = new List<LocalizedStringCreateRequest>()
@@ -26,7 +27,7 @@ public static class EntityConfigurationFactory
                 }
             },
             MachineName = "BoardGame",
-            TenantId = Guid.NewGuid(),
+            TenantId = tenantId,
             Attributes = new List<EntityAttributeConfigurationCreateUpdateRequest>()
             {
                 new LocalizedTextAttributeConfigurationCreateUpdateRequest()
@@ -45,6 +46,7 @@ public static class EntityConfigurationFactory
                             String = "Название"
                         }
                     },
+                    TenantId = tenantId
                 },
                 new LocalizedTextAttributeConfigurationCreateUpdateRequest()
                 {
@@ -62,6 +64,7 @@ public static class EntityConfigurationFactory
                             String = "Описание"
                         }
                     },
+                    TenantId = tenantId
                 },
                 new ArrayAttributeConfigurationCreateUpdateRequest()
                 {
@@ -90,7 +93,8 @@ public static class EntityConfigurationFactory
                                 MaxWidth = 400
                             }
                         }
-                    }
+                    },
+                    TenantId = tenantId
                 },
                 new NumberAttributeConfigurationCreateUpdateRequest()
                 {
@@ -109,7 +113,8 @@ public static class EntityConfigurationFactory
                         }
                     },
                     MinimumValue = 1,
-                    IsRequired = true
+                    IsRequired = true,
+                    TenantId = tenantId
                 },
                 new NumberAttributeConfigurationCreateUpdateRequest()
                 {
@@ -128,7 +133,8 @@ public static class EntityConfigurationFactory
                         }
                     },
                     MaximumValue = 10,
-                    IsRequired = true
+                    IsRequired = true,
+                    TenantId = tenantId
                 },
                 new NumberAttributeConfigurationCreateUpdateRequest
                 {
@@ -145,7 +151,8 @@ public static class EntityConfigurationFactory
                             CultureInfoId = CultureInfo.GetCultureInfo("RU-ru").LCID,
                             String = "Средняя продолжительность игры"
                         }
-                    }
+                    },
+                    TenantId = tenantId
                 }
             }
         };
