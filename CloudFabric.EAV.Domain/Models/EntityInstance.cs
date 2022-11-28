@@ -8,19 +8,25 @@ namespace CloudFabric.EAV.Domain.Models;
 
 public class EntityInstance : AggregateBase
 {
-    public override string PartitionKey => Id.ToString();
-
-    public Guid EntityConfigurationId { get; protected set; }
-
-    public ReadOnlyCollection<AttributeInstance> Attributes { get; protected set; }
 
     public EntityInstance(IEnumerable<IEvent> events) : base(events)
     {
     }
 
-    public EntityInstance(Guid id, Guid entityConfigurationId, List<AttributeInstance> attributes)
+    public EntityInstance(Guid id, Guid entityConfigurationId, string categoryPath, List<AttributeInstance> attributes)
     {
-        Apply(new EntityInstanceCreated(id, entityConfigurationId, attributes));
+        Apply(new EntityInstanceCreated(id, entityConfigurationId, categoryPath, attributes));
+    }
+    public override string PartitionKey => Id.ToString();
+
+    public Guid EntityConfigurationId { get; protected set; }
+
+    public string CategoryPath { get; protected set; }
+    public ReadOnlyCollection<AttributeInstance> Attributes { get; protected set; }
+
+    public IEnumerable<string> GetListOfCategoriesName()
+    {
+        return CategoryPath.Split(Path.DirectorySeparatorChar);
     }
 
     public void AddAttributeInstance(AttributeInstance attribute)
@@ -38,6 +44,11 @@ public class EntityInstance : AggregateBase
         Apply(new AttributeInstanceRemoved(Id, attributeMachineName));
     }
 
+    public void CategoryPathChanged(string categoryPath)
+    {
+        Apply(new EntityInstanceCategoryPathChanged(Id, categoryPath));
+    }
+
     #region Event Handlers
 
     public void On(EntityInstanceCreated @event)
@@ -45,6 +56,7 @@ public class EntityInstance : AggregateBase
         Id = @event.Id;
         EntityConfigurationId = @event.EntityConfigurationId;
         Attributes = new List<AttributeInstance>(@event.Attributes).AsReadOnly();
+        CategoryPath = @event.CategoryPath + "/" + @event.Id;
     }
 
     public void On(AttributeInstanceAdded @event)
@@ -57,11 +69,11 @@ public class EntityInstance : AggregateBase
     public void On(AttributeInstanceUpdated @event)
     {
         var attribute = Attributes?.FirstOrDefault(x => x.ConfigurationAttributeMachineName == @event.AttributeInstance.ConfigurationAttributeMachineName);
-        
+
         if (attribute != null)
         {
             var newCollection = new List<AttributeInstance>(Attributes);
-            
+
             newCollection.Remove(attribute);
             newCollection.Add(@event.AttributeInstance);
 
@@ -76,11 +88,16 @@ public class EntityInstance : AggregateBase
         if (attribute != null)
         {
             var newCollection = new List<AttributeInstance>(Attributes);
-            
+
             newCollection.Remove(attribute);
 
             Attributes = newCollection.AsReadOnly();
         }
+    }
+
+    public void On(EntityInstanceCategoryPathChanged @event)
+    {
+        CategoryPath = @event.NewCategoryPath;
     }
 
     #endregion

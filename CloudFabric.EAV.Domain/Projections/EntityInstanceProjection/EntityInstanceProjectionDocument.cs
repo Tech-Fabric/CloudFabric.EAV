@@ -12,4 +12,9 @@ public class EntityInstanceProjectionDocument : ProjectionDocument
 
     [ProjectionDocumentProperty(IsNestedArray = true)]
     public List<AttributeInstance> Attributes { get; set; }
+
+    [ProjectionDocumentProperty(IsNestedArray = true)]
+    public Dictionary<string, List<AttributeInstance>?> ParentalAttributes { get; set; }
+
+    public string CategoryPath { get; set; }
 }
