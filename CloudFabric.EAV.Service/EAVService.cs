@@ -96,6 +96,12 @@ public class EAVService : IEAVService
         return _mapper.Map<AttributeConfigurationViewModel>(attribute);
     }
 
+    public async Task<AttributeConfigurationViewModel> GetAttribute(Guid id, string partitionKey, CancellationToken cancellationToken = default)
+    {
+        var attribute = await _attributeConfigurationRepository.LoadAsyncOrThrowNotFound(id, partitionKey, CancellationToken.None);
+        return _mapper.Map<AttributeConfigurationViewModel>(attribute);
+    }
+
     public async Task<EntityConfigurationViewModel> CreateEntityConfiguration(
         EntityConfigurationCreateRequest entityConfigurationCreateRequest, CancellationToken cancellationToken
     )
@@ -159,6 +165,7 @@ public class EAVService : IEAVService
             entityConfiguration.UpdateName(name.String, name.CultureInfoId);
         }
 
+        List<Guid> addedAttributes = new();
         foreach (var attributeUpdate in entityUpdateRequest.Attributes)
         {
             if (attributeUpdate is EntityAttributeConfigurationCreateUpdateReferenceRequest attributeReferenceUpdate)
@@ -179,13 +186,15 @@ public class EAVService : IEAVService
                 );
 
                 entityConfiguration.AddAttribute(attributeCreated.Id);
+                addedAttributes.Add(attributeCreated.Id);
             }
         }
 
         var attributesToRemove = entityConfiguration.Attributes.ExceptBy(
             entityUpdateRequest.Attributes
                 .Where(a => a is EntityAttributeConfigurationCreateUpdateReferenceRequest)
-                .Select(a => ((a as EntityAttributeConfigurationCreateUpdateReferenceRequest)!).AttributeConfigurationId),
+                .Select(a => ((a as EntityAttributeConfigurationCreateUpdateReferenceRequest)!).AttributeConfigurationId)
+                .Concat(addedAttributes),
             x => x.AttributeConfigurationId
         );
 

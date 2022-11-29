@@ -468,6 +468,47 @@ public class Tests
     }
 
     [TestMethod]
+    public async Task TestGetNumberAttribute_Success()
+    {
+        var cultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID;
+        var numberAttribute = new NumberAttributeConfigurationCreateUpdateRequest()
+        {
+            MachineName = "testAttr",
+            Description =
+                new List<LocalizedStringCreateRequest>
+                {
+                    new LocalizedStringCreateRequest { CultureInfoId = cultureInfoId, String = "testAttrDesc" }
+                },
+            Name = new List<LocalizedStringCreateRequest>
+            {
+                new LocalizedStringCreateRequest { CultureInfoId = cultureInfoId, String = "testAttrName" }
+            },
+            DefaultValue = 15,
+            IsRequired = true,
+            MaximumValue = 100,
+            MinimumValue = -100
+        };
+
+        var configCreateRequest = new EntityConfigurationCreateRequest()
+        {
+            MachineName = "test",
+            Name = new List<LocalizedStringCreateRequest>
+            {
+                new LocalizedStringCreateRequest { CultureInfoId = cultureInfoId, String = "test" }
+            },
+            Attributes = new List<EntityAttributeConfigurationCreateUpdateRequest>() { numberAttribute }
+        };
+
+        var created = await _eavService.CreateEntityConfiguration(configCreateRequest, CancellationToken.None);
+        created.Attributes.Count.Should().Be(1);
+
+        var createdAttribute = await _eavService.GetAttribute(created.Attributes[0].AttributeConfigurationId,
+            created.Attributes[0].AttributeConfigurationId.ToString());
+
+        createdAttribute.MachineName.Should().Be("testAttr");
+    }
+
+    [TestMethod]
     public async Task UpdateInstance_UpdateAttribute_Success()
     {
         const string changedAttributeName = "players_max";
