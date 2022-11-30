@@ -23,9 +23,8 @@ public class EntityInstanceProjectionBuilder : ProjectionBuilder,
             async document =>
             {
                 var attributes = document[nameof(EntityInstanceProjectionDocument.Attributes)] as List<AttributeInstance>;
-                var currentCategoryPath = document[nameof(EntityInstanceProjectionDocument.CategoryPath)] as string;
+                var currentCategoryPath = document[nameof(EntityInstanceProjectionDocument.CategoryPath)] as string ?? string.Empty;
                 attributes ??= new();
-
                 attributes.Add(@event.AttributeInstance);
                 await UpdateChildren(@event.EntityInstanceId, currentCategoryPath, @event.PartitionKey, attributes);
             }
@@ -44,7 +43,7 @@ public class EntityInstanceProjectionBuilder : ProjectionBuilder,
                 if (attributeToRemove != null)
                 {
                     attributes.Remove(attributeToRemove);
-                    var currentCategoryPath = document[nameof(EntityInstanceProjectionDocument.CategoryPath)] as string;
+                    var currentCategoryPath = document[nameof(EntityInstanceProjectionDocument.CategoryPath)] as string ?? string.Empty;
                     await UpdateChildren(@event.EntityInstanceId, currentCategoryPath, @event.PartitionKey, attributes);
                 }
             }
@@ -76,11 +75,11 @@ public class EntityInstanceProjectionBuilder : ProjectionBuilder,
         var currentCategoryPath = item?[nameof(EntityInstanceProjectionDocument.CategoryPath)] as string;
         await UpdateDocument(@event.Id,
             @event.PartitionKey,
-            document =>
+            async document =>
             {
                 document[nameof(EntityInstanceProjectionDocument.CategoryPath)] = @event.NewCategoryPath;
+                await UpdateChildren(@event.Id, currentCategoryPath, @event.PartitionKey, newCategoryPath: @event.NewCategoryPath);
             });
-        await UpdateChildren(@event.Id, currentCategoryPath, @event.PartitionKey, newCategoryPath: @event.NewCategoryPath);
     }
 
     public async Task On(EntityInstanceCreated @event)
@@ -125,7 +124,7 @@ public class EntityInstanceProjectionBuilder : ProjectionBuilder,
 
         List<string> idsToRemove = null;
         List<string>? idsToAdd = null;
-        if (newCategoryPath != currentCategoryPath)
+        if (!string.IsNullOrEmpty(newCategoryPath) && newCategoryPath != currentCategoryPath)
         {
             var currentCategoryIds = currentCategoryPath.Split(Path.DirectorySeparatorChar).ToList();
             var newCategoryIds = newCategoryPath.Split(Path.DirectorySeparatorChar).ToList();
@@ -143,20 +142,20 @@ public class EntityInstanceProjectionBuilder : ProjectionBuilder,
                     Value = currentCategoryPath
                 }
             }
-        }) as List<EntityInstanceProjectionDocument>;
+        }) as List<EntityInstanceProjectionDocument>; // REFACTOR
 
         if (children != null && children.Any())
         {
             foreach (EntityInstanceProjectionDocument child in children)
             {
 
-                Dictionary<string, List<AttributeInstance>?> parentalAttributes = child.ParentalAttributes;
+                List<KeyValuePair<string, List<AttributeInstance>>> parentalAttributes = child.ParentalAttributes ?? new List<KeyValuePair<string, List<AttributeInstance>>>();
                 if (idsToAdd != null)
                 {
                     foreach (var id in idsToAdd)
                     {
                         Dictionary<string, object?>? parent = await Repository.Single(new Guid(id), partitionKey, CancellationToken.None);
-                        parentalAttributes[id] = parent?[nameof(EntityInstanceProjectionDocument.Attributes)] as List<AttributeInstance>;
+                        parentalAttributes.Add(new KeyValuePair<string, List<AttributeInstance>>(id, parent?[nameof(EntityInstanceProjectionDocument.Attributes)] as List<AttributeInstance>));
                     }
                 }
 
@@ -164,16 +163,17 @@ public class EntityInstanceProjectionBuilder : ProjectionBuilder,
                 {
                     foreach (var id in idsToRemove)
                     {
-                        parentalAttributes.Remove(id);
+                        parentalAttributes.Remove(parentalAttributes.FirstOrDefault(x => x.Key == id));
                     }
                 }
                 if (newAttributes != null)
                 {
-                    parentalAttributes[instanceId.ToString()] = newAttributes;
+                    parentalAttributes.Remove(parentalAttributes.FirstOrDefault(x => x.Key == instanceId.ToString()));
+                    parentalAttributes.Add(new KeyValuePair<string, List<AttributeInstance>>(instanceId.ToString(), newAttributes));
                 }
 
-                await UpdateDocument((Guid)child.Id,
-                    child.PartitionKey,
+                await UpdateDocument((Guid)child.Id!,
+                    child.PartitionKey!,
                     document =>
                     {
                         document[nameof(EntityInstanceProjectionDocument.CategoryPath)] = string.IsNullOrEmpty(newCategoryPath) ? currentCategoryPath : newCategoryPath;

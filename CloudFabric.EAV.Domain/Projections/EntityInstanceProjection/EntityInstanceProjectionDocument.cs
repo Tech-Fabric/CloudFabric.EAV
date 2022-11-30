@@ -14,7 +14,8 @@ public class EntityInstanceProjectionDocument : ProjectionDocument
     public List<AttributeInstance> Attributes { get; set; }
 
     [ProjectionDocumentProperty(IsNestedArray = true)]
-    public Dictionary<string, List<AttributeInstance>?> ParentalAttributes { get; set; }
+    // public Dictionary<string, List<AttributeInstance>?> ParentalAttributes { get; set; } // REFACTOR
+    public List<KeyValuePair<string, List<AttributeInstance>>>? ParentalAttributes { get; set; }
 
     public string CategoryPath { get; set; }
 }
