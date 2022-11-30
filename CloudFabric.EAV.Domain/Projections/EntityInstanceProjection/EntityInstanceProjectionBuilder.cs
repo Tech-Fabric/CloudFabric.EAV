@@ -133,9 +133,9 @@ public class EntityInstanceProjectionBuilder : ProjectionBuilder<EntityInstanceP
                     Value = currentCategoryPath
                 }
             }
-        }) as List<EntityInstanceProjectionDocument>; // REFACTOR
+        }); // REFACTOR
 
-        if (children != null && children.Any())
+        if (children.Any())
         {
             foreach (EntityInstanceProjectionDocument child in children)
             {
