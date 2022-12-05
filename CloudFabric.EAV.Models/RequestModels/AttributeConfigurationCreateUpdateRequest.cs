@@ -23,7 +23,7 @@ public abstract class AttributeConfigurationCreateUpdateRequest : EntityAttribut
 
     public List<LocalizedStringCreateRequest> Description { get; set; }
 
-    public string MachineName { get; set; }
+    public string? MachineName { get; set; }
 
     public abstract EavAttributeType ValueType { get; }
     
