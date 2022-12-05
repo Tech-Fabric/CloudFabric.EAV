@@ -35,11 +35,6 @@ namespace CloudFabric.EAV.Domain.Models
                 return new List<string>() { "Attribute is Required" };
             }
 
-            if (string.IsNullOrEmpty(MachineName))
-            {
-                return new List<string>() { "Machine name field is Required" };
-            }
-
             return new List<string>();
         }
 
