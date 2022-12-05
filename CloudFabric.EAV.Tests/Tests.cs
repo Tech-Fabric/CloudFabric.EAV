@@ -162,6 +162,7 @@ public class Tests
             .Be("Configuration not found");
     }
 
+    [TestMethod]
     public async Task CreateInstance_MissingRequiredAttribute()
     {
         var configurationCreateRequest = EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
@@ -506,6 +507,61 @@ public class Tests
             created.Attributes[0].AttributeConfigurationId.ToString());
 
         createdAttribute.MachineName.Should().Be("testAttr");
+    }
+
+    [TestMethod]
+    public async Task AddAttributeToEntityConfiguration()
+    {
+        var cultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID;
+        
+        var configCreateRequest = new EntityConfigurationCreateRequest()
+        {
+            MachineName = "test",
+            Name = new List<LocalizedStringCreateRequest>
+            {
+                new() { CultureInfoId = cultureInfoId, String = "test" }
+            },
+            Attributes = new List<EntityAttributeConfigurationCreateUpdateRequest>() {}
+        };
+
+        var createdEntityConfiguration = await _eavService.CreateEntityConfiguration(configCreateRequest, CancellationToken.None);
+        
+        var numberAttribute = new NumberAttributeConfigurationCreateUpdateRequest()
+        {
+            MachineName = "testAttr",
+            Description =
+                new List<LocalizedStringCreateRequest>
+                {
+                    new() { CultureInfoId = cultureInfoId, String = "testAttrDesc" }
+                },
+            Name = new List<LocalizedStringCreateRequest>
+            {
+                new() { CultureInfoId = cultureInfoId, String = "testAttrName" }
+            },
+            DefaultValue = 15,
+            IsRequired = true,
+            MaximumValue = 100,
+            MinimumValue = -100
+        };
+
+        var createdAttribute = await _eavService.CreateAttribute(numberAttribute, CancellationToken.None);
+        createdAttribute.Should().NotBeNull();
+
+        await _eavService.AddAttributeToEntityConfiguration(
+            createdAttribute.Id, 
+            createdEntityConfiguration.Id,
+            CancellationToken.None
+        );
+        
+        // check that attribute is added
+        var updatedEntityConfiguration = await _eavService.GetEntityConfiguration(
+            createdEntityConfiguration.Id,
+            createdEntityConfiguration.Id.ToString()
+        );
+
+        updatedEntityConfiguration.Attributes.Any(x => x.AttributeConfigurationId == createdAttribute.Id)
+            .Should()
+            .BeTrue();
     }
 
     [TestMethod]

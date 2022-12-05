@@ -212,6 +212,28 @@ public class EAVService : IEAVService
         return _mapper.Map<EntityConfigurationViewModel>(entityConfiguration);
     }
 
+    public async Task AddAttributeToEntityConfiguration(
+        Guid attributeId, 
+        Guid entityConfigurationId,
+        CancellationToken cancellationToken
+    )
+    {
+        var attributeConfiguration = await _attributeConfigurationRepository.LoadAsyncOrThrowNotFound(
+            attributeId,
+            attributeId.ToString(),
+            cancellationToken
+        );
+        
+        var entityConfiguration = await _entityConfigurationRepository.LoadAsyncOrThrowNotFound(
+            entityConfigurationId,
+            entityConfigurationId.ToString(),
+            cancellationToken
+        );
+
+        entityConfiguration.AddAttribute(attributeId);
+        await _entityConfigurationRepository.SaveAsync(_userInfo, entityConfiguration, cancellationToken);
+    }
+    
     #endregion
 
     // public async Task<List<EntityInstanceViewModel>> ListEntityInstances(string entityConfigurationMachineName, int take, int skip = 0)
