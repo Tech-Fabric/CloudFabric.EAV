@@ -1,3 +1,6 @@
+using System.Globalization;
+using System.Text.RegularExpressions;
+
 using AutoMapper;
 
 using CloudFabric.EAV.Domain.Models;
@@ -89,6 +92,21 @@ public class EAVService : IEAVService
         CancellationToken cancellationToken = default
     )
     {
+        // get the machineName
+        if (string.IsNullOrWhiteSpace(attributeConfigurationCreateUpdateRequest.MachineName))
+        {
+            string machineName =
+                attributeConfigurationCreateUpdateRequest.Name
+                    .FirstOrDefault(x => x.CultureInfoId == new CultureInfo("EN-us").LCID)
+                    ?.String
+                ?? attributeConfigurationCreateUpdateRequest.Name.First().String;
+
+            // remove spec symbols
+            machineName = machineName.Replace(" ", "_");
+            Regex specSymbolsRegex = new Regex("[^\\d\\w_]*");
+            attributeConfigurationCreateUpdateRequest.MachineName = specSymbolsRegex.Replace(machineName, "").ToLower();
+        }
+
         var attribute = _mapper.Map<AttributeConfiguration>(attributeConfigurationCreateUpdateRequest);
 
         await _attributeConfigurationRepository.SaveAsync(_userInfo, attribute, cancellationToken);

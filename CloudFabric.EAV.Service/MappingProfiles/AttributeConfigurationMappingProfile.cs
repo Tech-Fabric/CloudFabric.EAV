@@ -73,6 +73,9 @@ public class AttributeConfigurationProfile : Profile
                     Guid.NewGuid(),
                     src.MachineName,
                     ctx.Mapper.Map<List<LocalizedString>>(src.Name),
+                    src.DefaultValue,
+                    src.MaxLength,
+                    src.IsSearchable,
                     ctx.Mapper.Map<List<LocalizedString>>(src.Description),
                     src.IsRequired,
                     src.TenantId
