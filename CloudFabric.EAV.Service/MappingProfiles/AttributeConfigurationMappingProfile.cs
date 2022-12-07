@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+
 using CloudFabric.EAV.Domain.Models;
 using CloudFabric.EAV.Domain.Models.Attributes;
 using CloudFabric.EAV.Domain.Models.Base;
@@ -17,14 +18,14 @@ public class AttributeConfigurationProfile : Profile
         CreateMap<AttributeConfigurationCreateUpdateRequest, AttributeConfiguration>().IncludeAllDerived();
 
         CreateMap<EntityAttributeConfigurationCreateUpdateReferenceRequest, EntityConfigurationAttributeReference>();
-        
+
         CreateMap<ArrayAttributeConfigurationCreateUpdateRequest, ArrayAttributeConfiguration>()
             .ConvertUsing((o, dst, ctx) => new ArrayAttributeConfiguration(
                 Guid.NewGuid(),
                 o.MachineName,
                 ctx.Mapper.Map<List<LocalizedString>>(o.Name),
                 o.ItemsType,
-                Guid.Empty,//o.ItemsAttributeConfiguration,
+                Guid.Empty, //o.ItemsAttributeConfiguration,
                 ctx.Mapper.Map<List<LocalizedString>>(o.Description),
                 o.IsRequired,
                 o.TenantId
@@ -45,9 +46,9 @@ public class AttributeConfigurationProfile : Profile
         CreateMap<ImageThumbnailDefinitionCreateUpdateRequest, ImageThumbnailDefinition>();
         CreateMap<LocalizedTextAttributeConfigurationCreateUpdateRequest, LocalizedTextAttributeConfiguration>()
             .ConvertUsing((o, dst, ctx) => new LocalizedTextAttributeConfiguration(
-                Guid.NewGuid(), 
-                o.MachineName, 
-                ctx.Mapper.Map<List<LocalizedString>>(o.Name), 
+                Guid.NewGuid(),
+                o.MachineName,
+                ctx.Mapper.Map<List<LocalizedString>>(o.Name),
                 ctx.Mapper.Map<LocalizedString>(o.DefaultValue),
                 ctx.Mapper.Map<List<LocalizedString>>(o.Description),
                 o.IsRequired,
@@ -56,16 +57,16 @@ public class AttributeConfigurationProfile : Profile
         CreateMap<EntityReferenceAttributeConfigurationCreateUpdateRequest, EntityReferenceAttributeConfiguration>();
         CreateMap<NumberAttributeConfigurationCreateUpdateRequest, NumberAttributeConfiguration>()
             .ConvertUsing((o, dst, ctx) => new NumberAttributeConfiguration(
-                Guid.NewGuid(), 
-                o.MachineName, 
-                ctx.Mapper.Map<List<LocalizedString>>(o.Name), 
+                Guid.NewGuid(),
+                o.MachineName,
+                ctx.Mapper.Map<List<LocalizedString>>(o.Name),
                 o.DefaultValue,
                 ctx.Mapper.Map<List<LocalizedString>>(o.Description),
                 o.IsRequired,
                 o.MinimumValue,
                 o.MaximumValue,
                 o.TenantId
-             ));
+            ));
         CreateMap<TextAttributeConfigurationCreateUpdateRequest, TextAttributeConfiguration>()
             .ConvertUsing((src, dst, ctx) =>
             {
@@ -82,9 +83,20 @@ public class AttributeConfigurationProfile : Profile
                 );
                 return r;
             });
+        CreateMap<DateRangeAttributeConfigurationUpdateRequest, DateRangeAttributeConfiguration>()
+            .ConvertUsing((src, _, ctx) => new DateRangeAttributeConfiguration(
+                Guid.NewGuid(),
+                src.MachineName,
+                ctx.Mapper.Map<List<LocalizedString>>(src.Name),
+                src.ValueType,
+                src.IsSingleDate,
+                ctx.Mapper.Map<List<LocalizedString>>(src.Description),
+                src.IsRequired,
+                src.TenantId
+            ));
 
         CreateMap<EntityConfigurationAttributeReference, EntityConfigurationAttributeReferenceViewModel>();
-        
+
         CreateMap<AttributeConfiguration, AttributeConfigurationViewModel>().IncludeAllDerived();
 
         CreateMap<ArrayAttributeConfiguration, ArrayAttributeConfigurationViewModel>();
@@ -96,12 +108,12 @@ public class AttributeConfigurationProfile : Profile
         CreateMap<EntityReferenceAttributeConfiguration, EntityReferenceAttributeConfigurationViewModel>();
         CreateMap<NumberAttributeConfiguration, NumberAttributeConfigurationViewModel>();
         CreateMap<TextAttributeConfiguration, TextAttributeConfigurationViewModel>();
-        
-        
-        
+        CreateMap<DateRangeAttributeConfiguration, DateRangeAttributeConfigurationViewModel>();
+
         #region Projections
+
         CreateMap<AttributeConfigurationProjectionDocument, AttributeConfigurationListItemViewModel>();
-        
+
         #endregion
     }
 }

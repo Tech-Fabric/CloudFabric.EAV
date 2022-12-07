@@ -1,5 +1,7 @@
 using System.Globalization;
 
+using Castle.Components.DictionaryAdapter;
+
 using CloudFabric.EAV.Domain.Enums;
 using CloudFabric.EAV.Models.RequestModels;
 using CloudFabric.EAV.Models.RequestModels.Attributes;
@@ -153,6 +155,21 @@ public static class EntityConfigurationFactory
                         }
                     },
                     TenantId = tenantId
+                },
+                new DateRangeAttributeConfigurationUpdateRequest
+                {
+                    MachineName = "release_date",
+                    Name = new EditableList<LocalizedStringCreateRequest>
+                    {
+                        new LocalizedStringCreateRequest
+                        {
+                            CultureInfoId =
+                                CultureInfo.GetCultureInfo("EN-us").LCID,
+                            String = "Release date"
+                        }
+                    },
+                    TenantId = tenantId,
+                    IsSingleDate = true
                 }
             }
         };

@@ -1,6 +1,5 @@
-using System;
-using System.Collections.Generic;
 using System.Globalization;
+
 using CloudFabric.EAV.Models.RequestModels;
 using CloudFabric.EAV.Models.RequestModels.Attributes;
 
@@ -58,6 +57,11 @@ public class EntityInstanceFactory
                 {
                     ConfigurationAttributeMachineName = "players_max",
                     Value = 4
+                },
+                new DateRangeAttributeInstanceCreateUpdateRequest
+                {
+                    ConfigurationAttributeMachineName = "release_date",
+                    Value = DateTime.Today
                 },
                 new ArrayAttributeInstanceCreateUpdateRequest()
                 {
