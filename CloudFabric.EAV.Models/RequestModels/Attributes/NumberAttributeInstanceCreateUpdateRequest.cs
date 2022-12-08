@@ -2,6 +2,6 @@
 {
     public class NumberAttributeInstanceCreateUpdateRequest : AttributeInstanceCreateUpdateRequest
     {
-        public float Value { get; set; }
+        public decimal Value { get; set; }
     }
 }
