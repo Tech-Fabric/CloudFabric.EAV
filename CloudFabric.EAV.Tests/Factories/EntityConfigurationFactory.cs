@@ -1,6 +1,7 @@
 using System.Globalization;
 
 using CloudFabric.EAV.Domain.Enums;
+using CloudFabric.EAV.Domain.Models.Attributes;
 using CloudFabric.EAV.Models.RequestModels;
 using CloudFabric.EAV.Models.RequestModels.Attributes;
 
@@ -151,6 +152,40 @@ public static class EntityConfigurationFactory
                             CultureInfoId = CultureInfo.GetCultureInfo("RU-ru").LCID,
                             String = "Средняя продолжительность игры"
                         }
+                    },
+                    TenantId = tenantId
+                },
+                new NumberAttributeConfigurationCreateUpdateRequest
+                {
+                    MachineName = "price",
+                    Name = new List<LocalizedStringCreateRequest>
+                    {
+                        new LocalizedStringCreateRequest
+                        {
+                            CultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID,
+                            String = "Price"
+                        }
+                    },
+                    MinimumValue = 1,
+                    IsRequired = true,
+                    TenantId = tenantId
+                },
+                new ValueFromListConfigurationCreateUpdateRequest
+                {
+                    MachineName = "version",
+                    Name = new List<LocalizedStringCreateRequest>
+                    {
+                        new LocalizedStringCreateRequest
+                        {
+                            CultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID,
+                            String = "Version"
+                        }
+                    },
+                    AttributeMachineNameToAffect = "price",
+                    ValuesList = new List<ValueFromListOptionConfiguration>
+                    {
+                        new ValueFromListOptionConfiguration("EU", "eu", 100),
+                        new ValueFromListOptionConfiguration("Extra", "extra", 500)
                     },
                     TenantId = tenantId
                 }
