@@ -15,14 +15,14 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
             string machineName,
             List<LocalizedString> name,
             EavAttributeType valueType,
-            bool isSingleDate,
+            DateRangeAttributeType dateRangeAttributeType,
             List<LocalizedString> description = null,
             bool isRequired = false,
             Guid? TenantId = null) : base(id, machineName, name, valueType, description, isRequired, TenantId)
         {
-            Apply(new DateRangeAttributeConfigurationUpdated(isSingleDate));
+            Apply(new DateRangeAttributeConfigurationUpdated(dateRangeAttributeType));
         }
-        public bool IsSingleDate { get; set; }
+        public DateRangeAttributeType DateRangeAttributeType { get; set; }
         public override EavAttributeType ValueType => EavAttributeType.DateRange;
 
         public override List<string> Validate(AttributeInstance? instance)
@@ -48,13 +48,13 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
         }
         public override int GetHashCode()
         {
-            return HashCode.Combine(base.GetHashCode(), IsSingleDate);
+            return HashCode.Combine(base.GetHashCode(), DateRangeAttributeType);
         }
 
         private bool Equals(DateRangeAttributeConfiguration other)
         {
             return base.Equals(other)
-                   && IsSingleDate.Equals(other.IsSingleDate)
+                   && DateRangeAttributeType.Equals(other.DateRangeAttributeType)
                    && ValueType == other.ValueType;
         }
 
@@ -62,7 +62,7 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
 
         public void On(DateRangeAttributeConfigurationUpdated @event)
         {
-            IsSingleDate = @event.IsSingleDate;
+            DateRangeAttributeType = @event.DateRangeAttributeType;
         }
 
         #endregion

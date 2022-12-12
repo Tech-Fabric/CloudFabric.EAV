@@ -169,7 +169,7 @@ public static class EntityConfigurationFactory
                         }
                     },
                     TenantId = tenantId,
-                    IsSingleDate = true
+                    DateRangeAttributeType = DateRangeAttributeType.SingleDate
                 }
             }
         };

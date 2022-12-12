@@ -89,7 +89,7 @@ public class AttributeConfigurationProfile : Profile
                 src.MachineName,
                 ctx.Mapper.Map<List<LocalizedString>>(src.Name),
                 src.ValueType,
-                src.IsSingleDate,
+                src.DateRangeAttributeType,
                 ctx.Mapper.Map<List<LocalizedString>>(src.Description),
                 src.IsRequired,
                 src.TenantId
