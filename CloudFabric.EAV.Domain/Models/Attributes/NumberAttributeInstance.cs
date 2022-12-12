@@ -5,8 +5,8 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
 {
     public class NumberAttributeInstance : AttributeInstance
     {
-        public float Value { get; set; }
-        public float? MinimumValue { get; set; }
-        public float? MaximumValue { get; set; }
+        public decimal Value { get; set; }
+        public decimal? MinimumValue { get; set; }
+        public decimal? MaximumValue { get; set; }
     }
 }

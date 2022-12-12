@@ -61,6 +61,7 @@ public class AttributeConfigurationProfile : Profile
                 o.MachineName,
                 ctx.Mapper.Map<List<LocalizedString>>(o.Name),
                 o.DefaultValue,
+                o.NumberType,
                 ctx.Mapper.Map<List<LocalizedString>>(o.Description),
                 o.IsRequired,
                 o.MinimumValue,
