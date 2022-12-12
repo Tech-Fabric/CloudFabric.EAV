@@ -301,7 +301,7 @@ public class EAVService : IEAVService
             cancellationToken
         );
 
-        if (await IsAttributeMachineNameUniqueForEntityConfiguration(
+        if (!await IsAttributeMachineNameUniqueForEntityConfiguration(
                 attributeConfigurationCreateUpdateRequest.MachineName, 
                 entityConfiguration,
                 cancellationToken
