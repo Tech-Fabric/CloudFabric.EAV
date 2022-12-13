@@ -86,7 +86,7 @@ public class EntityInstanceFactory
                                 Alt = "A photo of Azul board game rulebook, page 1"
                             }
                         },
-                        new ValueFromListInstanceCreateUpdateRequest
+                        new ValueFromListAttributeInstanceCreateUpdateRequest
                         {
                             ConfigurationAttributeMachineName = "version",
                             UnavailableOptionsMachineNames = new List<string>

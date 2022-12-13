@@ -3,7 +3,7 @@ using CloudFabric.EAV.Domain.Models.Attributes;
 
 namespace CloudFabric.EAV.Models.RequestModels.Attributes
 {
-    public class ValueFromListConfigurationCreateUpdateRequest : AttributeConfigurationCreateUpdateRequest
+    public class ValueFromListAttributeConfigurationCreateUpdateRequest : AttributeConfigurationCreateUpdateRequest
     {
 
         public override EavAttributeType ValueType => EavAttributeType.ValueFromList;

@@ -83,7 +83,7 @@ public class AttributeConfigurationProfile : Profile
                 );
                 return r;
             });
-        CreateMap<ValueFromListConfigurationCreateUpdateRequest, ValueFromListAttributeConfiguration>()
+        CreateMap<ValueFromListAttributeConfigurationCreateUpdateRequest, ValueFromListAttributeConfiguration>()
             .ConvertUsing((src, _, ctx) =>
             {
                 var r = new ValueFromListAttributeConfiguration(
@@ -113,7 +113,7 @@ public class AttributeConfigurationProfile : Profile
         CreateMap<EntityReferenceAttributeConfiguration, EntityReferenceAttributeConfigurationViewModel>();
         CreateMap<NumberAttributeConfiguration, NumberAttributeConfigurationViewModel>();
         CreateMap<TextAttributeConfiguration, TextAttributeConfigurationViewModel>();
-        CreateMap(ValueFromListAttributeConfiguration, ValueFromListAttributeConfigurationViewModel > ();
+        CreateMap<ValueFromListAttributeConfiguration, ValueFromListAttributeConfigurationViewModel>();
 
         #region Projections
 

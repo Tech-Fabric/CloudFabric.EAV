@@ -170,7 +170,7 @@ public static class EntityConfigurationFactory
                     IsRequired = true,
                     TenantId = tenantId
                 },
-                new ValueFromListConfigurationCreateUpdateRequest
+                new ValueFromListAttributeConfigurationCreateUpdateRequest
                 {
                     MachineName = "version",
                     Name = new List<LocalizedStringCreateRequest>

@@ -1,6 +1,6 @@
 namespace CloudFabric.EAV.Models.RequestModels.Attributes
 {
-    public class ValueFromListInstanceCreateUpdateRequest : AttributeInstanceCreateUpdateRequest
+    public class ValueFromListAttributeInstanceCreateUpdateRequest : AttributeInstanceCreateUpdateRequest
     {
         public List<string> UnavailableOptionsMachineNames { get; set; }
     }
