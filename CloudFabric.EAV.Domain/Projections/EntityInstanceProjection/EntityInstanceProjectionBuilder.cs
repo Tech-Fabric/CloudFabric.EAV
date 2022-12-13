@@ -96,7 +96,7 @@ public class EntityInstanceProjectionBuilder : ProjectionBuilder<EntityInstanceP
         //var parents = new List<EntityInstanceProjectionDocument>();
 
         var lastParentId = parentIds.LastOrDefault();
-        if (lastParentId != null)
+        if (!string.IsNullOrEmpty(lastParentId))
         {
             EntityInstanceProjectionDocument? lastParent = await Repository.Single(new Guid(lastParentId), @event.PartitionKey, CancellationToken.None);
             if (lastParent != null)

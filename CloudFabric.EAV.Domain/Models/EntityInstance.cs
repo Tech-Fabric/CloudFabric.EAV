@@ -56,7 +56,7 @@ public class EntityInstance : AggregateBase
         Id = @event.Id;
         EntityConfigurationId = @event.EntityConfigurationId;
         Attributes = new List<AttributeInstance>(@event.Attributes).AsReadOnly();
-        CategoryPath = @event.CategoryPath + "/" + @event.Id;
+        CategoryPath = @event.CategoryPath;
     }
 
     public void On(AttributeInstanceAdded @event)
