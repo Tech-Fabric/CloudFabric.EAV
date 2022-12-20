@@ -10,7 +10,7 @@ namespace CloudFabric.EAV.Json.Utilities
 
         public override bool CanConvert(Type type)
         {
-            if (type.Name.IndexOf("List", StringComparison.Ordinal) == 0)
+            if (typeof(T).IsGenericType && type.Name.IndexOf("List", StringComparison.Ordinal) == 0)
             {
                 return typeof(T).GenericTypeArguments[0].IsAssignableFrom(type.GenericTypeArguments[0]);
             }
@@ -73,11 +73,12 @@ namespace CloudFabric.EAV.Json.Utilities
             }
 
             if (!reader.Read()
-                    || reader.TokenType != JsonTokenType.PropertyName
-                    || reader.GetString() != TYPE_NAME_JSON_PROPERTY_NAME)
+                || reader.TokenType != JsonTokenType.PropertyName
+                || reader.GetString() != TYPE_NAME_JSON_PROPERTY_NAME)
             {
                 throw new JsonException($"{TYPE_NAME_JSON_PROPERTY_NAME} should be first property in json");
             }
+
 
             if (!reader.Read() || reader.TokenType != JsonTokenType.String)
             {
@@ -87,8 +88,8 @@ namespace CloudFabric.EAV.Json.Utilities
             var typeName = reader.GetString();
 
             if (!reader.Read()
-                    || reader.TokenType != JsonTokenType.PropertyName
-                    || reader.GetString() != TYPE_VALUE_JSON_PROPERTY_NAME)
+                || reader.TokenType != JsonTokenType.PropertyName
+                || reader.GetString() != TYPE_VALUE_JSON_PROPERTY_NAME)
             {
                 throw new JsonException($"{TYPE_VALUE_JSON_PROPERTY_NAME} should go right after {TYPE_NAME_JSON_PROPERTY_NAME} property value");
             }
@@ -111,11 +112,9 @@ namespace CloudFabric.EAV.Json.Utilities
                 {
                     var jsonPropertyName = reader.GetString();
                     reader.Read();
-
                     var propertyType = properties.FirstOrDefault(
                         p => jsonNamingPolicy.ConvertName(p.Name) == jsonPropertyName
                     );
-
                     if (propertyType != null)
                     {
                         try
