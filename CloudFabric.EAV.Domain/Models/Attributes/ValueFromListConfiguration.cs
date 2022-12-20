@@ -10,6 +10,7 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
         public ValueFromListConfiguration(IEnumerable<IEvent> events) : base(events)
         {
         }
+
         public ValueFromListConfiguration(Guid id,
             string machineName,
             List<LocalizedString> name,
@@ -19,7 +20,8 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
             Guid? TenantId = null) : base(id, machineName, name, valueType, description, isRequired, TenantId)
         {
         }
-        public override EavAttributeType ValueType => EavAttributeType.OneValueFromList;
+
+        public override EavAttributeType ValueType => EavAttributeType.ValueFromList;
 
         public EavAttributeType ItemsType { get; protected set; }
 
