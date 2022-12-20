@@ -92,20 +92,7 @@ public class EAVService : IEAVService
         CancellationToken cancellationToken = default
     )
     {
-        // get the machineName
-        if (string.IsNullOrWhiteSpace(attributeConfigurationCreateUpdateRequest.MachineName))
-        {
-            string machineName =
-                attributeConfigurationCreateUpdateRequest.Name
-                    .FirstOrDefault(x => x.CultureInfoId == new CultureInfo("EN-us").LCID)
-                    ?.String
-                ?? attributeConfigurationCreateUpdateRequest.Name.First().String;
-
-            // remove spec symbols
-            machineName = machineName.Replace(" ", "_");
-            Regex specSymbolsRegex = new Regex("[^\\d\\w_]*");
-            attributeConfigurationCreateUpdateRequest.MachineName = specSymbolsRegex.Replace(machineName, "").ToLower();
-        }
+        EnsureAttributeMachineNameIsAdded(attributeConfigurationCreateUpdateRequest);
 
         var attribute = _mapper.Map<AttributeConfiguration>(attributeConfigurationCreateUpdateRequest);
 
@@ -120,10 +107,26 @@ public class EAVService : IEAVService
         return _mapper.Map<AttributeConfigurationViewModel>(attribute);
     }
 
-    public async Task<EntityConfigurationViewModel> CreateEntityConfiguration(
-        EntityConfigurationCreateRequest entityConfigurationCreateRequest, CancellationToken cancellationToken
+    public async Task<(EntityConfigurationViewModel?, ProblemDetails?)> CreateEntityConfiguration(
+        EntityConfigurationCreateRequest entityConfigurationCreateRequest,
+        CancellationToken cancellationToken
     )
     {
+        foreach (var attribute in entityConfigurationCreateRequest.Attributes.Where(x => x is AttributeConfigurationCreateUpdateRequest))
+        {
+            EnsureAttributeMachineNameIsAdded(
+                (AttributeConfigurationCreateUpdateRequest)attribute
+            );
+        }
+        
+        if (!await CheckAttributesListMachineNameUnique(entityConfigurationCreateRequest.Attributes, cancellationToken))
+        {
+            return (
+                null,
+                new ValidationErrorResponse(nameof(entityConfigurationCreateRequest.Attributes), "Attributes machine name must be unique")
+            )!;
+        }
+
         for (var i = 0; i < entityConfigurationCreateRequest.Attributes.Count; i++)
         {
             var attribute = entityConfigurationCreateRequest.Attributes[i];
@@ -158,13 +161,28 @@ public class EAVService : IEAVService
             cancellationToken
         );
 
-        return _mapper.Map<EntityConfigurationViewModel>(entityConfiguration);
+        return (_mapper.Map<EntityConfigurationViewModel>(entityConfiguration), null)!;
     }
 
-    public async Task<EntityConfigurationViewModel> UpdateEntityConfiguration(
+    public async Task<(EntityConfigurationViewModel?, ProblemDetails?)> UpdateEntityConfiguration(
         EntityConfigurationUpdateRequest entityUpdateRequest,
         CancellationToken cancellationToken)
     {
+        foreach (var attribute in entityUpdateRequest.Attributes.Where(x => x is AttributeConfigurationCreateUpdateRequest))
+        {
+            EnsureAttributeMachineNameIsAdded(
+                (AttributeConfigurationCreateUpdateRequest)attribute
+            );
+        }
+        
+        if (!await CheckAttributesListMachineNameUnique(entityUpdateRequest.Attributes, cancellationToken))
+        {
+            return (
+                null,
+                new ValidationErrorResponse(nameof(entityUpdateRequest.Attributes), "Attributes machine name must be unique")
+            )!;
+        }
+        
         var entityConfiguration = await _entityConfigurationRepository.LoadAsync(
             entityUpdateRequest.Id,
             entityUpdateRequest.Id.ToString(),
@@ -227,13 +245,13 @@ public class EAVService : IEAVService
         
         await _entityConfigurationRepository.SaveAsync(_userInfo, entityConfiguration, cancellationToken);
 
-        return _mapper.Map<EntityConfigurationViewModel>(entityConfiguration);
+        return (_mapper.Map<EntityConfigurationViewModel>(entityConfiguration), null)!;
     }
 
-    public async Task AddAttributeToEntityConfiguration(
+    public async Task<(EntityConfigurationViewModel?, ProblemDetails?)> AddAttributeToEntityConfiguration(
         Guid attributeId, 
         Guid entityConfigurationId,
-        CancellationToken cancellationToken
+        CancellationToken cancellationToken = default
     )
     {
         var attributeConfiguration = await _attributeConfigurationRepository.LoadAsyncOrThrowNotFound(
@@ -248,8 +266,60 @@ public class EAVService : IEAVService
             cancellationToken
         );
 
+        if (entityConfiguration.Attributes.Any(x => x.AttributeConfigurationId == attributeConfiguration.Id))
+        {
+            return (null, new ValidationErrorResponse(nameof(attributeId), "Attribute has already been added"))!;
+        }
+
+        if (!await IsAttributeMachineNameUniqueForEntityConfiguration(
+                attributeConfiguration.MachineName,
+                entityConfiguration,
+                cancellationToken
+            )
+        )
+        {
+            return (null, new ValidationErrorResponse(nameof(attributeId), "Attributes machine name must be unique"));
+        }
+
         entityConfiguration.AddAttribute(attributeId);
         await _entityConfigurationRepository.SaveAsync(_userInfo, entityConfiguration, cancellationToken);
+
+        return (_mapper.Map<EntityConfigurationViewModel>(entityConfiguration), null)!;
+    }
+
+    public async Task<(AttributeConfigurationViewModel, ProblemDetails)> CreateAttributeAndAddToEntityConfiguration(
+        AttributeConfigurationCreateUpdateRequest attributeConfigurationCreateUpdateRequest,
+        Guid entityConfigurationId,
+        CancellationToken cancellationToken = default
+    )
+    {
+        EnsureAttributeMachineNameIsAdded(attributeConfigurationCreateUpdateRequest);
+
+        EntityConfiguration entityConfiguration = await _entityConfigurationRepository.LoadAsyncOrThrowNotFound(
+            entityConfigurationId,
+            entityConfigurationId.ToString(),
+            cancellationToken
+        );
+
+        if (!await IsAttributeMachineNameUniqueForEntityConfiguration(
+                attributeConfigurationCreateUpdateRequest.MachineName, 
+                entityConfiguration,
+                cancellationToken
+            )
+        )
+        {
+            return (
+                null, 
+                new ValidationErrorResponse(nameof(attributeConfigurationCreateUpdateRequest.MachineName), "Machine name already exists in this configuration. Please consider using different name")
+            )!;
+        }
+
+        AttributeConfigurationViewModel createdAttribute = await CreateAttribute(attributeConfigurationCreateUpdateRequest, cancellationToken);
+        
+        entityConfiguration.AddAttribute(createdAttribute.Id);
+        await _entityConfigurationRepository.SaveAsync(_userInfo, entityConfiguration, cancellationToken);
+
+        return (createdAttribute, null)!;
     }
     
     #endregion
@@ -462,4 +532,104 @@ public class EAVService : IEAVService
         return attributeConfigurations;
     }
     #endregion
+
+    private void EnsureAttributeMachineNameIsAdded(AttributeConfigurationCreateUpdateRequest attributeRequest)
+    {
+        if (string.IsNullOrWhiteSpace(attributeRequest.MachineName))
+        {
+            var machineName =
+                attributeRequest.Name
+                    .FirstOrDefault(x => x.CultureInfoId == new CultureInfo("EN-us").LCID)
+                    ?.String
+                ?? attributeRequest.Name.First().String;
+
+            // remove spec symbols
+            machineName = machineName.Replace(" ", "_");
+            Regex specSymbolsRegex = new Regex("[^\\d\\w_]*");
+            attributeRequest.MachineName = specSymbolsRegex.Replace(machineName, "").ToLower();
+        }
+    }
+
+    private async Task<bool> IsAttributeMachineNameUniqueForEntityConfiguration(string machineName, EntityConfiguration entityConfiguration, CancellationToken cancellationToken)
+    {
+        List<Guid> attributesIds = entityConfiguration.Attributes
+            .Select(x => x.AttributeConfigurationId)
+            .ToList();
+
+        if (!attributesIds.Any())
+        {
+            return true;
+        }
+        
+        // create attributes filter
+        var attributes = await GetAttributesByIds(attributesIds, cancellationToken);
+
+        if (attributes.Any(x => x.MachineName == machineName))
+        {
+            return false;
+        }
+        
+        return true;
+    }
+    
+    private async Task<bool> CheckAttributesListMachineNameUnique(List<EntityAttributeConfigurationCreateUpdateRequest> attributesRequest, CancellationToken cancellationToken)
+    {
+        // validate reference attributes don't have the same machine name
+        var referenceAttributes = attributesRequest
+            .Where(x => x is EntityAttributeConfigurationCreateUpdateReferenceRequest)
+            .Select(x => ((EntityAttributeConfigurationCreateUpdateReferenceRequest)x).AttributeConfigurationId)
+            .ToList();
+
+        List<string> machineNames = new();
+        if (referenceAttributes.Any())
+        {
+            machineNames = (await GetAttributesByIds(referenceAttributes, cancellationToken))
+                .Select(x => x.MachineName)
+                .ToList();
+        }
+        
+        // validate new attributes don't have the same machine name
+        var newAttributes = attributesRequest.Where(x => x is AttributeConfigurationCreateUpdateRequest);
+
+        foreach (var attribute in newAttributes)
+        {
+            machineNames.Add(
+                ((AttributeConfigurationCreateUpdateRequest)attribute).MachineName!
+            );
+        }
+
+        if (machineNames.GroupBy(x => x).Any(x => x.Count() > 1))
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    private async Task<List<AttributeConfigurationListItemViewModel>> GetAttributesByIds(List<Guid> attributesIds, CancellationToken cancellationToken)
+    {
+        // create attributes filter
+        Filter attributeIdFilter = new(nameof(AttributeConfigurationProjectionDocument.Id), FilterOperator.Equal, attributesIds[0]);
+        
+        foreach (Guid attributesId in attributesIds.Skip(1))
+        {
+            attributeIdFilter.Filters.Add(
+                new FilterConnector(
+                    FilterLogic.Or, new Filter(nameof(AttributeConfigurationProjectionDocument.Id), FilterOperator.Equal, attributesId))
+            );
+        }
+        
+        List<AttributeConfigurationListItemViewModel> attributes = await ListAttributes(
+            new ProjectionQuery
+            {
+                Filters = new List<Filter>
+                {
+                    attributeIdFilter
+                }
+            },
+            cancellationToken: cancellationToken
+        );
+
+        return attributes;
+    }
 }

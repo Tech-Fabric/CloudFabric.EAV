@@ -12,5 +12,6 @@ public enum EavAttributeType
     Array,
     EntityReference,
     Image,
-    LocalizedText
+    LocalizedText,
+    DateRange
 }

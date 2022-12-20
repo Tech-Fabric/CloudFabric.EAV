@@ -7,9 +7,11 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
 {
     public class NumberAttributeConfiguration : AttributeConfiguration
     {
-        public float DefaultValue { get; set; }
-        public float? MinimumValue { get; set; }
-        public float? MaximumValue { get; set; }
+        public decimal DefaultValue { get; set; }
+        public decimal? MinimumValue { get; set; }
+        public decimal? MaximumValue { get; set; }
+        
+        public NumberAttributeType NumberType { get; set; } = NumberAttributeType.Integer;
 
         public override EavAttributeType ValueType { get; } = EavAttributeType.Number;
         
@@ -29,6 +31,12 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
             }
 
             var floatValue = numberInstance.Value;
+
+            if (NumberType == NumberAttributeType.Integer && floatValue != Math.Truncate(floatValue))
+            {
+                errors.Add("Value is not an integer value");
+            }
+            
             if (floatValue < MinimumValue)
             {
                 errors.Add($"Value should be greater or equal than {MinimumValue}");
@@ -50,15 +58,16 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
             Guid id, 
             string machineName, 
             List<LocalizedString> name,
-            float defaultValue,
+            decimal defaultValue,
+            NumberAttributeType numberType,
             List<LocalizedString> description = null, 
             bool isRequired = false,
-            float? minimumValue = null,
-            float? maximumValue = null,
+            decimal? minimumValue = null,
+            decimal? maximumValue = null,
             Guid? tenantId = null
         ) : base(id, machineName, name, EavAttributeType.Number, description, isRequired, tenantId)
         {
-            Apply(new NumberAttributeConfigurationUpdated(defaultValue, minimumValue, maximumValue));
+            Apply(new NumberAttributeConfigurationUpdated(defaultValue, minimumValue, maximumValue, numberType));
         }
 
         public override bool Equals(object obj)
@@ -72,12 +81,13 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
                    && DefaultValue.Equals(other.DefaultValue)
                    && Nullable.Equals(MinimumValue, other.MinimumValue)
                    && Nullable.Equals(MaximumValue, other.MaximumValue)
+                   && NumberType == other.NumberType
                    && ValueType == other.ValueType;
         }
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(DefaultValue, MinimumValue, MaximumValue, (int)ValueType);
+            return HashCode.Combine(DefaultValue, MinimumValue, MaximumValue, NumberType, (int)ValueType);
         }
         
         #region EventHandlers
@@ -87,6 +97,7 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
             DefaultValue = @event.DefaultValue;
             MinimumValue = @event.MinimumValue;
             MaximumValue = @event.MaximumValue;
+            NumberType = @event.NumberType;
         }
 
         #endregion

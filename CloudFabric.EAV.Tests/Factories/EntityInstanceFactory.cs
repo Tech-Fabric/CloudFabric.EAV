@@ -58,6 +58,11 @@ public class EntityInstanceFactory
                     ConfigurationAttributeMachineName = "players_max",
                     Value = 4
                 },
+                new DateRangeAttributeInstanceCreateUpdateRequest
+                {
+                    ConfigurationAttributeMachineName = "release_date",
+                    From = DateTime.Today
+                },
                 new NumberAttributeInstanceCreateUpdateRequest
                 {
                     ConfigurationAttributeMachineName = "price",

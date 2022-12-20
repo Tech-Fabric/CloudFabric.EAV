@@ -23,6 +23,7 @@ public class AttributeInstanceProfile : Profile
         CreateMap<NumberAttributeInstanceCreateUpdateRequest, NumberAttributeInstance>();
         CreateMap<TextAttributeInstanceCreateUpdateRequest, TextAttributeInstance>();
         CreateMap<ValueFromListAttributeInstanceCreateUpdateRequest, ValueFromListAttributeInstance>();
+        CreateMap<DateRangeAttributeInstanceCreateUpdateRequest, DateRangeAttributeInstance>();
 
         CreateMap<AttributeInstance, AttributeInstanceViewModel>().IncludeAllDerived();
         CreateMap<ArrayAttributeInstance, ArrayAttributeInstanceViewModel>();
@@ -36,5 +37,6 @@ public class AttributeInstanceProfile : Profile
         CreateMap<NumberAttributeInstance, NumberAttributeInstanceViewModel>();
         CreateMap<TextAttributeInstance, TextAttributeInstanceViewModel>();
         CreateMap<ValueFromListAttributeInstance, ValueFromListAttributeInstanceViewModel>();
+        CreateMap<DateRangeAttributeInstance, DateRangeAttributeConfigurationViewModel>();
     }
 }
