@@ -1,8 +1,4 @@
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using CloudFabric.EAV.Domain.Events.Configuration.Entity;
-using CloudFabric.EAV.Domain.Models;
 using CloudFabric.EAV.Domain.Models.Base;
 using CloudFabric.Projections;
 
@@ -14,7 +10,9 @@ public class EntityConfigurationProjectionBuilder : ProjectionBuilder<EntityConf
     IHandleEvent<EntityConfigurationAttributeAdded>,
     IHandleEvent<EntityConfigurationAttributeRemoved>
 {
-    public EntityConfigurationProjectionBuilder(IProjectionRepository<EntityConfigurationProjectionDocument> repository) : base(repository)
+    public EntityConfigurationProjectionBuilder(
+        ProjectionRepositoryFactory projectionRepositoryFactory
+    ) : base(projectionRepositoryFactory)
     {
     }
 

@@ -9,8 +9,10 @@ using CloudFabric.EventSourcing.EventStore;
 namespace CloudFabric.EAV.Domain.Models
 {
     [JsonConverter(typeof(PolymorphicJsonConverter<AttributeInstance>))]
-    public class AttributeInstance
+    public abstract class AttributeInstance
     {
         public string ConfigurationAttributeMachineName { get; protected set; }
+
+        public abstract object? GetValue();
     }
 }

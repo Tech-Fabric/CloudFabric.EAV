@@ -1,79 +1,126 @@
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using CloudFabric.EAV.Domain.Events.Instance.Entity;
 using CloudFabric.EAV.Domain.Models;
+using CloudFabric.EventSourcing.Domain;
 using CloudFabric.Projections;
 
 namespace CloudFabric.EAV.Domain.Projections.EntityInstanceProjection;
 
 public class EntityInstanceProjectionBuilder : ProjectionBuilder,
-    IHandleEvent<EntityInstanceCreated>,
-    IHandleEvent<AttributeInstanceAdded>,
-    IHandleEvent<AttributeInstanceUpdated>,
-    IHandleEvent<AttributeInstanceRemoved>
+    IHandleEvent<EntityInstanceCreated>//,
+    // IHandleEvent<AttributeInstanceAdded>,
+    // IHandleEvent<AttributeInstanceUpdated>,
+    // IHandleEvent<AttributeInstanceRemoved>
 {
-    public EntityInstanceProjectionBuilder(IProjectionRepository repository) : base(repository)
+    private readonly AggregateRepositoryFactory _aggregateRepositoryFactory;
+
+    public EntityInstanceProjectionBuilder(
+        AggregateRepositoryFactory aggregateRepositoryFactory,
+        ProjectionRepositoryFactory projectionRepositoryFactory
+    ) : base(projectionRepositoryFactory)
     {
+        _aggregateRepositoryFactory = aggregateRepositoryFactory;
+    }
+
+    private async Task<ProjectionDocumentSchema> BuildProjectionDocumentSchemaForEntityConfigurationId(
+        Guid entityConfigurationId
+    )
+    {
+        var entityConfiguration = await _aggregateRepositoryFactory
+            .GetAggregateRepository<EntityConfiguration>()
+            .LoadAsyncOrThrowNotFound(entityConfigurationId, entityConfigurationId.ToString());
+
+        List<AttributeConfiguration> attributes = new List<AttributeConfiguration>();
+
+        foreach (var attributeReference in entityConfiguration.Attributes)
+        {
+            var attribute = await _aggregateRepositoryFactory
+                .GetAggregateRepository<AttributeConfiguration>()
+                .LoadAsyncOrThrowNotFound(attributeReference.AttributeConfigurationId,
+                    attributeReference.AttributeConfigurationId.ToString()
+                );
+            attributes.Add(attribute);
+        }
+
+        return ProjectionDocumentSchemaFactory.FromEntityConfiguration(entityConfiguration, attributes);
     }
 
     public async Task On(EntityInstanceCreated @event)
     {
-        await UpsertDocument(new Dictionary<string, object?>()
+        var projectionDocumentSchema = await BuildProjectionDocumentSchemaForEntityConfigurationId(
+            @event.EntityConfigurationId
+        );
+
+        var document = new Dictionary<string, object?>()
         {
-            { nameof(EntityInstanceProjectionDocument.Id), @event.Id },
-            { nameof(EntityInstanceProjectionDocument.EntityConfigurationId), @event.EntityConfigurationId },
-            { nameof(EntityInstanceProjectionDocument.Attributes), @event.Attributes }
-        },
-        @event.PartitionKey);
-    }
+            { "Id", @event.Id },
+            { "EntityConfigurationId", @event.EntityConfigurationId }
+        };
 
-    public async Task On(AttributeInstanceAdded @event)
-    {
-        await UpdateDocument(@event.EntityInstanceId,
-            @event.PartitionKey,
-            (document) =>
-            {
-                var attributes = document[nameof(EntityInstanceProjectionDocument.Attributes)] as List<AttributeInstance>;
-                attributes ??= new();
+        foreach (var attribute in @event.Attributes)
+        {
+            document.Add(attribute.ConfigurationAttributeMachineName, attribute.GetValue());
+        }
 
-                attributes.Add(@event.AttributeInstance);
-            }
+        await UpsertDocument(
+            projectionDocumentSchema,
+            document,
+            @event.PartitionKey
         );
     }
-
-    public async Task On(AttributeInstanceUpdated @event)
-    {
-        await UpdateDocument(@event.EntityInstanceId,
-            @event.PartitionKey,
-            (document) =>
-            {
-                var attributes = document[nameof(EntityInstanceProjectionDocument.Attributes)] as List<AttributeInstance>;
-                var attributeToUpdate = attributes?.FirstOrDefault(x => x.ConfigurationAttributeMachineName == @event.AttributeInstance.ConfigurationAttributeMachineName);
-
-                if (attributeToUpdate != null)
-                {
-                    attributes.Remove(attributeToUpdate);
-                    attributes.Add(@event.AttributeInstance);
-                }
-            }
-        );
-    }
-
-    public async Task On(AttributeInstanceRemoved @event)
-    {
-        await UpdateDocument(@event.EntityInstanceId,
-            @event.PartitionKey,
-            (document) =>
-            {
-                var attributes = document[nameof(EntityInstanceProjectionDocument.Attributes)] as List<AttributeInstance>;
-                var attributeToRemove = attributes?.FirstOrDefault(x => x.ConfigurationAttributeMachineName == @event.AttributeMachineName);
-
-                if (attributeToRemove != null)
-                {
-                    attributes.Remove(attributeToRemove);
-                }
-            }
-        );
-    }
+    //
+    // public async Task On(AttributeInstanceAdded @event)
+    // {
+    //     await UpdateDocument(@event.EntityInstanceId,
+    //         @event.PartitionKey,
+    //         (document) =>
+    //         {
+    //             var attributes =
+    //                 document[nameof(EntityInstanceProjectionDocument.Attributes)] as List<AttributeInstance>;
+    //             attributes ??= new();
+    //
+    //             attributes.Add(@event.AttributeInstance);
+    //         }
+    //     );
+    // }
+    //
+    // public async Task On(AttributeInstanceUpdated @event)
+    // {
+    //     await UpdateDocument(@event.EntityInstanceId,
+    //         @event.PartitionKey,
+    //         (document) =>
+    //         {
+    //             var attributes =
+    //                 document[nameof(EntityInstanceProjectionDocument.Attributes)] as List<AttributeInstance>;
+    //             var attributeToUpdate = attributes?.FirstOrDefault(x =>
+    //                 x.ConfigurationAttributeMachineName == @event.AttributeInstance.ConfigurationAttributeMachineName
+    //             );
+    //
+    //             if (attributeToUpdate != null)
+    //             {
+    //                 attributes.Remove(attributeToUpdate);
+    //                 attributes.Add(@event.AttributeInstance);
+    //             }
+    //         }
+    //     );
+    // }
+    //
+    // public async Task On(AttributeInstanceRemoved @event)
+    // {
+    //     await UpdateDocument(@event.EntityInstanceId,
+    //         @event.PartitionKey,
+    //         (document) =>
+    //         {
+    //             var attributes =
+    //                 document[nameof(EntityInstanceProjectionDocument.Attributes)] as List<AttributeInstance>;
+    //             var attributeToRemove = attributes?.FirstOrDefault(x =>
+    //                 x.ConfigurationAttributeMachineName == @event.AttributeMachineName
+    //             );
+    //
+    //             if (attributeToRemove != null)
+    //             {
+    //                 attributes.Remove(attributeToRemove);
+    //             }
+    //         }
+    //     );
+    // }
 }

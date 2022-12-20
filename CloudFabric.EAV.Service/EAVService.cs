@@ -24,36 +24,47 @@ public class EAVService : IEAVService
 {
     private readonly ILogger<EAVService> _logger;
     private readonly IMapper _mapper;
-    
+
     private readonly AggregateRepository<AttributeConfiguration> _attributeConfigurationRepository;
     private readonly AggregateRepository<EntityConfiguration> _entityConfigurationRepository;
     private readonly AggregateRepository<EntityInstance> _entityInstanceRepository;
 
     private readonly IProjectionRepository<AttributeConfigurationProjectionDocument>
         _attributeConfigurationProjectionRepository;
-    private readonly IProjectionRepository<EntityConfigurationProjectionDocument> _entityConfigurationProjectionRepository;
+
+    private readonly IProjectionRepository<EntityConfigurationProjectionDocument>
+        _entityConfigurationProjectionRepository;
+
+    private readonly AggregateRepositoryFactory _aggregateRepositoryFactory;
+    private readonly ProjectionRepositoryFactory _projectionRepositoryFactory;
 
     private readonly EventUserInfo _userInfo;
 
     public EAVService(
         ILogger<EAVService> logger,
         IMapper mapper,
-        AggregateRepository<AttributeConfiguration> attributeConfigurationRepository,
-        AggregateRepository<EntityConfiguration> entityConfigurationRepository,
-        AggregateRepository<EntityInstance> entityInstanceRepository,
-        IProjectionRepository<AttributeConfigurationProjectionDocument> attributeConfigurationProjectionRepository,
-        IProjectionRepository<EntityConfigurationProjectionDocument> entityConfigurationProjectionRepository,
+        AggregateRepositoryFactory aggregateRepositoryFactory,
+        ProjectionRepositoryFactory projectionRepositoryFactory,
         EventUserInfo userInfo
     )
     {
         _logger = logger;
         _mapper = mapper;
-        _attributeConfigurationRepository = attributeConfigurationRepository;
-        _entityConfigurationRepository = entityConfigurationRepository;
-        _entityInstanceRepository = entityInstanceRepository;
-        _attributeConfigurationProjectionRepository = attributeConfigurationProjectionRepository;
-        _entityConfigurationProjectionRepository = entityConfigurationProjectionRepository;
+        _aggregateRepositoryFactory = aggregateRepositoryFactory;
+        _projectionRepositoryFactory = projectionRepositoryFactory;
         _userInfo = userInfo;
+
+        _attributeConfigurationRepository = _aggregateRepositoryFactory
+            .GetAggregateRepository<AttributeConfiguration>();
+        _entityConfigurationRepository = _aggregateRepositoryFactory
+            .GetAggregateRepository<EntityConfiguration>();
+        _entityInstanceRepository = _aggregateRepositoryFactory
+            .GetAggregateRepository<EntityInstance>();
+
+        _attributeConfigurationProjectionRepository = _projectionRepositoryFactory
+            .GetProjectionRepository<AttributeConfigurationProjectionDocument>();
+        _entityConfigurationProjectionRepository = _projectionRepositoryFactory
+            .GetProjectionRepository<EntityConfigurationProjectionDocument>();
     }
 
     #region EntityConfiguration
@@ -65,20 +76,44 @@ public class EAVService : IEAVService
         return _mapper.Map<EntityConfigurationViewModel>(entityConfiguration);
     }
 
+    public async Task<EntityConfigurationWithAttributesViewModel> GetEntityConfigurationWithAttributes(
+        Guid id,
+        string partitionKey,
+        CancellationToken cancellationToken = default(CancellationToken)
+    )
+    {
+        var entityConfiguration = await _entityConfigurationRepository.LoadAsyncOrThrowNotFound(
+            id,
+            partitionKey,
+            cancellationToken
+        );
+
+        var entityConfigurationViewModel = _mapper.Map<EntityConfigurationWithAttributesViewModel>(entityConfiguration);
+
+        var attributes = await GetAttributeConfigurationsForEntityConfiguration(
+            entityConfiguration,
+            cancellationToken
+        );
+
+        entityConfigurationViewModel.Attributes = _mapper.Map<List<AttributeConfigurationViewModel>>(attributes);
+
+        return entityConfigurationViewModel;
+    }
+
     public async Task<List<AttributeConfigurationListItemViewModel>> ListAttributes(int take, int skip = 0)
     {
         var list = await _attributeConfigurationProjectionRepository.Query(new ProjectionQuery()
-        {
-            Limit = take,
-            Offset = 0
-        });
-        
+            {
+                Limit = take, Offset = 0
+            }
+        );
+
         return _mapper.Map<List<AttributeConfigurationListItemViewModel>>(list);
     }
-    
+
     public async Task<List<EntityConfigurationViewModel>> ListEntityConfigurations(
-        ProjectionQuery query, 
-        string partitionKey, 
+        ProjectionQuery query,
+        string partitionKey,
         CancellationToken cancellationToken
     )
     {
@@ -130,7 +165,7 @@ public class EAVService : IEAVService
             entityConfigurationCreateRequest.Metadata
         );
 
-         await _entityConfigurationRepository.SaveAsync(
+        await _entityConfigurationRepository.SaveAsync(
             _userInfo,
             entityConfiguration,
             cancellationToken
@@ -148,7 +183,7 @@ public class EAVService : IEAVService
             entityUpdateRequest.Id.ToString(),
             cancellationToken
         );
-        
+
         if (entityConfiguration == null)
         {
             throw new NotFoundException();
@@ -156,7 +191,9 @@ public class EAVService : IEAVService
 
         // Update config name
         foreach (var name in entityUpdateRequest.Name.Where(name => !entityConfiguration.Name.Any(
-                     x => x.CultureInfoId == name.CultureInfoId && x.String == name.String)))
+                         x => x.CultureInfoId == name.CultureInfoId && x.String == name.String
+                     )
+                 ))
         {
             entityConfiguration.UpdateName(name.String, name.CultureInfoId);
         }
@@ -167,7 +204,7 @@ public class EAVService : IEAVService
             {
                 // for references we need to just add/remove the reference
                 var attributeShouldBeAdded = entityConfiguration.Attributes
-                    .All(a => a.AttributeConfigurationId != attributeReferenceUpdate.AttributeConfigurationId); 
+                    .All(a => a.AttributeConfigurationId != attributeReferenceUpdate.AttributeConfigurationId);
                 if (attributeShouldBeAdded)
                 {
                     entityConfiguration.AddAttribute(attributeReferenceUpdate.AttributeConfigurationId);
@@ -187,7 +224,8 @@ public class EAVService : IEAVService
         var attributesToRemove = entityConfiguration.Attributes.ExceptBy(
             entityUpdateRequest.Attributes
                 .Where(a => a is EntityAttributeConfigurationCreateUpdateReferenceRequest)
-                .Select(a => ((a as EntityAttributeConfigurationCreateUpdateReferenceRequest)!).AttributeConfigurationId),
+                .Select(a => ((a as EntityAttributeConfigurationCreateUpdateReferenceRequest)!).AttributeConfigurationId
+                ),
             x => x.AttributeConfigurationId
         );
 
@@ -195,11 +233,11 @@ public class EAVService : IEAVService
         {
             entityConfiguration.RemoveAttribute(attribute.AttributeConfigurationId);
         }
-        
+
         entityConfiguration.UpdateMetadata(
             entityConfiguration.Metadata.ToDictionary(k => k.Key, k => k.Value)
         );
-        
+
         await _entityConfigurationRepository.SaveAsync(_userInfo, entityConfiguration, cancellationToken);
 
         return _mapper.Map<EntityConfigurationViewModel>(entityConfiguration);
@@ -235,18 +273,19 @@ public class EAVService : IEAVService
 
     public async Task<(EntityInstanceViewModel, ProblemDetails)> CreateEntityInstance(
         EntityInstanceCreateRequest entity, CancellationToken cancellationToken = default
-    ) {
+    )
+    {
         EntityConfiguration? entityConfiguration = await _entityConfigurationRepository.LoadAsync(
             entity.EntityConfigurationId,
             entity.EntityConfigurationId.ToString(),
             cancellationToken
         );
-        
+
         if (entityConfiguration == null)
         {
             return (null, new ValidationErrorResponse("EntityConfigurationId", "Configuration not found"))!;
         }
-        
+
         List<AttributeConfiguration> attributeConfigurations =
             await GetAttributeConfigurationsForEntityConfiguration(
                 entityConfiguration,
@@ -258,7 +297,7 @@ public class EAVService : IEAVService
             entity.EntityConfigurationId,
             _mapper.Map<List<AttributeInstance>>(entity.Attributes)
         );
-        
+
         var validationErrors = new Dictionary<string, string[]>();
         foreach (var a in attributeConfigurations)
         {
@@ -294,29 +333,33 @@ public class EAVService : IEAVService
         return _mapper.Map<EntityInstanceViewModel>(entityInstance);
     }
 
-    public async Task<(EntityInstanceViewModel, ProblemDetails)> UpdateEntityInstance(string partitionKey, EntityInstanceUpdateRequest updateRequest, CancellationToken cancellationToken)
+    public async Task<(EntityInstanceViewModel, ProblemDetails)> UpdateEntityInstance(string partitionKey,
+        EntityInstanceUpdateRequest updateRequest, CancellationToken cancellationToken)
     {
-        EntityInstance? entityInstance = await _entityInstanceRepository.LoadAsync(updateRequest.Id, partitionKey, cancellationToken);
-        
+        EntityInstance? entityInstance =
+            await _entityInstanceRepository.LoadAsync(updateRequest.Id, partitionKey, cancellationToken);
+
         if (entityInstance == null)
         {
             throw new NotFoundException("Entity Instance was not found");
         }
-        
+
         EntityConfiguration? entityConfiguration = await _entityConfigurationRepository.LoadAsync(
             entityInstance.EntityConfigurationId,
             entityInstance.EntityConfigurationId.ToString(),
             cancellationToken
         );
-        
+
         if (entityConfiguration == null)
         {
             throw new NotFoundException("Entity Configuration was not found");
         }
 
-        var entityConfigurationAttributeConfigurations =
-           await GetAttributeConfigurationsForEntityConfiguration(entityConfiguration);
-        
+        var entityConfigurationAttributeConfigurations = await GetAttributeConfigurationsForEntityConfiguration(
+            entityConfiguration,
+            cancellationToken
+        );
+
         var validationErrors = new Dictionary<string, string[]>();
 
         // Remove attributes
@@ -325,15 +368,15 @@ public class EAVService : IEAVService
                 updateRequest.Attributes.Select(x => x.ConfigurationAttributeMachineName),
                 x => x.ConfigurationAttributeMachineName
             );
-        
+
         foreach (AttributeInstance? attribute in attributesToRemove)
         {
             AttributeConfiguration? attrConfiguration = entityConfigurationAttributeConfigurations
                 .First(c => c.MachineName == attribute.ConfigurationAttributeMachineName);
-            
+
             // validation against null will check if the attribute is required
             List<string> errors = attrConfiguration.Validate(null);
-            
+
             if (errors.Count == 0)
             {
                 entityInstance.RemoveAttributeInstance(attribute.ConfigurationAttributeMachineName);
@@ -343,24 +386,26 @@ public class EAVService : IEAVService
                 validationErrors.Add(attribute.ConfigurationAttributeMachineName, errors.ToArray());
             }
         }
-        
+
         // Add or update attributes
         foreach (AttributeInstanceCreateUpdateRequest? newAttributeRequest in updateRequest.Attributes)
         {
             AttributeConfiguration? attrConfig = entityConfigurationAttributeConfigurations
                 .FirstOrDefault(c => c.MachineName == newAttributeRequest.ConfigurationAttributeMachineName);
-            
+
             if (attrConfig == null)
             {
                 continue;
             }
-            
+
             AttributeInstance? newAttribute = _mapper.Map<AttributeInstance>(newAttributeRequest);
             List<string> errors = attrConfig.Validate(newAttribute);
-        
+
             if (errors.Count == 0)
             {
-                AttributeInstance? currentAttribute = entityInstance.Attributes.FirstOrDefault(x => x.ConfigurationAttributeMachineName == newAttributeRequest.ConfigurationAttributeMachineName);
+                AttributeInstance? currentAttribute = entityInstance.Attributes.FirstOrDefault(x =>
+                    x.ConfigurationAttributeMachineName == newAttributeRequest.ConfigurationAttributeMachineName
+                );
                 if (currentAttribute != null)
                 {
                     if (!newAttribute.Equals(currentAttribute))
@@ -380,7 +425,7 @@ public class EAVService : IEAVService
                 validationErrors.Add(newAttribute.ConfigurationAttributeMachineName, errors.ToArray());
             }
         }
-        
+
         if (validationErrors.Count != 0)
         {
             return (null, new ValidationErrorResponse(validationErrors))!;
@@ -391,21 +436,48 @@ public class EAVService : IEAVService
         {
             //TODO: Throw a error when ready
         }
-        return (_mapper.Map<EntityInstanceViewModel>(entityInstance), null)!;
 
+        return (_mapper.Map<EntityInstanceViewModel>(entityInstance), null)!;
+    }
+
+    public async Task<ProjectionQueryResult<Dictionary<string, object?>>> QueryInstances(
+        Guid entityConfigurationId,
+        ProjectionQuery query,
+        CancellationToken cancellationToken = default(CancellationToken)
+    )
+    {
+        var entityConfiguration = await _entityConfigurationRepository.LoadAsyncOrThrowNotFound(
+            entityConfigurationId,
+            entityConfigurationId.ToString(),
+            cancellationToken
+        );
+
+        var attributes = await GetAttributeConfigurationsForEntityConfiguration(
+            entityConfiguration,
+            cancellationToken
+        );
+
+        var schema = CloudFabric.EAV.Domain.Projections.EntityInstanceProjection.ProjectionDocumentSchemaFactory
+            .FromEntityConfiguration(entityConfiguration, attributes);
+
+        var projectionRepository = _projectionRepositoryFactory.GetProjectionRepository(schema);
+
+        var results = await projectionRepository.Query(query, entityConfigurationId.ToString(), cancellationToken);
+        return results;
     }
 
     private async Task<List<AttributeConfiguration>> GetAttributeConfigurationsForEntityConfiguration(
         EntityConfiguration entityConfiguration, CancellationToken cancellationToken = default
-    ) {
+    )
+    {
         List<AttributeConfiguration> attributeConfigurations = new List<AttributeConfiguration>();
 
         foreach (var attributeReference in entityConfiguration.Attributes)
         {
             attributeConfigurations.Add(
                 await _attributeConfigurationRepository.LoadAsyncOrThrowNotFound(
-                    attributeReference.AttributeConfigurationId, 
-                    attributeReference.AttributeConfigurationId.ToString(), 
+                    attributeReference.AttributeConfigurationId,
+                    attributeReference.AttributeConfigurationId.ToString(),
                     cancellationToken
                 )
             );
@@ -413,5 +485,6 @@ public class EAVService : IEAVService
 
         return attributeConfigurations;
     }
+
     #endregion
 }
