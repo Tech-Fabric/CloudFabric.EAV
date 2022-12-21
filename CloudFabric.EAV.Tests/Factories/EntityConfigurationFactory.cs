@@ -3,7 +3,6 @@ using System.Globalization;
 using Castle.Components.DictionaryAdapter;
 
 using CloudFabric.EAV.Domain.Enums;
-using CloudFabric.EAV.Domain.Models.Attributes;
 using CloudFabric.EAV.Models.RequestModels;
 using CloudFabric.EAV.Models.RequestModels.Attributes;
 
@@ -184,10 +183,10 @@ public static class EntityConfigurationFactory
                         }
                     },
                     AttributeMachineNameToAffect = "price",
-                    ValuesList = new List<ValueFromListOptionConfiguration>
+                    ValuesList = new List<ValueFromListOptionCreateUpdateRequest>
                     {
-                        new ValueFromListOptionConfiguration("EU", "eu", 100),
-                        new ValueFromListOptionConfiguration("Extra", "extra", 500)
+                        new ValueFromListOptionCreateUpdateRequest("EU", "eu", 100),
+                        new ValueFromListOptionCreateUpdateRequest("Extra", "extra", 500)
                     },
                     TenantId = tenantId
                 },

@@ -103,7 +103,7 @@ public class AttributeConfigurationProfile : Profile
                     src.MachineName,
                     ctx.Mapper.Map<List<LocalizedString>>(src.Name),
                     src.ValueFromListAttributeType,
-                    src.ValuesList,
+                    ctx.Mapper.Map<List<ValueFromListOptionConfiguration>>(src.ValuesList),
                     src.AttributeMachineNameToAffect,
                     ctx.Mapper.Map<List<LocalizedString>>(src.Description),
                     src.IsRequired,
@@ -111,6 +111,8 @@ public class AttributeConfigurationProfile : Profile
                 );
                 return r;
             });
+
+        CreateMap<ValueFromListOptionCreateUpdateRequest, ValueFromListOptionConfiguration>();
 
         CreateMap<EntityConfigurationAttributeReference, EntityConfigurationAttributeReferenceViewModel>();
 
@@ -134,5 +136,6 @@ public class AttributeConfigurationProfile : Profile
         CreateMap<AttributeConfigurationProjectionDocument, AttributeConfigurationListItemViewModel>();
 
         #endregion
+
     }
 }
