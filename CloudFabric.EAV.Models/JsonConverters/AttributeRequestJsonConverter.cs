@@ -4,7 +4,6 @@ using System.Text.Json.Serialization;
 
 using CloudFabric.EAV.Domain.Enums;
 using CloudFabric.EAV.Json.Utilities;
-using CloudFabric.EAV.Models.RequestModels;
 using CloudFabric.EAV.Models.RequestModels.Attributes;
 
 namespace CloudFabric.EAV.Models.JsonConverters
@@ -47,8 +46,10 @@ namespace CloudFabric.EAV.Models.JsonConverters
                     return typeof(LocalizedTextAttributeConfigurationCreateUpdateRequest);
                 case EavAttributeType.Text:
                     return typeof(TextAttributeConfigurationCreateUpdateRequest);
+                case EavAttributeType.DateRange:
+                    return typeof(DateRangeAttributeConfigurationUpdateRequest);
                 default:
-                    return typeof(AttributeConfigurationCreateUpdateRequest);
+                    throw new InvalidOperationException();
             }
         }
 
