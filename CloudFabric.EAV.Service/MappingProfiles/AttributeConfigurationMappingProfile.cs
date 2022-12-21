@@ -95,6 +95,24 @@ public class AttributeConfigurationProfile : Profile
                 src.IsRequired,
                 src.TenantId
             ));
+        CreateMap<ValueFromListAttributeConfigurationCreateUpdateRequest, ValueFromListAttributeConfiguration>()
+            .ConvertUsing((src, _, ctx) =>
+            {
+                var r = new ValueFromListAttributeConfiguration(
+                    Guid.NewGuid(),
+                    src.MachineName,
+                    ctx.Mapper.Map<List<LocalizedString>>(src.Name),
+                    src.ValueFromListAttributeType,
+                    ctx.Mapper.Map<List<ValueFromListOptionConfiguration>>(src.ValuesList),
+                    src.AttributeMachineNameToAffect,
+                    ctx.Mapper.Map<List<LocalizedString>>(src.Description),
+                    src.IsRequired,
+                    src.TenantId
+                );
+                return r;
+            });
+
+        CreateMap<ValueFromListOptionCreateUpdateRequest, ValueFromListOptionConfiguration>();
 
         CreateMap<EntityConfigurationAttributeReference, EntityConfigurationAttributeReferenceViewModel>();
 
@@ -111,10 +129,13 @@ public class AttributeConfigurationProfile : Profile
         CreateMap<TextAttributeConfiguration, TextAttributeConfigurationViewModel>();
         CreateMap<DateRangeAttributeConfiguration, DateRangeAttributeConfigurationViewModel>();
 
+        CreateMap<ValueFromListAttributeConfiguration, ValueFromListAttributeConfigurationViewModel>();
+
         #region Projections
 
         CreateMap<AttributeConfigurationProjectionDocument, AttributeConfigurationListItemViewModel>();
 
         #endregion
+
     }
 }
