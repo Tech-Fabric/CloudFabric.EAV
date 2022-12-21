@@ -440,20 +440,6 @@ public class Tests
     [TestMethod]
     public async Task GetEntityConfigurationProjectionByTenantId_Success()
     {
-        // configure projections
-        var entityConfigurationEventsObserver = GetEventStoreEventsObserver();
-
-        // Projections engine - takes events from events observer and passes them to multiple projection builders
-        var projectionsEngine = new ProjectionsEngine(GetProjectionRebuildStateRepository());
-        projectionsEngine.SetEventsObserver(entityConfigurationEventsObserver);
-
-        var ordersListProjectionBuilder = new EntityConfigurationProjectionBuilder(_entityConfigurationProjectionRepository);
-        projectionsEngine.AddProjectionBuilder(ordersListProjectionBuilder);
-
-
-        await projectionsEngine.StartAsync("TestInstance");
-
-
         var configurationCreateRequest1 = EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
         var configurationCreateRequest2 = EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
 
@@ -474,8 +460,6 @@ public class Tests
 
         configurationItems.Count.Should().Be(1);
         configurationItems[0].TenantId.Should().Be(createdConfiguration2.TenantId);
-        
-        await projectionsEngine.StopAsync();
     }
 
     [TestMethod]
@@ -986,7 +970,7 @@ public class Tests
     {
         var configurationCreateRequest = EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
 
-        EntityConfigurationViewModel createdConfiguration = await _eavService.CreateEntityConfiguration(
+        var (createdConfiguration, _) = await _eavService.CreateEntityConfiguration(
             configurationCreateRequest,
             CancellationToken.None
         );
@@ -1012,8 +996,6 @@ public class Tests
 
         await _eavService
             .QueryInstances(createdConfiguration.Id, query);
-        
-        
     }
 
     private IProjectionRepository GetProjectionRepository(ProjectionDocumentSchema schema)

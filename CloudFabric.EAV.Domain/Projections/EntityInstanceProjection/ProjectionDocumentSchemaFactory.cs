@@ -67,6 +67,8 @@ public static class ProjectionDocumentSchemaFactory
                 propertyType = TypeCode.String;
                 break;
             case EavAttributeType.LocalizedText:
+            case EavAttributeType.ValueFromList:
+            case EavAttributeType.DateRange:
             case EavAttributeType.Image:
                 propertyType = TypeCode.Object;
                 isNestedObject = true;
@@ -75,6 +77,8 @@ public static class ProjectionDocumentSchemaFactory
                 propertyType = TypeCode.Object;
                 isNestedArray = true;
                 break;
+            default:
+                throw new Exception($"EavAttributeType {attributeConfiguration.ValueType} is not supported.");
         }
 
         return new ProjectionDocumentPropertySchema()

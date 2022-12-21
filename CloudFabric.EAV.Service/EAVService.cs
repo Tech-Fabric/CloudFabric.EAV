@@ -78,30 +78,30 @@ public class EAVService : IEAVService
 
         return _mapper.Map<EntityConfigurationViewModel>(entityConfiguration);
     }
-
-    public async Task<EntityConfigurationWithAttributesViewModel> GetEntityConfigurationWithAttributes(
-        Guid id,
-        string partitionKey,
-        CancellationToken cancellationToken = default(CancellationToken)
-    )
-    {
-        var entityConfiguration = await _entityConfigurationRepository.LoadAsyncOrThrowNotFound(
-            id,
-            partitionKey,
-            cancellationToken
-        );
-
-        var entityConfigurationViewModel = _mapper.Map<EntityConfigurationWithAttributesViewModel>(entityConfiguration);
-
-        var attributes = await GetAttributeConfigurationsForEntityConfiguration(
-            entityConfiguration,
-            cancellationToken
-        );
-
-        entityConfigurationViewModel.Attributes = _mapper.Map<List<AttributeConfigurationViewModel>>(attributes);
-
-        return entityConfigurationViewModel;
-    }
+    //
+    // public async Task<EntityConfigurationWithAttributesViewModel> GetEntityConfigurationWithAttributes(
+    //     Guid id,
+    //     string partitionKey,
+    //     CancellationToken cancellationToken = default(CancellationToken)
+    // )
+    // {
+    //     var entityConfiguration = await _entityConfigurationRepository.LoadAsyncOrThrowNotFound(
+    //         id,
+    //         partitionKey,
+    //         cancellationToken
+    //     );
+    //
+    //     var entityConfigurationViewModel = _mapper.Map<EntityConfigurationWithAttributesViewModel>(entityConfiguration);
+    //
+    //     var attributes = await GetAttributeConfigurationsForEntityConfiguration(
+    //         entityConfiguration,
+    //         cancellationToken
+    //     );
+    //
+    //     entityConfigurationViewModel.Attributes = _mapper.Map<List<AttributeConfigurationViewModel>>(attributes);
+    //
+    //     return entityConfigurationViewModel;
+    // }
 
     public async Task<List<AttributeConfigurationListItemViewModel>> ListAttributes(ProjectionQuery query, 
         string? partitionKey = null, 

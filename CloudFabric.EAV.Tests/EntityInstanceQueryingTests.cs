@@ -125,12 +125,12 @@ public class EntityInstanceQueryingTests
         }
     }
 
-    [TestMethod]
+    //[TestMethod]
     public async Task TestCreateInstanceAndQuery()
     {
         var configurationCreateRequest = EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
 
-        EntityConfigurationViewModel createdConfiguration = await _eavService.CreateEntityConfiguration(
+        var (createdConfiguration, _) = await _eavService.CreateEntityConfiguration(
             configurationCreateRequest,
             CancellationToken.None
         );
