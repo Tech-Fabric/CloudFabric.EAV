@@ -11,7 +11,7 @@ public class LocalizedString: IEquatable<LocalizedString>
 
 #pragma warning disable CA1720 // Identifier contains type name
     [ProjectionDocumentProperty]
-    public string String { get; set; }
+    public virtual string String { get; set; }
 #pragma warning restore CA1720 // Identifier contains type name
 
     public static LocalizedString Russian(string stringRu)

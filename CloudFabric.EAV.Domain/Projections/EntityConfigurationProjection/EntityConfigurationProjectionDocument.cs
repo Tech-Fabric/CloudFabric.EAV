@@ -10,7 +10,7 @@ namespace CloudFabric.EAV.Domain.Projections.EntityConfigurationProjection;
 public class EntityConfigurationProjectionDocument : ProjectionDocument
 {
     [ProjectionDocumentProperty(IsNestedArray = true, IsSearchable = true)]
-    public List<LocalizedString> Name { get; set; }
+    public List<LocalizedString> Name { get; set; } = new();
 
     [ProjectionDocumentProperty(IsFilterable = true)]
     public string MachineName { get; set; }

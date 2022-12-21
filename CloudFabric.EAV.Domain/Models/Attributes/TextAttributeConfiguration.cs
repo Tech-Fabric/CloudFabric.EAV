@@ -56,7 +56,7 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
                 return errors;
             }
 
-            if (textInstance.Value.Length > MaxLength)
+            if (MaxLength.HasValue && textInstance.Value.Length > MaxLength)
             {
                 errors.Add($"Text length can't be greater than {MaxLength}");
             }

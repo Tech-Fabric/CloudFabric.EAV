@@ -1,10 +1,9 @@
-using System;
-using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
 using System.Reflection;
-using System.Threading;
-using System.Threading.Tasks;
+
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 using AutoMapper;
 
@@ -29,10 +28,6 @@ using CloudFabric.Projections.Queries;
 
 using FluentAssertions;
 
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-
 namespace CloudFabric.EAV.Tests;
 
 [TestClass]
@@ -41,12 +36,7 @@ public class Tests
     private EAVService _eavService;
     private IEventStore _eventStore;
     private ILogger<EAVService> _logger;
-
-    private PostgresqlProjectionRepository<AttributeConfigurationProjectionDocument>
-        _attributeConfigurationProjectionRepository;
-
-    private PostgresqlProjectionRepository<EntityConfigurationProjectionDocument>
-        _entityConfigurationProjectionRepository;
+    private ProjectionRepositoryFactory _projectionRepositoryFactory;
 
     [TestInitialize]
     public async Task SetUp()
@@ -82,13 +72,10 @@ public class Tests
         var projectionsEngine = new ProjectionsEngine(GetProjectionRebuildStateRepository());
         projectionsEngine.SetEventsObserver(GetEventStoreEventsObserver());
 
-        _attributeConfigurationProjectionRepository =
-            new PostgresqlProjectionRepository<AttributeConfigurationProjectionDocument>(connectionString);
-        _entityConfigurationProjectionRepository =
-            new PostgresqlProjectionRepository<EntityConfigurationProjectionDocument>(connectionString);
+        _projectionRepositoryFactory = new PostgresqlProjectionRepositoryFactory(connectionString);
 
         var ordersListProjectionBuilder = new AttributeConfigurationProjectionBuilder(
-            _attributeConfigurationProjectionRepository
+            _projectionRepositoryFactory
         );
         projectionsEngine.AddProjectionBuilder(ordersListProjectionBuilder);
 
@@ -101,8 +88,7 @@ public class Tests
             attributeConfigurationRepository,
             entityConfigurationRepository,
             entityInstanceRepository,
-            _attributeConfigurationProjectionRepository,
-            _entityConfigurationProjectionRepository,
+            _projectionRepositoryFactory,
             new EventUserInfo(Guid.NewGuid())
         );
     }
@@ -114,8 +100,8 @@ public class Tests
 
         try
         {
-            await _entityConfigurationProjectionRepository.DeleteAll();
-            await _attributeConfigurationProjectionRepository.DeleteAll();
+            await _projectionRepositoryFactory.GetProjectionRepository<EntityConfigurationProjectionDocument>().DeleteAll();
+            await _projectionRepositoryFactory.GetProjectionRepository<AttributeConfigurationProjectionDocument>().DeleteAll();
 
             var rebuildStateRepository = GetProjectionRebuildStateRepository();
             await rebuildStateRepository.DeleteAll();
@@ -419,7 +405,7 @@ public class Tests
         projectionsEngine.SetEventsObserver(entityConfigurationEventsObserver);
 
         var ordersListProjectionBuilder =
-            new EntityConfigurationProjectionBuilder(_entityConfigurationProjectionRepository);
+            new EntityConfigurationProjectionBuilder(_projectionRepositoryFactory);
         projectionsEngine.AddProjectionBuilder(ordersListProjectionBuilder);
 
         await projectionsEngine.StartAsync("TestInstance");
@@ -430,7 +416,7 @@ public class Tests
             CancellationToken.None
         );
 
-        configurationItemsStart.Count.Should().Be(0);
+        configurationItemsStart.Records.Count.Should().Be(0);
 
         var configurationCreateRequest = EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
 
@@ -444,7 +430,7 @@ public class Tests
             ProjectionQuery.Where<EntityConfigurationProjectionDocument>(x => x.MachineName == "BoardGame")
         );
 
-        configurationItems.Count.Should().Be(1);
+        configurationItems.Records.Count.Should().Be(1);
         
         await projectionsEngine.StopAsync();
     }
@@ -459,7 +445,7 @@ public class Tests
         var projectionsEngine = new ProjectionsEngine(GetProjectionRebuildStateRepository());
         projectionsEngine.SetEventsObserver(entityConfigurationEventsObserver);
 
-        var ordersListProjectionBuilder = new EntityConfigurationProjectionBuilder(_entityConfigurationProjectionRepository);
+        var ordersListProjectionBuilder = new EntityConfigurationProjectionBuilder(_projectionRepositoryFactory);
         projectionsEngine.AddProjectionBuilder(ordersListProjectionBuilder);
 
 
@@ -484,8 +470,8 @@ public class Tests
             ProjectionQuery.Where<EntityConfigurationProjectionDocument>(x => x.TenantId == createdConfiguration2.TenantId)
         );
 
-        configurationItems.Count.Should().Be(1);
-        configurationItems[0].TenantId.Should().Be(createdConfiguration2.TenantId);
+        configurationItems.Records.Count.Should().Be(1);
+        configurationItems.Records[0].Document!.TenantId.Should().Be(createdConfiguration2.TenantId);
         
         await projectionsEngine.StopAsync();
     }
@@ -529,7 +515,7 @@ public class Tests
         {
             Limit = 100
         });
-        allAttributes.First().As<AttributeConfigurationListItemViewModel>()
+        allAttributes.Records.First().Document!.As<AttributeConfigurationListItemViewModel>()
             .Name.Should().BeEquivalentTo(numberAttribute.Name);
     }
 
@@ -945,12 +931,7 @@ public class Tests
         {
             Limit = 1000
         });
-        allAttributes.Count.Should().Be(2);
-    }
-
-    private IProjectionRepository GetProjectionRepository(ProjectionDocumentSchema schema)
-    {
-        return new InMemoryProjectionRepository(schema);
+        allAttributes.Records.Count.Should().Be(2);
     }
 
     private IProjectionRepository<ProjectionRebuildState> GetProjectionRebuildStateRepository()
