@@ -101,7 +101,6 @@ public class Tests
 
         await projectionsEngine.StartAsync("TestInstance");
 
-        
         _eavService = new EAVService(
             _logger,
             mapper,
@@ -420,7 +419,7 @@ public class Tests
             CancellationToken.None
         );
 
-        configurationItemsStart.Count.Should().Be(0);
+        configurationItemsStart.Records.Count.Should().Be(0);
 
         var configurationCreateRequest = EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
 
@@ -434,7 +433,7 @@ public class Tests
             ProjectionQuery.Where<EntityConfigurationProjectionDocument>(x => x.MachineName == "BoardGame")
         );
 
-        configurationItems.Count.Should().Be(1);
+        configurationItems.Records.Count.Should().Be(1);
     }
 
     [TestMethod]
@@ -458,8 +457,8 @@ public class Tests
             ProjectionQuery.Where<EntityConfigurationProjectionDocument>(x => x.TenantId == createdConfiguration2.TenantId)
         );
 
-        configurationItems.Count.Should().Be(1);
-        configurationItems[0].TenantId.Should().Be(createdConfiguration2.TenantId);
+        configurationItems.Records.Count.Should().Be(1);
+        configurationItems.Records[0].Document?.TenantId.Should().Be(createdConfiguration2.TenantId);
     }
 
     [TestMethod]
@@ -501,8 +500,8 @@ public class Tests
         {
             Limit = 100
         });
-        allAttributes.First().As<AttributeConfigurationListItemViewModel>()
-            .Name.Should().BeEquivalentTo(numberAttribute.Name);
+        allAttributes.Records.First().As<QueryResultDocument<AttributeConfigurationListItemViewModel>>()
+            .Document?.Name.Should().BeEquivalentTo(numberAttribute.Name);
     }
 
     [TestMethod]
@@ -962,7 +961,7 @@ public class Tests
         {
             Limit = 1000
         });
-        allAttributes.Count.Should().Be(2);
+        allAttributes.Records.Count.Should().Be(2);
     }
 
     [TestMethod]

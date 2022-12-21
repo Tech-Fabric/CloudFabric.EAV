@@ -103,23 +103,23 @@ public class EAVService : IEAVService
     //     return entityConfigurationViewModel;
     // }
 
-    public async Task<List<AttributeConfigurationListItemViewModel>> ListAttributes(ProjectionQuery query, 
+    public async Task<ProjectionQueryResult<AttributeConfigurationListItemViewModel>> ListAttributes(ProjectionQuery query,
         string? partitionKey = null, 
         CancellationToken cancellationToken = default
     )
     {
         var list = await _attributeConfigurationProjectionRepository.Query(query, partitionKey, cancellationToken);
-        return _mapper.Map<List<AttributeConfigurationListItemViewModel>>(list);
+        return _mapper.Map<ProjectionQueryResult<AttributeConfigurationListItemViewModel>>(list);
     }
 
-    public async Task<List<EntityConfigurationViewModel>> ListEntityConfigurations(
+    public async Task<ProjectionQueryResult<EntityConfigurationViewModel>> ListEntityConfigurations(
         ProjectionQuery query, 
         string? partitionKey = null, 
         CancellationToken cancellationToken = default
     )
     {
         var records = await _entityConfigurationProjectionRepository.Query(query, partitionKey, cancellationToken);
-        return _mapper.Map<List<EntityConfigurationViewModel>>(records);
+        return _mapper.Map<ProjectionQueryResult<EntityConfigurationViewModel>>(records);
     }
 
     public async Task<AttributeConfigurationViewModel> CreateAttribute(
@@ -631,7 +631,7 @@ public class EAVService : IEAVService
         // create attributes filter
         var attributes = await GetAttributesByIds(attributesIds, cancellationToken);
 
-        if (attributes.Any(x => x.MachineName == machineName))
+        if (attributes.Records.Any(x => x.Document?.MachineName == machineName))
         {
             return false;
         }
@@ -651,7 +651,7 @@ public class EAVService : IEAVService
         if (referenceAttributes.Any())
         {
             machineNames = (await GetAttributesByIds(referenceAttributes, cancellationToken))
-                .Select(x => x.MachineName)
+                .Records.Select(x => x.Document?.MachineName!)
                 .ToList();
         }
         
@@ -673,7 +673,7 @@ public class EAVService : IEAVService
         return true;
     }
 
-    private async Task<List<AttributeConfigurationListItemViewModel>> GetAttributesByIds(List<Guid> attributesIds, CancellationToken cancellationToken)
+    private async Task<ProjectionQueryResult<AttributeConfigurationListItemViewModel>> GetAttributesByIds(List<Guid> attributesIds, CancellationToken cancellationToken)
     {
         // create attributes filter
         Filter attributeIdFilter = new(nameof(AttributeConfigurationProjectionDocument.Id), FilterOperator.Equal, attributesIds[0]);
@@ -686,7 +686,7 @@ public class EAVService : IEAVService
             );
         }
         
-        List<AttributeConfigurationListItemViewModel> attributes = await ListAttributes(
+        ProjectionQueryResult<AttributeConfigurationListItemViewModel> attributes = await ListAttributes(
             new ProjectionQuery
             {
                 Filters = new List<Filter>

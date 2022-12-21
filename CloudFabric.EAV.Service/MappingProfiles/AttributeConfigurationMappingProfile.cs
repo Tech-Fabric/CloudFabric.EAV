@@ -8,6 +8,7 @@ using CloudFabric.EAV.Models.RequestModels;
 using CloudFabric.EAV.Models.RequestModels.Attributes;
 using CloudFabric.EAV.Models.ViewModels;
 using CloudFabric.EAV.Models.ViewModels.Attributes;
+using CloudFabric.Projections;
 
 namespace CloudFabric.EAV.Service.MappingProfiles;
 
@@ -134,7 +135,8 @@ public class AttributeConfigurationProfile : Profile
         #region Projections
 
         CreateMap<AttributeConfigurationProjectionDocument, AttributeConfigurationListItemViewModel>();
-
+        CreateMap<ProjectionQueryResult<AttributeConfigurationProjectionDocument>, ProjectionQueryResult<AttributeConfigurationListItemViewModel>>();
+        CreateMap<QueryResultDocument<AttributeConfigurationProjectionDocument>, QueryResultDocument<AttributeConfigurationListItemViewModel>>();
         #endregion
 
     }
