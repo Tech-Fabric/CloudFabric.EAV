@@ -22,6 +22,7 @@ public class AttributeInstanceProfile : Profile
         CreateMap<EntityReferenceAttributeInstanceCreateUpdateRequest, EntityReferenceAttributeInstance>();
         CreateMap<NumberAttributeInstanceCreateUpdateRequest, NumberAttributeInstance>();
         CreateMap<TextAttributeInstanceCreateUpdateRequest, TextAttributeInstance>();
+        CreateMap<ValueFromListAttributeInstanceCreateUpdateRequest, ValueFromListAttributeInstance>();
         CreateMap<DateRangeAttributeInstanceCreateUpdateRequest, DateRangeAttributeInstance>();
 
         CreateMap<AttributeInstance, AttributeInstanceViewModel>().IncludeAllDerived();
@@ -35,6 +36,7 @@ public class AttributeInstanceProfile : Profile
         CreateMap<EntityReferenceAttributeInstance, EntityReferenceAttributeInstanceViewModel>();
         CreateMap<NumberAttributeInstance, NumberAttributeInstanceViewModel>();
         CreateMap<TextAttributeInstance, TextAttributeInstanceViewModel>();
+        CreateMap<ValueFromListAttributeInstance, ValueFromListAttributeInstanceViewModel>();
         CreateMap<DateRangeAttributeInstance, DateRangeAttributeConfigurationViewModel>();
     }
 }

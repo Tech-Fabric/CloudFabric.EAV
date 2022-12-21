@@ -63,6 +63,11 @@ public class EntityInstanceFactory
                     ConfigurationAttributeMachineName = "release_date",
                     From = DateTime.Today
                 },
+                new NumberAttributeInstanceCreateUpdateRequest
+                {
+                    ConfigurationAttributeMachineName = "price",
+                    Value = 1000
+                },
                 new ArrayAttributeInstanceCreateUpdateRequest()
                 {
                     ConfigurationAttributeMachineName = "images",
@@ -84,6 +89,14 @@ public class EntityInstanceFactory
                                 Title = "Azul Rulebook",
                                 Url = "/images/rulebook.jpg",
                                 Alt = "A photo of Azul board game rulebook, page 1"
+                            }
+                        },
+                        new ValueFromListAttributeInstanceCreateUpdateRequest
+                        {
+                            ConfigurationAttributeMachineName = "version",
+                            UnavailableOptionsMachineNames = new List<string>
+                            {
+                                "EU"
                             }
                         }
                     }
