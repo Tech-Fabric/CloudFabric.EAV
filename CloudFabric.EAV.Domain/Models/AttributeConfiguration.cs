@@ -25,6 +25,8 @@ namespace CloudFabric.EAV.Domain.Models
         public bool IsRequired { get; protected set; }
 
         public abstract EavAttributeType ValueType { get; }
+        
+        public Guid? TenantId { get; protected set; }
 
         public virtual List<string> Validate(AttributeInstance? instance)
         {
@@ -41,14 +43,16 @@ namespace CloudFabric.EAV.Domain.Models
         }
 
         public AttributeConfiguration(
-            Guid id, string machineName,
+            Guid id,
+            string machineName,
             List<LocalizedString> name,
             EavAttributeType valueType,
             List<LocalizedString> description = null,
-            bool isRequired = false
+            bool isRequired = false,
+            Guid? TenantId = null
         )
         {
-            Apply(new AttributeConfigurationCreated(id, machineName, name, valueType, description, isRequired));
+            Apply(new AttributeConfigurationCreated(id, machineName, name, valueType, description, isRequired, TenantId));
         }
 
         public void UpdateName(string newName)
@@ -125,6 +129,7 @@ namespace CloudFabric.EAV.Domain.Models
                 ? new List<LocalizedString>().AsReadOnly()
                 : new List<LocalizedString>(@event.Description).AsReadOnly();
             IsRequired = @event.IsRequired;
+            TenantId = @event.TenantId;
         }
 
         public void On(AttributeConfigurationNameUpdated @event)

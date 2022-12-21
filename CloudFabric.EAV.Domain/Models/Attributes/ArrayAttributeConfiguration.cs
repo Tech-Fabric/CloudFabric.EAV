@@ -24,8 +24,9 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
             EavAttributeType itemsType,
             Guid itemsAttributeConfigurationId,
             List<LocalizedString> description = null,
-            bool isRequired = false
-        ) : base(id, machineName, name, EavAttributeType.Array, description, isRequired)
+            bool isRequired = false,
+            Guid? tenantId = null
+        ) : base(id, machineName, name, EavAttributeType.Array, description, isRequired, tenantId)
         {
             Update(itemsType, itemsAttributeConfigurationId);
         }

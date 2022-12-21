@@ -1,6 +1,5 @@
-using System;
-using System.Collections.Generic;
 using System.Globalization;
+
 using CloudFabric.EAV.Models.RequestModels;
 using CloudFabric.EAV.Models.RequestModels.Attributes;
 
@@ -59,6 +58,16 @@ public class EntityInstanceFactory
                     ConfigurationAttributeMachineName = "players_max",
                     Value = 4
                 },
+                new DateRangeAttributeInstanceCreateUpdateRequest
+                {
+                    ConfigurationAttributeMachineName = "release_date",
+                    From = DateTime.Today
+                },
+                new NumberAttributeInstanceCreateUpdateRequest
+                {
+                    ConfigurationAttributeMachineName = "price",
+                    Value = 1000
+                },
                 new ArrayAttributeInstanceCreateUpdateRequest()
                 {
                     ConfigurationAttributeMachineName = "images",
@@ -80,6 +89,14 @@ public class EntityInstanceFactory
                                 Title = "Azul Rulebook",
                                 Url = "/images/rulebook.jpg",
                                 Alt = "A photo of Azul board game rulebook, page 1"
+                            }
+                        },
+                        new ValueFromListAttributeInstanceCreateUpdateRequest
+                        {
+                            ConfigurationAttributeMachineName = "version",
+                            UnavailableOptionsMachineNames = new List<string>
+                            {
+                                "EU"
                             }
                         }
                     }

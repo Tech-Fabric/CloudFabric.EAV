@@ -16,8 +16,9 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
             string machineName, 
             List<LocalizedString> name,
             List<LocalizedString> description = null, 
-            bool isRequired = false
-        ) : base(id, machineName, name, EavAttributeType.HtmlText, description, isRequired) {
+            bool isRequired = false,
+            Guid? tenantId = null
+        ) : base(id, machineName, name, EavAttributeType.HtmlText, description, isRequired, tenantId) {
         }
     }
 }

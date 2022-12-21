@@ -1,3 +1,6 @@
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 using CloudFabric.EAV.Domain.Events.Instance.Entity;
 using CloudFabric.EAV.Domain.Models;
 using CloudFabric.EventSourcing.Domain;
@@ -53,7 +56,8 @@ public class EntityInstanceProjectionBuilder : ProjectionBuilder,
         var document = new Dictionary<string, object?>()
         {
             { "Id", @event.Id },
-            { "EntityConfigurationId", @event.EntityConfigurationId }
+            { "EntityConfigurationId", @event.EntityConfigurationId },
+            { "TenantId", @event.TenantId }
         };
 
         foreach (var attribute in @event.Attributes)

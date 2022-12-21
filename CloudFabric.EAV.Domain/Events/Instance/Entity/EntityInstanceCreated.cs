@@ -5,4 +5,4 @@ using CloudFabric.EventSourcing.EventStore;
 
 namespace CloudFabric.EAV.Domain.Events.Instance.Entity;
 
-public record EntityInstanceCreated(Guid Id, Guid EntityConfigurationId, List<AttributeInstance> Attributes) : Event;
+public record EntityInstanceCreated(Guid Id, Guid EntityConfigurationId, List<AttributeInstance> Attributes, Guid? TenantId) : Event;
