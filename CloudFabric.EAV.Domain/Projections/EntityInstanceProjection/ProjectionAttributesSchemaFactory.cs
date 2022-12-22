@@ -112,9 +112,7 @@ namespace CloudFabric.EAV.Domain.Projections.EntityInstanceProjection
                 IsFilterable = true,
                 IsSortable = true,
                 IsNestedArray = true,
-                ArrayElementType = Type.GetTypeCode(
-                    typeof(LocalizedTextAttributeInstance).GetProperty(nameof(LocalizedTextAttributeInstance.Value))?.GetType().GetGenericArguments()[0]
-                ),
+                ArrayElementType = Type.GetTypeCode(typeof(LocalizedString)),
                 NestedObjectProperties = GetLocalizedTextAttributeNestedProperties()
             };
         }
@@ -203,10 +201,10 @@ namespace CloudFabric.EAV.Domain.Projections.EntityInstanceProjection
             {
                 new ProjectionDocumentPropertySchema
                 {
-                    PropertyName = nameof(DateRangeAttributeInstance.From),
+                    PropertyName = nameof(DateRangeAttributeInstanceValue.From),
                     PropertyType = Type.GetTypeCode(
-                        typeof(DateRangeAttributeInstance)
-                            .GetProperty(nameof(DateRangeAttributeInstance.From))
+                        typeof(DateRangeAttributeInstanceValue)
+                            .GetProperty(nameof(DateRangeAttributeInstanceValue.From))
                             ?.GetType()
                     ),
                     IsRetrievable = true,
@@ -216,10 +214,10 @@ namespace CloudFabric.EAV.Domain.Projections.EntityInstanceProjection
                 },
                 new ProjectionDocumentPropertySchema
                 {
-                    PropertyName = nameof(DateRangeAttributeInstance.To),
+                    PropertyName = nameof(DateRangeAttributeInstanceValue.To),
                     PropertyType = Type.GetTypeCode(
-                        typeof(DateRangeAttributeInstance)
-                            .GetProperty(nameof(DateRangeAttributeInstance.To))
+                        typeof(DateRangeAttributeInstanceValue)
+                            .GetProperty(nameof(DateRangeAttributeInstanceValue.To))
                             ?.GetType()
                     ),
                     IsRetrievable = true,
@@ -239,22 +237,22 @@ namespace CloudFabric.EAV.Domain.Projections.EntityInstanceProjection
                     PropertyType = Type.GetTypeCode(
                         typeof(LocalizedString)
                             .GetProperty(nameof(LocalizedString.CultureInfoId))
-                            ?.GetType()
+                            ?.PropertyType
                     ),
                     IsRetrievable = true,
-                    IsFilterable = true,
-                    IsSortable = true
+                    IsFilterable = false,
+                    IsSortable = true,
                 },
                 new ProjectionDocumentPropertySchema
                 {
                     PropertyName = nameof(LocalizedString.String),
                     PropertyType = Type.GetTypeCode(
                         typeof(LocalizedString)
-                            .GetProperty(nameof(LocalizedString.CultureInfoId))
-                            ?.GetType()
+                            .GetProperty(nameof(LocalizedString.String))
+                            ?.PropertyType
                     ),
                     IsRetrievable = true,
-                    IsFilterable = true,
+                    IsFilterable = false,
                     IsSortable = true
                 }
             };
@@ -270,14 +268,14 @@ namespace CloudFabric.EAV.Domain.Projections.EntityInstanceProjection
                     PropertyType = Type.GetTypeCode(
                             typeof(ValueFromListAttributeInstance)
                                 .GetProperty(nameof(ValueFromListAttributeInstance.PreselectedOptionsMachineNames))
-                                ?.GetType()
+                                ?.PropertyType
                     ),
                     IsRetrievable = true,
                     IsNestedArray = true,
                     ArrayElementType = Type.GetTypeCode(
                         typeof(ValueFromListAttributeInstance)
                             .GetProperty(nameof(ValueFromListAttributeInstance.PreselectedOptionsMachineNames))
-                            ?.GetType()
+                            ?.PropertyType
                             .GetGenericArguments()[0]
                     )
                 },
@@ -287,14 +285,14 @@ namespace CloudFabric.EAV.Domain.Projections.EntityInstanceProjection
                     PropertyType = Type.GetTypeCode(
                         typeof(ValueFromListAttributeInstance)
                             .GetProperty(nameof(ValueFromListAttributeInstance.UnavailableOptionsMachineNames))
-                            ?.GetType()
+                            ?.PropertyType
                     ),
                     IsRetrievable = true,
                     IsNestedArray = true,
                     ArrayElementType = Type.GetTypeCode(
                         typeof(ValueFromListAttributeInstance)
                             .GetProperty(nameof(ValueFromListAttributeInstance.PreselectedOptionsMachineNames))
-                            ?.GetType()
+                            ?.PropertyType
                             .GetGenericArguments()[0]
                     )
                 }
@@ -311,9 +309,9 @@ namespace CloudFabric.EAV.Domain.Projections.EntityInstanceProjection
                     PropertyType = Type.GetTypeCode(
                         typeof(ImageAttributeInstance)
                             .GetProperty(nameof(ImageAttributeInstance.Value))
-                            ?.GetType()
+                            ?.PropertyType
                             .GetProperty(nameof(ImageAttributeInstance.Value.Url))
-                            ?.GetType()
+                            ?.PropertyType
                     ),
                     IsRetrievable = true
                 },
@@ -323,9 +321,9 @@ namespace CloudFabric.EAV.Domain.Projections.EntityInstanceProjection
                     PropertyType = Type.GetTypeCode(
                         typeof(ImageAttributeInstance)
                             .GetProperty(nameof(ImageAttributeInstance.Value))
-                            ?.GetType()
+                            ?.PropertyType
                             .GetProperty(nameof(ImageAttributeInstance.Value.Title))
-                            ?.GetType()
+                            ?.PropertyType
                     ),
                     IsRetrievable = true
                 },
@@ -335,9 +333,9 @@ namespace CloudFabric.EAV.Domain.Projections.EntityInstanceProjection
                     PropertyType = Type.GetTypeCode(
                         typeof(ImageAttributeInstance)
                             .GetProperty(nameof(ImageAttributeInstance.Value))
-                            ?.GetType()
+                            ?.PropertyType
                             .GetProperty(nameof(ImageAttributeInstance.Value.Alt))
-                            ?.GetType()
+                            ?.PropertyType
                     ),
                     IsRetrievable = true
                 },

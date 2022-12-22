@@ -16,9 +16,7 @@ public static class ProjectionDocumentSchemaFactory
         var schema = new ProjectionDocumentSchema()
         {
             SchemaName = entityConfiguration.MachineName,
-            Properties = attributeConfigurations.Select(
-                GetAttributeProjectionPropertySchema
-            ).ToList()
+            Properties = new List<ProjectionDocumentPropertySchema>()
         };
 
         schema.Properties.Add(
@@ -48,6 +46,8 @@ public static class ProjectionDocumentSchemaFactory
                 IsFacetable = false
             }
         );
+
+        schema.Properties.AddRange(attributeConfigurations.Select(GetAttributeProjectionPropertySchema));
 
         return schema;
     }

@@ -125,7 +125,7 @@ public class EntityInstanceQueryingTests
         }
     }
 
-    //[TestMethod]
+    [TestMethod]
     public async Task TestCreateInstanceAndQuery()
     {
         var configurationCreateRequest = EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
