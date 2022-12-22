@@ -1,11 +1,4 @@
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-
 using CloudFabric.EAV.Domain.Events.Configuration.Attribute;
-using CloudFabric.EAV.Domain.Events.Configuration.Entity;
-using CloudFabric.EAV.Domain.Models;
-using CloudFabric.EAV.Domain.Models.Base;
 using CloudFabric.Projections;
 
 namespace CloudFabric.EAV.Domain.Projections.AttributeConfigurationProjection;
@@ -17,8 +10,8 @@ public class AttributeConfigurationProjectionBuilder : ProjectionBuilder<Attribu
     //IHandleEvent<AttributeConfigurationIsRequiredFlagUpdated>, 
 {
     public AttributeConfigurationProjectionBuilder(
-        IProjectionRepository<AttributeConfigurationProjectionDocument> repository
-    ) : base(repository) {
+        ProjectionRepositoryFactory projectionRepositoryFactory
+    ) : base(projectionRepositoryFactory) {
     }
 
     public async Task On(AttributeConfigurationCreated @event)
