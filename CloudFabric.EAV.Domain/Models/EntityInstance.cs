@@ -8,7 +8,7 @@ namespace CloudFabric.EAV.Domain.Models;
 
 public class EntityInstance : AggregateBase
 {
-    public override string PartitionKey => Id.ToString();
+    public override string PartitionKey => EntityConfigurationId.ToString();
 
     public Guid EntityConfigurationId { get; protected set; }
 

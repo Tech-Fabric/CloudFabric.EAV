@@ -4,23 +4,21 @@
     <TargetFramework>net6.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <PackageId>CloudFabric.EAV.Domain</PackageId>
+    <PackageId>CloudFabric.EAV.Models</PackageId>
     <Version>0.0.1</Version>
     <Authors>CloudFabric Developers</Authors>
     <Company>CloudFabric</Company>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="CloudFabric.EventSourcing.Domain" Version="0.0.19" />
-    <PackageReference Include="CloudFabric.Projections" Version="0.0.19" />
-    <PackageReference Include="Microsoft.AspNetCore.Mvc.Core" Version="2.2.5" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="6.0.0" />
     <PackageReference Include="System.ComponentModel.Annotations" Version="5.0.0" />
     <PackageReference Include="System.Text.Json" Version="6.0.2" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\CloudFabric.EAV.Json\CloudFabric.EAV.Json.csproj" />
+    <ProjectReference Include="..\CloudFabric.EAV.Domain\CloudFabric.EAV.Domain.LocalEventSourcingPackages.csproj" />
+    <ProjectReference Include="..\CloudFabric.EAV.Json\CloudFabric.EAV.Json.LocalEventSourcingPackages.csproj" />
   </ItemGroup>
 
 </Project>

@@ -90,14 +90,6 @@ public class EntityInstanceFactory
                                 Url = "/images/rulebook.jpg",
                                 Alt = "A photo of Azul board game rulebook, page 1"
                             }
-                        },
-                        new ValueFromListAttributeInstanceCreateUpdateRequest
-                        {
-                            ConfigurationAttributeMachineName = "version",
-                            UnavailableOptionsMachineNames = new List<string>
-                            {
-                                "EU"
-                            }
                         }
                     }
                 }

@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <PackageId>CloudFabric.EAV.Json</PackageId>
+    <Version>0.0.1</Version>
+    <Authors>CloudFabric Developers</Authors>
+    <Company>CloudFabric</Company>
+  </PropertyGroup>
+
+</Project>

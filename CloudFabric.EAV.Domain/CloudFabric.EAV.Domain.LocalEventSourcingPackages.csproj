@@ -11,8 +11,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="CloudFabric.EventSourcing.Domain" Version="0.0.19" />
-    <PackageReference Include="CloudFabric.Projections" Version="0.0.19" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Core" Version="2.2.5" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="6.0.0" />
     <PackageReference Include="System.ComponentModel.Annotations" Version="5.0.0" />
@@ -20,7 +18,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\CloudFabric.EAV.Json\CloudFabric.EAV.Json.csproj" />
+    <ProjectReference Include="..\..\CloudFabric.EventSourcing\CloudFabric.EventSourcing.Domain\CloudFabric.EventSourcing.Domain.csproj" />
+    <ProjectReference Include="..\..\CloudFabric.EventSourcing\CloudFabric.Projections\CloudFabric.Projections.csproj" />
+    <ProjectReference Include="..\CloudFabric.EAV.Json\CloudFabric.EAV.Json.LocalEventSourcingPackages.csproj" />
   </ItemGroup>
 
 </Project>
