@@ -10,7 +10,9 @@ public class EntityConfigurationProjectionBuilder : ProjectionBuilder<EntityConf
     IHandleEvent<EntityConfigurationAttributeAdded>,
     IHandleEvent<EntityConfigurationAttributeRemoved>
 {
-    public EntityConfigurationProjectionBuilder(ProjectionRepositoryFactory repositoryFactory) : base(repositoryFactory)
+    public EntityConfigurationProjectionBuilder(
+        ProjectionRepositoryFactory projectionRepositoryFactory
+    ) : base(projectionRepositoryFactory)
     {
     }
 

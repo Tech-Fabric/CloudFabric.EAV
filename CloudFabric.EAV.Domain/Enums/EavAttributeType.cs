@@ -8,9 +8,10 @@ public enum EavAttributeType
     Money,
     NumberRange,
     MoneyRange,
-    OneValueFromList,
+    ValueFromList,
     Array,
     EntityReference,
     Image,
-    LocalizedText
+    LocalizedText,
+    DateRange
 }

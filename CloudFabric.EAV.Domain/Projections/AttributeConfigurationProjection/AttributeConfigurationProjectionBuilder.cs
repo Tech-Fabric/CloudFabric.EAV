@@ -16,8 +16,8 @@ public class AttributeConfigurationProjectionBuilder : ProjectionBuilder<Attribu
     IHandleEvent<AttributeInstanceRemoved>
 {
     public AttributeConfigurationProjectionBuilder(
-        ProjectionRepositoryFactory repositoryFactory
-    ) : base(repositoryFactory)
+        ProjectionRepositoryFactory projectionRepositoryFactory
+    ) : base(projectionRepositoryFactory)
     {
     }
 
