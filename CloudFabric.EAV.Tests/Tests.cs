@@ -34,14 +34,10 @@ namespace CloudFabric.EAV.Tests;
 [TestClass]
 public class Tests
 {
-
-    private PostgresqlProjectionRepository<AttributeConfigurationProjectionDocument>
-        _attributeConfigurationProjectionRepository;
+    private AggregateRepositoryFactory _aggregateRepositoryFactory;
+    private PostgresqlProjectionRepositoryFactory _projectionRepositoryFactory;
 
     private EAVService _eavService;
-
-    private PostgresqlProjectionRepository<EntityConfigurationProjectionDocument>
-        _entityConfigurationProjectionRepository;
 
     private IEventStore _eventStore;
     private ILogger<EAVService> _logger;
@@ -72,26 +68,19 @@ public class Tests
 
         await _eventStore.Initialize();
 
-        var aggregateRepositoryFactory = new AggregateRepositoryFactory(_eventStore);
-        var attributeConfigurationRepository = aggregateRepositoryFactory
-            .GetAggregateRepository<AttributeConfiguration>();
-        var entityConfigurationRepository = aggregateRepositoryFactory
-            .GetAggregateRepository<EntityConfiguration>();
-        var entityInstanceRepository = aggregateRepositoryFactory
-            .GetAggregateRepository<EntityInstance>();
-
-        var projectionRepositoryFactory = new PostgresqlProjectionRepositoryFactory(connectionString);
+        _aggregateRepositoryFactory = new AggregateRepositoryFactory(_eventStore);
+        _projectionRepositoryFactory = new PostgresqlProjectionRepositoryFactory(connectionString);
 
         // Projections engine - takes events from events observer and passes them to multiple projection builders
         var projectionsEngine = new ProjectionsEngine(
-            projectionRepositoryFactory.GetProjectionRepository<ProjectionRebuildState>()
+            _projectionRepositoryFactory.GetProjectionRepository<ProjectionRebuildState>()
         );
         projectionsEngine.SetEventsObserver(GetEventStoreEventsObserver());
 
         var attributeConfigurationProjectionBuilder = new AttributeConfigurationProjectionBuilder(
-            projectionRepositoryFactory
+            _projectionRepositoryFactory
         );
-        var ordersListProjectionBuilder = new EntityConfigurationProjectionBuilder(projectionRepositoryFactory);
+        var ordersListProjectionBuilder = new EntityConfigurationProjectionBuilder(_projectionRepositoryFactory);
 
         projectionsEngine.AddProjectionBuilder(attributeConfigurationProjectionBuilder);
         projectionsEngine.AddProjectionBuilder(ordersListProjectionBuilder);
@@ -103,8 +92,8 @@ public class Tests
         _eavService = new EAVService(
             _logger,
             mapper,
-            aggregateRepositoryFactory,
-            projectionRepositoryFactory,
+            _aggregateRepositoryFactory,
+            _projectionRepositoryFactory,
             new EventUserInfo(Guid.NewGuid())
         );
     }
@@ -116,8 +105,14 @@ public class Tests
 
         try
         {
-            await _entityConfigurationProjectionRepository.DeleteAll();
-            await _attributeConfigurationProjectionRepository.DeleteAll();
+            var entityConfigurationProjectionRepository = _projectionRepositoryFactory
+                .GetProjectionRepository<EntityConfigurationProjectionDocument>();
+
+            var attributeConfigurationProjectionRepository = _projectionRepositoryFactory
+                .GetProjectionRepository<AttributeConfigurationProjectionDocument>();
+
+            await entityConfigurationProjectionRepository.DeleteAll();
+            await attributeConfigurationProjectionRepository.DeleteAll();
 
             var rebuildStateRepository = GetProjectionRebuildStateRepository();
             await rebuildStateRepository.DeleteAll();
