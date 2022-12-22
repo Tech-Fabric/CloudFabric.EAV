@@ -1,5 +1,7 @@
 using CloudFabric.EAV.Domain.Enums;
 using CloudFabric.EAV.Domain.Models;
+using CloudFabric.EAV.Domain.Models.Attributes;
+using CloudFabric.EAV.Domain.Models.Base;
 using CloudFabric.Projections;
 
 namespace CloudFabric.EAV.Domain.Projections.EntityInstanceProjection;
@@ -19,7 +21,8 @@ public static class ProjectionDocumentSchemaFactory
             ).ToList()
         };
 
-        schema.Properties.Add(new ProjectionDocumentPropertySchema()
+        schema.Properties.Add(
+            new ProjectionDocumentPropertySchema()
             {
                 PropertyName = "Id",
                 PropertyType = TypeCode.String,
@@ -32,7 +35,8 @@ public static class ProjectionDocumentSchemaFactory
             }
         );
 
-        schema.Properties.Add(new ProjectionDocumentPropertySchema()
+        schema.Properties.Add(
+            new ProjectionDocumentPropertySchema()
             {
                 PropertyName = "EntityConfigurationId",
                 PropertyType = TypeCode.String,
@@ -52,60 +56,28 @@ public static class ProjectionDocumentSchemaFactory
         AttributeConfiguration attributeConfiguration
     )
     {
-        TypeCode? propertyType = null;
-        bool isNestedObject = false;
-        bool isNestedArray = false;
-
         switch (attributeConfiguration.ValueType)
         {
             case EavAttributeType.Number:
-                propertyType = TypeCode.Decimal;
-                break;
+                return ProjectionAttributesSchemaFactory.GetNumberAttributeSchema(attributeConfiguration);
             case EavAttributeType.Text:
+                return ProjectionAttributesSchemaFactory.GetTextAttributeSchema(attributeConfiguration);
             case EavAttributeType.HtmlText:
+                return ProjectionAttributesSchemaFactory.GetHtmlTextAttributeSchema(attributeConfiguration);
             case EavAttributeType.EntityReference:
-                propertyType = TypeCode.String;
-                break;
+                return ProjectionAttributesSchemaFactory.GetEntityReferenceAttributeSchema(attributeConfiguration);
             case EavAttributeType.LocalizedText:
+                return ProjectionAttributesSchemaFactory.GetLocalizedTextAttributeSchema(attributeConfiguration);
             case EavAttributeType.ValueFromList:
+                return ProjectionAttributesSchemaFactory.GetValueFromListAttributeSchema(attributeConfiguration);
             case EavAttributeType.DateRange:
+                return ProjectionAttributesSchemaFactory.GetDateAttributeSchema(attributeConfiguration);
             case EavAttributeType.Image:
-                propertyType = TypeCode.Object;
-                isNestedObject = true;
-                break;
+                return ProjectionAttributesSchemaFactory.GetImageAttributeSchema(attributeConfiguration);
             case EavAttributeType.Array:
-                propertyType = TypeCode.Object;
-                isNestedArray = true;
-                break;
+                return ProjectionAttributesSchemaFactory.GetArrayAttributeSchema(attributeConfiguration);
             default:
                 throw new Exception($"EavAttributeType {attributeConfiguration.ValueType} is not supported.");
         }
-
-        return new ProjectionDocumentPropertySchema()
-        {
-            PropertyName = attributeConfiguration.MachineName,
-            PropertyType = propertyType.GetValueOrDefault(),
-            IsKey = false,
-            IsSearchable = true,
-            IsRetrievable = true,
-            //SynonymMaps = documentPropertyAttribute.SynonymMaps,
-            //SearchableBoost = documentPropertyAttribute.SearchableBoost,
-            IsFilterable = true,
-            IsSortable = true,
-            IsFacetable = true,
-            //Analyzer = documentPropertyAttribute.Analyzer,
-            //SearchAnalyzer = documentPropertyAttribute.SearchAnalyzer,
-            //IndexAnalyzer = documentPropertyAttribute.IndexAnalyzer,
-            //UseForSuggestions = documentPropertyAttribute.UseForSuggestions,
-            //FacetableRanges = documentPropertyAttribute.FacetableRanges,
-            IsNestedObject = isNestedObject,
-            IsNestedArray = isNestedArray,
-            //ArrayElementType = documentPropertyAttribute.IsNestedArray
-            //    ? Type.GetTypeCode(propertyInfo.PropertyType.GenericTypeArguments[0])
-            //    : null,
-            //NestedObjectProperties = (documentPropertyAttribute.IsNestedObject || documentPropertyAttribute.IsNestedArray)
-            //    ? GetNestedObjectProperties(nestedPropertiesDictionary as Dictionary<PropertyInfo, (ProjectionDocumentPropertyAttribute, object)>)
-            //    : null
-        };
     }
 }
