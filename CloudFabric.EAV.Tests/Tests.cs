@@ -848,7 +848,7 @@ public class Tests
             Id = createdInstance.Id
         };
 
-        (EntityInstanceViewModel updatedInstance, _) = await _eavService.UpdateEntityInstance(createdInstance.Id.ToString(), updateRequest, CancellationToken.None);
+        (EntityInstanceViewModel updatedInstance, _) = await _eavService.UpdateEntityInstance(createdConfiguration.Id.ToString(), updateRequest, CancellationToken.None);
 
         ProjectionQueryResult<AttributeConfigurationListItemViewModel> attributeConfigurations = await _eavService.ListAttributes(
             new ProjectionQuery
