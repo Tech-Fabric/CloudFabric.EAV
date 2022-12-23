@@ -26,8 +26,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CloudFabric.Projections", "
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CloudFabric.Projections.Postgresql", "..\CloudFabric.EventSourcing\Implementations\CloudFabric.Projections.Postgresql\CloudFabric.Projections.Postgresql.csproj", "{C97124A4-59E0-4270-BA12-2B51B4D034DD}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CloudFabric.Projections", "..\CloudFabric.EventSourcing\CloudFabric.Projections\CloudFabric.Projections.csproj", "{638444FE-4668-404C-833A-EB0C6D7295C9}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CloudFabric.Projections.InMemory", "..\CloudFabric.EventSourcing\Implementations\CloudFabric.Projections.InMemory\CloudFabric.Projections.InMemory.csproj", "{AF4F3951-52BB-4585-A948-C00D98C7B077}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CloudFabric.EventSourcing.EventStore.Postgresql", "..\CloudFabric.EventSourcing\Implementations\CloudFabric.EventSourcing.EventStore.Postgresql\CloudFabric.EventSourcing.EventStore.Postgresql.csproj", "{48F85199-3899-490C-8A04-8611B652AA18}"
@@ -106,14 +104,6 @@ Global
 		{C97124A4-59E0-4270-BA12-2B51B4D034DD}.Release|Any CPU.Build.0 = Release|Any CPU
 		{C97124A4-59E0-4270-BA12-2B51B4D034DD}.Release|x64.ActiveCfg = Release|Any CPU
 		{C97124A4-59E0-4270-BA12-2B51B4D034DD}.Release|x64.Build.0 = Release|Any CPU
-		{638444FE-4668-404C-833A-EB0C6D7295C9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{638444FE-4668-404C-833A-EB0C6D7295C9}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{638444FE-4668-404C-833A-EB0C6D7295C9}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{638444FE-4668-404C-833A-EB0C6D7295C9}.Debug|x64.Build.0 = Debug|Any CPU
-		{638444FE-4668-404C-833A-EB0C6D7295C9}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{638444FE-4668-404C-833A-EB0C6D7295C9}.Release|Any CPU.Build.0 = Release|Any CPU
-		{638444FE-4668-404C-833A-EB0C6D7295C9}.Release|x64.ActiveCfg = Release|Any CPU
-		{638444FE-4668-404C-833A-EB0C6D7295C9}.Release|x64.Build.0 = Release|Any CPU
 		{AF4F3951-52BB-4585-A948-C00D98C7B077}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{AF4F3951-52BB-4585-A948-C00D98C7B077}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{AF4F3951-52BB-4585-A948-C00D98C7B077}.Debug|x64.ActiveCfg = Debug|Any CPU
