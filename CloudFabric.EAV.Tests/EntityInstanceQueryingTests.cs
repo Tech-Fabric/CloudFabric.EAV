@@ -140,7 +140,7 @@ public class EntityInstanceQueryingTests
             createdConfiguration.PartitionKey
         );
 
-        //configuration.Should().BeEquivalentTo(createdConfiguration);
+        configuration.Should().BeEquivalentTo(createdConfiguration);
 
         var instanceCreateRequest =
             EntityInstanceFactory.CreateValidBoardGameEntityInstanceCreateRequest(createdConfiguration.Id);
@@ -158,6 +158,8 @@ public class EntityInstanceQueryingTests
             .QueryInstances(createdConfiguration.Id, query);
 
         results.TotalRecordsFound.Value.Should().BeGreaterThan(0);
+
+        results.Records.Select(r => r.Document).First().Should().BeEquivalentTo(createdInstance);
     }
 
     private IEventsObserver GetEventStoreEventsObserver()

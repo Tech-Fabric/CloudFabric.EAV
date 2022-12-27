@@ -171,40 +171,40 @@ public static class EntityConfigurationFactory
                     IsRequired = true,
                     TenantId = tenantId
                 },
-                new ValueFromListAttributeConfigurationCreateUpdateRequest
-                {
-                    MachineName = "version",
-                    Name = new List<LocalizedStringCreateRequest>
-                    {
-                        new LocalizedStringCreateRequest
-                        {
-                            CultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID,
-                            String = "Version"
-                        }
-                    },
-                    AttributeMachineNameToAffect = "price",
-                    ValuesList = new List<ValueFromListOptionCreateUpdateRequest>
-                    {
-                        new ValueFromListOptionCreateUpdateRequest("EU", "eu", 100),
-                        new ValueFromListOptionCreateUpdateRequest("Extra", "extra", 500)
-                    },
-                    TenantId = tenantId
-                },
-                new DateRangeAttributeConfigurationUpdateRequest
-                {
-                    MachineName = "release_date",
-                    Name = new EditableList<LocalizedStringCreateRequest>
-                    {
-                        new LocalizedStringCreateRequest
-                        {
-                            CultureInfoId =
-                                CultureInfo.GetCultureInfo("EN-us").LCID,
-                            String = "Release date"
-                        }
-                    },
-                    TenantId = tenantId,
-                    DateRangeAttributeType = DateRangeAttributeType.SingleDate
-                }
+                // new ValueFromListAttributeConfigurationCreateUpdateRequest
+                // {
+                //     MachineName = "version",
+                //     Name = new List<LocalizedStringCreateRequest>
+                //     {
+                //         new LocalizedStringCreateRequest
+                //         {
+                //             CultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID,
+                //             String = "Version"
+                //         }
+                //     },
+                //     AttributeMachineNameToAffect = "price",
+                //     ValuesList = new List<ValueFromListOptionCreateUpdateRequest>
+                //     {
+                //         new ValueFromListOptionCreateUpdateRequest("EU", "eu", 100),
+                //         new ValueFromListOptionCreateUpdateRequest("Extra", "extra", 500)
+                //     },
+                //     TenantId = tenantId
+                // },
+                // new DateRangeAttributeConfigurationUpdateRequest
+                // {
+                //     MachineName = "release_date",
+                //     Name = new EditableList<LocalizedStringCreateRequest>
+                //     {
+                //         new LocalizedStringCreateRequest
+                //         {
+                //             CultureInfoId =
+                //                 CultureInfo.GetCultureInfo("EN-us").LCID,
+                //             String = "Release date"
+                //         }
+                //     },
+                //     TenantId = tenantId,
+                //     DateRangeAttributeType = DateRangeAttributeType.SingleDate
+                // }
             }
         };
     }
