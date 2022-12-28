@@ -157,9 +157,9 @@ public class EntityInstanceQueryingTests
         var results = await _eavService
             .QueryInstances(createdConfiguration.Id, query);
 
-        results.TotalRecordsFound.Value.Should().BeGreaterThan(0);
+        results?.TotalRecordsFound.Should().BeGreaterThan(0);
 
-        results.Records.Select(r => r.Document).First().Should().BeEquivalentTo(createdInstance);
+        results?.Records.Select(r => r.Document).First().Should().BeEquivalentTo(createdInstance);
     }
 
     private IEventsObserver GetEventStoreEventsObserver()

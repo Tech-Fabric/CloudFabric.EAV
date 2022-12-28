@@ -51,6 +51,7 @@ public class EntityInstanceFromDictionaryDeserializer
             case EavAttributeType.Array:
                 attributeInstance = new ArrayAttributeInstanceViewModel()
                 {
+                    ConfigurationAttributeMachineName = attributeConfiguration.MachineName,
                     Items = new List<AttributeInstanceViewModel>()
                 };
 
