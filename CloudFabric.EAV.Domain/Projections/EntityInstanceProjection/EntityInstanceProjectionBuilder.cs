@@ -52,9 +52,9 @@ public class EntityInstanceProjectionBuilder : ProjectionBuilder,
 
         var document = new Dictionary<string, object?>()
         {
-            { "Id", @event.Id },
-            { "EntityConfigurationId", @event.EntityConfigurationId },
-            { "TenantId", @event.TenantId }
+            { "Id", @event.Id.ToString() },
+            { "EntityConfigurationId", @event.EntityConfigurationId.ToString() },
+            { "TenantId", @event.TenantId.ToString() }
         };
 
         foreach (var attribute in @event.Attributes)

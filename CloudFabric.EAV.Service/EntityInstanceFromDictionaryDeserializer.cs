@@ -28,7 +28,9 @@ public class EntityInstanceFromDictionaryDeserializer
         var entityInstance = new EntityInstanceViewModel()
         {
             Id = Guid.Parse((string)record["Id"]!),
-            TenantId = record.ContainsKey("TenantId") ? Guid.Parse((string)record["TenantId"]!) : null,
+            TenantId = record.ContainsKey("TenantId") && !string.IsNullOrEmpty((string?)record["TenantId"])
+                ? Guid.Parse((string)record["TenantId"]!)
+                : null,
             EntityConfigurationId = Guid.Parse((string)record["EntityConfigurationId"]!),
             Attributes = attributesConfigurations
                 .Select(attributeConfig =>
