@@ -10,8 +10,8 @@ public static class ProjectionDocumentSchemaFactory
 {
     public static ProjectionDocumentSchema FromEntityConfiguration(
         EntityConfiguration entityConfiguration,
-        List<AttributeConfiguration> attributeConfigurations
-    )
+        List<AttributeConfiguration> attributeConfigurations,
+        List<AttributeConfiguration>? parentAttributeConfigurations)
     {
         var schema = new ProjectionDocumentSchema()
         {
@@ -49,6 +49,40 @@ public static class ProjectionDocumentSchemaFactory
 
         schema.Properties.AddRange(attributeConfigurations.Select(GetAttributeProjectionPropertySchema));
 
+        /*
+         * 
+    [ProjectionDocumentProperty(IsNestedArray = true)]
+    // public Dictionary<string, List<AttributeInstance>?> ParentalAttributes { get; set; } // REFACTOR
+
+    public string CategoryPath { get; set; }
+         */
+        
+        schema.Properties.Add(
+            new ProjectionDocumentPropertySchema()
+            {
+                PropertyName = "ParentalAttributes",
+                PropertyType = TypeCode.Object,
+                IsKey = false,
+                IsSearchable = false,
+                IsRetrievable = true,
+                IsFilterable = true,
+                IsSortable = false,
+                IsFacetable = false,
+                IsNestedObject = true,
+                NestedObjectProperties = parentAttributeConfigurations?.Select(GetAttributeProjectionPropertySchema).ToList() ?? new List<ProjectionDocumentPropertySchema>()
+            }
+        );
+   // public List<KeyValuePair<string, List<AttributeInstance>>>? ParentalAttributes { get; set; }
+
+        schema.Properties.Add(new ProjectionDocumentPropertySchema()
+        {
+            PropertyName = "CategoryPath",
+            PropertyType = TypeCode.String,
+            IsRetrievable = true,
+            
+            IsFacetable = false,
+            IsNestedArray = false
+        });
         return schema;
     }
 

@@ -387,7 +387,9 @@ public class EAVService : IEAVService
     #region EntityInstance
 
     public async Task<(EntityInstanceViewModel, ProblemDetails)> CreateEntityInstance(
-        EntityInstanceCreateRequest entity, CancellationToken cancellationToken = default
+        EntityInstanceCreateRequest entity,
+        string categoryPath = "",
+        CancellationToken cancellationToken = default
     ) {
         EntityConfiguration? entityConfiguration = await _entityConfigurationRepository.LoadAsync(
             entity.EntityConfigurationId,
@@ -409,6 +411,7 @@ public class EAVService : IEAVService
         var entityInstance = new EntityInstance(
             Guid.NewGuid(),
             entity.EntityConfigurationId,
+            categoryPath,
             _mapper.Map<List<AttributeInstance>>(entity.Attributes),
             entity.TenantId
         );
@@ -571,7 +574,7 @@ public class EAVService : IEAVService
         );
 
         var schema = CloudFabric.EAV.Domain.Projections.EntityInstanceProjection.ProjectionDocumentSchemaFactory
-            .FromEntityConfiguration(entityConfiguration, attributes);
+            .FromEntityConfiguration(entityConfiguration, attributes, null);
 
         var projectionRepository = _projectionRepositoryFactory.GetProjectionRepository(schema);
 
