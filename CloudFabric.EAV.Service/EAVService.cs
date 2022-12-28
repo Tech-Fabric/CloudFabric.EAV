@@ -107,7 +107,8 @@ public class EAVService : IEAVService
     //     return entityConfigurationViewModel;
     // }
 
-    public async Task<ProjectionQueryResult<AttributeConfigurationListItemViewModel>> ListAttributes(ProjectionQuery query,
+    public async Task<ProjectionQueryResult<AttributeConfigurationListItemViewModel>> ListAttributes(
+        ProjectionQuery query,
         string? partitionKey = null,
         CancellationToken cancellationToken = default
     )
@@ -658,7 +659,8 @@ public class EAVService : IEAVService
         if (referenceAttributes.Any())
         {
             machineNames = (await GetAttributesByIds(referenceAttributes, cancellationToken))
-                .Records.Select(x => x.Document?.MachineName!)
+                .Records
+                .Select(x => x.Document?.MachineName!)
                 .ToList();
         }
 

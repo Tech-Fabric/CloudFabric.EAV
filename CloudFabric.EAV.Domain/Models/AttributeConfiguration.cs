@@ -136,12 +136,14 @@ namespace CloudFabric.EAV.Domain.Models
         {
             var name = Name.FirstOrDefault(n => n.CultureInfoId == @event.CultureInfoId);
 
-            var newCollection = new List<LocalizedString>();
+            var newCollection = new List<LocalizedString>(Name);
             if (name == null)
             {
-                newCollection.Add(new LocalizedString()
+                newCollection.Add(
+                    new LocalizedString
                     {
-                        CultureInfoId = @event.CultureInfoId, String = @event.NewName
+                        CultureInfoId = @event.CultureInfoId,
+                        String = @event.NewName
                     }
                 );
             }
@@ -157,12 +159,14 @@ namespace CloudFabric.EAV.Domain.Models
         {
             var description = Description.FirstOrDefault(n => n.CultureInfoId == @event.CultureInfoId);
 
-            var newCollection = new List<LocalizedString>();
+            var newCollection = new List<LocalizedString>(Description);
             if (description == null)
             {
-                newCollection.Add(new LocalizedString()
+                newCollection.Add(
+                    new LocalizedString
                     {
-                        CultureInfoId = @event.CultureInfoId, String = @event.NewDescription
+                        CultureInfoId = @event.CultureInfoId,
+                        String = @event.NewDescription
                     }
                 );
             }
@@ -171,7 +175,7 @@ namespace CloudFabric.EAV.Domain.Models
                 description.String = @event.NewDescription;
             }
 
-            Name = newCollection.AsReadOnly();
+            Description = newCollection.AsReadOnly();
         }
 
         public void On(AttributeConfigurationIsRequiredFlagUpdated @event)
