@@ -28,6 +28,8 @@ namespace CloudFabric.EAV.Domain.Models
         
         public Guid? TenantId { get; protected set; }
 
+        public bool IsDeleted { get; protected set; }
+
         public virtual List<string> Validate(AttributeInstance? instance)
         {
             if (IsRequired && instance == null)
@@ -86,6 +88,11 @@ namespace CloudFabric.EAV.Domain.Models
         public void UpdateIsRequiredFlag(bool newIsRequiredFlag)
         {
             Apply(new AttributeConfigurationIsRequiredFlagUpdated(Id, newIsRequiredFlag));
+        }
+
+        public void Delete()
+        {
+            Apply(new AttributeConfigurationDeleted(Id));
         }
 
         public override bool Equals(object obj)
@@ -183,6 +190,10 @@ namespace CloudFabric.EAV.Domain.Models
             IsRequired = @event.NewIsRequired;
         }
 
+        public void On(AttributeConfigurationDeleted @event)
+        {
+            IsDeleted = true;
+        }
         #endregion
     }
 }

@@ -1,5 +1,6 @@
 using CloudFabric.EAV.Domain.Events.Configuration.Entity;
 using CloudFabric.EAV.Domain.Models.Base;
+using CloudFabric.EAV.Domain.Projections.AttributeConfigurationProjection;
 using CloudFabric.Projections;
 
 namespace CloudFabric.EAV.Domain.Projections.EntityConfigurationProjection;
@@ -18,12 +19,23 @@ public class EntityConfigurationProjectionBuilder : ProjectionBuilder<EntityConf
 
     public async Task On(EntityConfigurationCreated @event)
     {
+        List<AttributeConfigurationReference> attributes = new();
+
+        foreach (var eventAttribute in @event.Attributes)
+        {
+            attributes.Add(new AttributeConfigurationReference
+            {
+                AttributeConfigurationId = eventAttribute.AttributeConfigurationId
+            });
+        }
+
         await UpsertDocument(new EntityConfigurationProjectionDocument
         {
             Id = @event.Id,
             Name = @event.Name,
             MachineName = @event.MachineName,
-            TenantId = @event.TenantId
+            TenantId = @event.TenantId,
+            Attributes = attributes
         },
         @event.PartitionKey);
     }
@@ -72,13 +84,12 @@ public class EntityConfigurationProjectionBuilder : ProjectionBuilder<EntityConf
             @event.PartitionKey,
             (document) =>
             {
-                // var attributes = document[nameof(EntityConfigurationProjectionDocument.Attributes)] as List<AttributeConfiguration>;
-                // var attributeToRemove = attributes?.FirstOrDefault(x => x. == @event..AttributeMachineName);
-                //
-                // if (attributeToRemove != null)
-                // {
-                //     attributes.Remove(attributeToRemove);
-                // }
+                var attributeToRemove = document.Attributes.FirstOrDefault(a => a.AttributeConfigurationId == @event.AttributeConfigurationId);
+
+                if (attributeToRemove != null)
+                {
+                    document.Attributes = document.Attributes.Where(a => a.AttributeConfigurationId != attributeToRemove.AttributeConfigurationId).ToList();
+                }
             }
         );
     }

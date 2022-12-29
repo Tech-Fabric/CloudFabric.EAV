@@ -11,6 +11,7 @@ public class AttributeConfigurationProjectionBuilder : ProjectionBuilder<Attribu
     IHandleEvent<AttributeConfigurationNameUpdated>,
     IHandleEvent<AttributeConfigurationDescriptionUpdated>,
     IHandleEvent<AttributeConfigurationIsRequiredFlagUpdated>,
+    IHandleEvent<AttributeConfigurationDeleted>,
     IHandleEvent<EntityInstanceCreated>,
     IHandleEvent<AttributeInstanceAdded>,
     IHandleEvent<AttributeInstanceRemoved>
@@ -107,6 +108,11 @@ public class AttributeConfigurationProjectionBuilder : ProjectionBuilder<Attribu
                 document.IsRequired = @event.NewIsRequired;
             }
         );
+    }
+
+    public async Task On(AttributeConfigurationDeleted @event)
+    {
+        await DeleteDocument(@event.Id, @event.PartitionKey);
     }
 
     public async Task On(EntityInstanceCreated @event)
