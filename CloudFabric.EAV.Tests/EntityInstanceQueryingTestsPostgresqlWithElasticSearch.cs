@@ -8,7 +8,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace CloudFabric.EAV.Tests;
 
-[TestClass]
+//[TestClass]
 public class EntityInstanceQueryingTestsPostgresqlWithElasticSearch : EntityInstanceQueryingTests
 {
     private IEventStore _eventStore;
