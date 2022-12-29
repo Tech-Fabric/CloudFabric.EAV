@@ -11,7 +11,6 @@
 
     <ItemGroup>
         <PackageReference Include="AutoMapper" Version="11.0.1" />
-        <PackageReference Include="CloudFabric.Projections.ElasticSearch" Version="0.0.21" />
         <PackageReference Include="coverlet.msbuild" Version="3.1.2">
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
             <PrivateAssets>all</PrivateAssets>
@@ -32,6 +31,7 @@
       <ProjectReference Include="..\..\CloudFabric.EventSourcing\CloudFabric.Projections\CloudFabric.Projections.csproj" />
       <ProjectReference Include="..\..\CloudFabric.EventSourcing\Implementations\CloudFabric.EventSourcing.EventStore.InMemory\CloudFabric.EventSourcing.EventStore.InMemory.csproj" />
       <ProjectReference Include="..\..\CloudFabric.EventSourcing\Implementations\CloudFabric.EventSourcing.EventStore.Postgresql\CloudFabric.EventSourcing.EventStore.Postgresql.csproj" />
+      <ProjectReference Include="..\..\CloudFabric.EventSourcing\Implementations\CloudFabric.Projections.ElasticSearch\CloudFabric.Projections.ElasticSearch.csproj" />
       <ProjectReference Include="..\..\CloudFabric.EventSourcing\Implementations\CloudFabric.Projections.InMemory\CloudFabric.Projections.InMemory.csproj" />
       <ProjectReference Include="..\..\CloudFabric.EventSourcing\Implementations\CloudFabric.Projections.Postgresql\CloudFabric.Projections.Postgresql.csproj" />
       <ProjectReference Include="..\CloudFabric.EAV.Models\CloudFabric.EAV.Models.LocalEventSourcingPackages.csproj" />
