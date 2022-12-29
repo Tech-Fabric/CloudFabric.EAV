@@ -1,11 +1,13 @@
 using CloudFabric.EAV.Domain.Events.Instance.Entity;
 using CloudFabric.EAV.Domain.Models;
-using CloudFabric.EAV.Domain.Projections.EntityConfigurationProjection;
+using CloudFabric.EAV.Domain.Projections.EntityInstanceProjection;
 using CloudFabric.EventSourcing.Domain;
 using CloudFabric.Projections;
 using CloudFabric.Projections.Queries;
 
-namespace CloudFabric.EAV.Domain.Projections.EntityInstanceProjection;
+using ProjectionDocumentSchemaFactory = CloudFabric.EAV.Domain.Projections.EntityInstanceProjection.ProjectionDocumentSchemaFactory;
+
+namespace CloudFabric.EAV.Domain.LocalEventSourcingPackages.Projections.EntityInstanceProjection;
 
 public class EntityInstanceProjectionBuilder : ProjectionBuilder,
     IHandleEvent<EntityInstanceCreated>
@@ -58,15 +60,34 @@ public class EntityInstanceProjectionBuilder : ProjectionBuilder,
             { "Id", @event.Id },
             { "EntityConfigurationId", @event.EntityConfigurationId },
             { "TenantId", @event.TenantId },
-            {"CategoryPath", @event.CategoryPath}
+            {"CategoryPath", @event.CategoryPath},
+            {"ParentalAttributes", new Dictionary<string, object?>()} 
         };
         
         foreach (var attribute in @event.Attributes)
         {
             document.Add(attribute.ConfigurationAttributeMachineName, attribute.GetValue());
         }
-
-        // TODO: Build parental attributes
+        
+        var lastParentId = @event.CategoryPath.Split("/").LastOrDefault();
+        if (lastParentId != null)
+        {
+            var lastParent = await _aggregateRepositoryFactory
+                .GetAggregateRepository<EntityInstance>()
+                .LoadAsyncOrThrowNotFound(Guid.Parse(lastParentId), lastParentId);
+            
+            var lastParentSchema = await BuildProjectionDocumentSchemaForEntityConfigurationId(lastParent.EntityConfigurationId);
+        
+            var lastParentProjection = await ProjectionRepositoryFactory.GetProjectionRepository(lastParentSchema)
+                .Single(lastParent.Id, lastParent.PartitionKey);
+            Dictionary<string, object?> parentalAttributes = lastParentProjection?["ParentalAttributes"] as Dictionary<string, object?> ?? new Dictionary<string, object?>();
+            foreach (var attr in lastParent.Attributes) 
+            {
+                parentalAttributes.Add(attr.ConfigurationAttributeMachineName, attr.GetValue());
+            } 
+        
+            document["ParentalAttributes"] = parentalAttributes;
+        }
         
         await UpsertDocument(
             projectionDocumentSchema,
@@ -135,7 +156,7 @@ public class EntityInstanceProjectionBuilder : ProjectionBuilder,
                     parentalAttributes.Add(new KeyValuePair<string, List<AttributeInstance>>(instanceId.ToString(), newAttributes));
                 }
 
-                // TODO: cache 
+`                // TODO: cache 
                 var childProjectionDocumentSchema = await BuildProjectionDocumentSchemaForEntityConfigurationId(
                     child.EntityConfigurationId
                 );

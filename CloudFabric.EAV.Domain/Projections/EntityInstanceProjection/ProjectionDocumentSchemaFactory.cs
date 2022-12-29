@@ -78,8 +78,7 @@ public static class ProjectionDocumentSchemaFactory
         {
             PropertyName = "CategoryPath",
             PropertyType = TypeCode.String,
-            IsRetrievable = true,
-            
+            IsRetrievable = true,    
             IsFacetable = false,
             IsNestedArray = false
         });

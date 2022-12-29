@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 
 using AutoMapper;
 
+using CloudFabric.EAV.Domain.LocalEventSourcingPackages.Projections.EntityInstanceProjection;
 using CloudFabric.EAV.Domain.Models;
 using CloudFabric.EAV.Domain.Projections.AttributeConfigurationProjection;
 using CloudFabric.EAV.Domain.Projections.EntityConfigurationProjection;
