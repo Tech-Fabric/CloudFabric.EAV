@@ -7,6 +7,6 @@ namespace CloudFabric.EAV.Models.ViewModels.Attributes
     [JsonConverter(typeof(PolymorphicJsonConverter<AttributeInstanceViewModel>))]
     public class AttributeInstanceViewModel
     {
-        public string ConfigurationAttributeMachineName { get; protected set; }
+        public string ConfigurationAttributeMachineName { get; set; }
     }
 }

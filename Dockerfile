@@ -51,6 +51,28 @@ RUN service postgresql start \
 USER root
 WORKDIR /
 
+
+#---------------------------------------------------------------------
+# Test elasticsearch setup
+#---------------------------------------------------------------------
+RUN wget https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-8.5.0-amd64.deb
+RUN wget https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-8.5.0-amd64.deb.sha512
+RUN shasum -a 512 -c elasticsearch-8.5.0-amd64.deb.sha512
+RUN dpkg -i elasticsearch-8.5.0-amd64.deb
+# Replace home dir - needed for su
+RUN sed -i "s|elasticsearch\(.*\)\/nonexistent\(.*\)|elasticsearch\1/usr/share/elasticsearch\2|g" /etc/passwd
+# Replace shell
+RUN sed -i "s|elasticsearch\(.*\)\/bin\/false|elasticsearch\1/bin/bash|g" /etc/passwd
+RUN sed -i "s|xpack.security.enabled: true|xpack.security.enabled: false|g" /etc/elasticsearch/elasticsearch.yml
+RUN sed -i "s|cluster.initial_master_nodes:\(.*\)|# cluster.initial_master_nodes:\1|g" /etc/elasticsearch/elasticsearch.yml
+RUN printf '%s\n' 'cluster.routing.allocation.disk.watermark.low: "1gb"' \
+    'cluster.routing.allocation.disk.watermark.high: "500mb"' \
+    'cluster.routing.allocation.disk.watermark.flood_stage: "500mb"' \
+    'cluster.info.update.interval: "30m"' >> /etc/elasticsearch/elasticsearch.yml
+#---------------------------------------------------------------------
+# /Test elasticsearch setup
+#---------------------------------------------------------------------
+
 #---------------------------------------------------------------------
 # Nuget restore 
 # !Important: this is a nice hack to avoid package restoration on each docker build step.
@@ -86,7 +108,7 @@ RUN if [ -n "$SONAR_TOKEN" ] ; then dotnet sonarscanner begin \
   /d:sonar.login="$SONAR_TOKEN" \
   /d:sonar.cs.opencover.reportsPaths=/artifacts/tests/*/coverage.opencover.xml ; fi
 
-RUN service postgresql start && \
+RUN su elasticsearch -c '/usr/share/elasticsearch/bin/elasticsearch' & service postgresql start && sleep 20 && \
     dotnet test /src/CloudFabric.EAV.Tests/CloudFabric.EAV.Tests.csproj --logger trx --results-directory /artifacts/tests --configuration Release --collect:"XPlat Code Coverage" -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=json,cobertura,lcov,teamcity,opencover
 
 ARG COVERAGE_REPORT_GENERATOR_LICENSE
