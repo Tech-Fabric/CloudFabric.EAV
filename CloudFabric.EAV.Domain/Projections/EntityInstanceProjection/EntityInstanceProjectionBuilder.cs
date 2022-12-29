@@ -27,17 +27,24 @@ public class EntityInstanceProjectionBuilder : ProjectionBuilder,
     }
 
     private async Task<ProjectionDocumentSchema> BuildProjectionDocumentSchemaForEntityConfigurationId(
-        Guid entityConfigurationId
-    )
+        Guid entityConfigurationId,
+        List<AttributeConfiguration>? parentAttributeConfigurations)
     {
         var entityConfiguration = await _aggregateRepositoryFactory
             .GetAggregateRepository<EntityConfiguration>()
             .LoadAsyncOrThrowNotFound(entityConfigurationId, entityConfigurationId.ToString());
 
-        List<AttributeConfiguration> attributes = new List<AttributeConfiguration>();
+        List<AttributeConfiguration> attributes = await BuildAttributesListFromAttributesReferences(entityConfiguration.Attributes.ToList());
 
-        foreach (var attributeReference in entityConfiguration.Attributes)
-        {
+        return ProjectionDocumentSchemaFactory.FromEntityConfiguration(entityConfiguration, attributes, parentAttributeConfigurations);
+    }
+
+    private async Task<List<AttributeConfiguration>> BuildAttributesListFromAttributesReferences(List<EntityConfigurationAttributeReference> references)
+    {
+        List<AttributeConfiguration> attributes = new List<AttributeConfiguration>();
+        //TODO optimize this
+        foreach (var attributeReference in references)
+        {  
             var attribute = await _aggregateRepositoryFactory
                 .GetAggregateRepository<AttributeConfiguration>()
                 .LoadAsyncOrThrowNotFound(attributeReference.AttributeConfigurationId,
@@ -45,14 +52,43 @@ public class EntityInstanceProjectionBuilder : ProjectionBuilder,
                 );
             attributes.Add(attribute);
         }
-
-        return ProjectionDocumentSchemaFactory.FromEntityConfiguration(entityConfiguration, attributes, null);
+        return attributes;
     }
-
     public async Task On(EntityInstanceCreated @event)
     {
+        var parentIds = @event.CategoryPath.Split("/").ToList();
+        var allParentalAttributesConfigurations = new List<AttributeConfiguration>();
+        var allParentalAttributes = new Dictionary<string, object?>();
+        
+        if (parentIds.Any())
+        {
+            var repo = _aggregateRepositoryFactory
+                .GetAggregateRepository<EntityInstance>();
+            foreach (var parentIdString in parentIds)
+            {
+                if (!string.IsNullOrEmpty(parentIdString))
+                {
+                    var parentEntityInstance = await repo.LoadAsyncOrThrowNotFound(Guid.Parse(parentIdString), parentIdString);
+                    var entityConfiguration = await _aggregateRepositoryFactory
+                        .GetAggregateRepository<EntityConfiguration>()
+                        .LoadAsyncOrThrowNotFound(parentEntityInstance.EntityConfigurationId, parentEntityInstance.EntityConfigurationId.ToString());
+
+                    List<AttributeConfiguration> attributes = await BuildAttributesListFromAttributesReferences(entityConfiguration.Attributes.ToList());
+                
+                    allParentalAttributesConfigurations.AddRange(attributes);
+                
+                    //TODO: rewrite on linq
+                    foreach (var attribute in parentEntityInstance.Attributes)
+                    {
+                        allParentalAttributes.Add(attribute.ConfigurationAttributeMachineName, attribute.GetValue());
+                    }
+                }
+            }
+        }
+        
         var projectionDocumentSchema = await BuildProjectionDocumentSchemaForEntityConfigurationId(
-            @event.EntityConfigurationId
+            @event.EntityConfigurationId,
+            allParentalAttributesConfigurations
         );
 
         var document = new Dictionary<string, object?>()
@@ -61,34 +97,13 @@ public class EntityInstanceProjectionBuilder : ProjectionBuilder,
             { "EntityConfigurationId", @event.EntityConfigurationId },
             { "TenantId", @event.TenantId },
             {"CategoryPath", @event.CategoryPath},
-            {"ParentalAttributes", new Dictionary<string, object?>()} 
+            {"ParentalAttributes", allParentalAttributes},
+            {"Attributes", new Dictionary<string, object?>()}
         };
-        
         foreach (var attribute in @event.Attributes)
         {
             document.Add(attribute.ConfigurationAttributeMachineName, attribute.GetValue());
         }
-        
-        var lastParentId = @event.CategoryPath.Split("/").LastOrDefault();
-        if (lastParentId != null)
-        {
-            var lastParent = await _aggregateRepositoryFactory
-                .GetAggregateRepository<EntityInstance>()
-                .LoadAsyncOrThrowNotFound(Guid.Parse(lastParentId), lastParentId);
-            
-            var lastParentSchema = await BuildProjectionDocumentSchemaForEntityConfigurationId(lastParent.EntityConfigurationId);
-        
-            var lastParentProjection = await ProjectionRepositoryFactory.GetProjectionRepository(lastParentSchema)
-                .Single(lastParent.Id, lastParent.PartitionKey);
-            Dictionary<string, object?> parentalAttributes = lastParentProjection?["ParentalAttributes"] as Dictionary<string, object?> ?? new Dictionary<string, object?>();
-            foreach (var attr in lastParent.Attributes) 
-            {
-                parentalAttributes.Add(attr.ConfigurationAttributeMachineName, attr.GetValue());
-            } 
-        
-            document["ParentalAttributes"] = parentalAttributes;
-        }
-        
         await UpsertDocument(
             projectionDocumentSchema,
             document,
@@ -99,7 +114,8 @@ public class EntityInstanceProjectionBuilder : ProjectionBuilder,
     private async Task UpdateChildren(Guid instanceId, Guid entityConfigurationId, string currentCategoryPath, string partitionKey, List<AttributeInstance>? newAttributes = null, string newCategoryPath = "")
     {
         var projectionDocumentSchema = await BuildProjectionDocumentSchemaForEntityConfigurationId(
-            entityConfigurationId
+            entityConfigurationId,
+            null
         );
         List<string> idsToRemove = null;
         List<string>? idsToAdd = null;
@@ -156,9 +172,10 @@ public class EntityInstanceProjectionBuilder : ProjectionBuilder,
                     parentalAttributes.Add(new KeyValuePair<string, List<AttributeInstance>>(instanceId.ToString(), newAttributes));
                 }
 
-`                // TODO: cache 
+                // TODO: cache 
                 var childProjectionDocumentSchema = await BuildProjectionDocumentSchemaForEntityConfigurationId(
-                    child.EntityConfigurationId
+                    child.EntityConfigurationId,
+                    null
                 );
                 await UpdateDocument(childProjectionDocumentSchema,
                     child.Id.Value,

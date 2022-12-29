@@ -111,7 +111,7 @@ public class EntityInstanceQueryingTests
     [TestCleanup]
     public async Task Cleanup()
     {
-        await _eventStore.DeleteAll();
+       // await _eventStore.DeleteAll();
 
         try
         {

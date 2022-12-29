@@ -7,6 +7,49 @@ namespace CloudFabric.EAV.Tests.Factories;
 
 public class EntityInstanceFactory
 {
+
+    public static EntityInstanceCreateRequest CreateValidTireEntityInstanceCreateRequest(Guid entityConfigurationId)
+    {
+        return new EntityInstanceCreateRequest()
+        {
+            EntityConfigurationId = entityConfigurationId,
+            Attributes = new List<AttributeInstanceCreateUpdateRequest>()
+            {
+                new LocalizedTextAttributeInstanceCreateUpdateRequest()
+                {
+                    ConfigurationAttributeMachineName = "brand",
+                    Value = new List<LocalizedStringCreateRequest>()
+                    {
+                        new LocalizedStringCreateRequest()
+                        {
+                            CultureInfoId = CultureInfo.GetCultureInfo("en-US").LCID,
+                            String = "Pirelli"
+                        },
+                        new LocalizedStringCreateRequest()
+                        {
+                            CultureInfoId = CultureInfo.GetCultureInfo("de-DE").LCID,
+                            String = "Pirelli"
+                        }
+                    }
+                },
+                new NumberAttributeInstanceCreateUpdateRequest()
+                {
+                    ConfigurationAttributeMachineName = "width",
+                    Value = 205
+                },
+                new NumberAttributeInstanceCreateUpdateRequest()
+                {
+                    ConfigurationAttributeMachineName = "height",
+                    Value = 55
+                },
+                new NumberAttributeInstanceCreateUpdateRequest()
+                {
+                    ConfigurationAttributeMachineName = "diameter",
+                    Value = 16
+                }
+            }
+        };
+    }
     public static EntityInstanceCreateRequest CreateValidBoardGameEntityInstanceCreateRequest(Guid entityConfigurationId)
     {
         return new EntityInstanceCreateRequest()
@@ -96,4 +139,6 @@ public class EntityInstanceFactory
             }
         };
     }
+    
+    
 }

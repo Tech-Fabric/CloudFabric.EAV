@@ -12,5 +12,7 @@ namespace CloudFabric.EAV.Models.RequestModels
         public List<AttributeInstanceCreateUpdateRequest> Attributes { get; set; }
         
         public Guid? TenantId { get; set; }
+        
+        public string CategoryPath { get; set; }
     }
 }

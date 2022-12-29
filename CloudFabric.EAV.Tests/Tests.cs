@@ -4,6 +4,7 @@ using System.Text.Json;
 using AutoMapper;
 
 using CloudFabric.EAV.Domain.Enums;
+using CloudFabric.EAV.Domain.LocalEventSourcingPackages.Projections.EntityInstanceProjection;
 using CloudFabric.EAV.Domain.Models;
 using CloudFabric.EAV.Domain.Projections.AttributeConfigurationProjection;
 using CloudFabric.EAV.Domain.Projections.EntityConfigurationProjection;
@@ -35,7 +36,6 @@ public class Tests
 {
     private AggregateRepositoryFactory _aggregateRepositoryFactory;
     private PostgresqlProjectionRepositoryFactory _projectionRepositoryFactory;
-
     private EAVService _eavService;
 
     private IEventStore _eventStore;
@@ -81,9 +81,11 @@ public class Tests
         );
         var ordersListProjectionBuilder = new EntityConfigurationProjectionBuilder(_projectionRepositoryFactory);
 
+        var entityInstanceProjectionBuilder = new EntityInstanceProjectionBuilder(_aggregateRepositoryFactory, _projectionRepositoryFactory);
         projectionsEngine.AddProjectionBuilder(attributeConfigurationProjectionBuilder);
         projectionsEngine.AddProjectionBuilder(ordersListProjectionBuilder);
-
+        
+        projectionsEngine.AddProjectionBuilder(entityInstanceProjectionBuilder);
 
         await projectionsEngine.StartAsync("TestInstance");
 
@@ -100,7 +102,7 @@ public class Tests
     [TestCleanup]
     public async Task Cleanup()
     {
-        await _eventStore.DeleteAll();
+        //await _eventStore.DeleteAll();
 
         try
         {
@@ -110,11 +112,11 @@ public class Tests
             var attributeConfigurationProjectionRepository = _projectionRepositoryFactory
                 .GetProjectionRepository<AttributeConfigurationProjectionDocument>();
 
-            await entityConfigurationProjectionRepository.DeleteAll();
-            await attributeConfigurationProjectionRepository.DeleteAll();
+            //await entityConfigurationProjectionRepository.DeleteAll();
+            //await attributeConfigurationProjectionRepository.DeleteAll();
 
             var rebuildStateRepository = GetProjectionRebuildStateRepository();
-            await rebuildStateRepository.DeleteAll();
+            //await rebuildStateRepository.DeleteAll();
         }
         catch
         {
@@ -1113,6 +1115,39 @@ public class Tests
         AttributeConfigurationCreateUpdateRequest attribute = JsonSerializer.Deserialize<AttributeConfigurationCreateUpdateRequest>(jsonString, deserializeOptions)!;
         attribute.As<NumberAttributeConfigurationCreateUpdateRequest>().ValueType.Should().Be(EavAttributeType.Number);
         attribute.MachineName.Should().Be("test");
+    }
+    
+    [TestMethod]
+    public async Task CreateInheritedInstance_Success()
+    {
+        var parentConfigurationCreateRequest = EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
+
+        var childConfigurationCreateRequest = EntityConfigurationFactory.CreateCarTireEntityConfigurationCreateRequest();
+
+        (EntityConfigurationViewModel? parentCreatedConfiguration, _) = await _eavService.CreateEntityConfiguration(
+            parentConfigurationCreateRequest,
+            CancellationToken.None
+        );
+
+        (EntityConfigurationViewModel? childCreatedConfiguration, _) = await _eavService.CreateEntityConfiguration(
+            childConfigurationCreateRequest,
+            CancellationToken.None
+        );
+
+        var parentEntityInstanceCreateRequest =
+            EntityInstanceFactory.CreateValidBoardGameEntityInstanceCreateRequest(parentCreatedConfiguration.Id);
+        
+        var childEntityInstanceCreateRequest = EntityInstanceFactory.CreateValidTireEntityInstanceCreateRequest(childCreatedConfiguration.Id);
+        
+        (EntityInstanceViewModel parentCreatedInstance, ProblemDetails validationErrors) =
+            await _eavService.CreateEntityInstance(parentEntityInstanceCreateRequest);
+
+        var parentId = parentCreatedInstance.Id;
+        childEntityInstanceCreateRequest.CategoryPath = $"/{parentId}";
+        
+        (EntityInstanceViewModel childCreatedInstance, ProblemDetails childValidationErrors) =
+            await _eavService.CreateEntityInstance(childEntityInstanceCreateRequest);
+
     }
 
     private IProjectionRepository GetProjectionRepository(ProjectionDocumentSchema schema)

@@ -388,7 +388,6 @@ public class EAVService : IEAVService
 
     public async Task<(EntityInstanceViewModel, ProblemDetails)> CreateEntityInstance(
         EntityInstanceCreateRequest entity,
-        string categoryPath = "",
         CancellationToken cancellationToken = default
     ) {
         EntityConfiguration? entityConfiguration = await _entityConfigurationRepository.LoadAsync(
@@ -411,7 +410,7 @@ public class EAVService : IEAVService
         var entityInstance = new EntityInstance(
             Guid.NewGuid(),
             entity.EntityConfigurationId,
-            categoryPath,
+            entity.CategoryPath ?? "",
             _mapper.Map<List<AttributeInstance>>(entity.Attributes),
             entity.TenantId
         );
