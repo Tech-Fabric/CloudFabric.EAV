@@ -300,8 +300,8 @@ public class Tests
         (EntityConfigurationViewModel entityConfig, ProblemDetails? _) = await _eavService.CreateEntityConfiguration(configurationCreateRequest, CancellationToken.None);
 
         await _eavService.DeleteAttributesFromEntityConfiguration(new List<Guid> { Guid.NewGuid() }, entityConfig.Id, CancellationToken.None);
-        var entityConfigAfterTryDeleteUnexAttribute = await _eavService.GetEntityConfiguration(entityConfig.Id, entityConfig.Id.ToString());
-        entityConfigAfterTryDeleteUnexAttribute.Attributes.Count.Should().Be(entityConfig.Attributes.Count);
+        var entityConfigAfterDeletingNotExistingAttribute = await _eavService.GetEntityConfiguration(entityConfig.Id, entityConfig.Id.ToString());
+        entityConfigAfterDeletingNotExistingAttribute.Attributes.Count.Should().Be(entityConfig.Attributes.Count);
     }
 
     //
