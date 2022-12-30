@@ -31,6 +31,7 @@
       <ProjectReference Include="..\..\CloudFabric.EventSourcing\CloudFabric.Projections\CloudFabric.Projections.csproj" />
       <ProjectReference Include="..\..\CloudFabric.EventSourcing\Implementations\CloudFabric.EventSourcing.EventStore.InMemory\CloudFabric.EventSourcing.EventStore.InMemory.csproj" />
       <ProjectReference Include="..\..\CloudFabric.EventSourcing\Implementations\CloudFabric.EventSourcing.EventStore.Postgresql\CloudFabric.EventSourcing.EventStore.Postgresql.csproj" />
+      <ProjectReference Include="..\..\CloudFabric.EventSourcing\Implementations\CloudFabric.Projections.ElasticSearch\CloudFabric.Projections.ElasticSearch.csproj" />
       <ProjectReference Include="..\..\CloudFabric.EventSourcing\Implementations\CloudFabric.Projections.InMemory\CloudFabric.Projections.InMemory.csproj" />
       <ProjectReference Include="..\..\CloudFabric.EventSourcing\Implementations\CloudFabric.Projections.Postgresql\CloudFabric.Projections.Postgresql.csproj" />
       <ProjectReference Include="..\CloudFabric.EAV.Models\CloudFabric.EAV.Models.LocalEventSourcingPackages.csproj" />

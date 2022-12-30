@@ -46,6 +46,8 @@ public class EAVService : IEAVService
 
     private readonly EventUserInfo _userInfo;
 
+    private readonly EntityInstanceFromDictionaryDeserializer _entityInstanceFromDictionaryDeserializer;
+
     public EAVService(
         ILogger<EAVService> logger,
         IMapper mapper,
@@ -71,6 +73,8 @@ public class EAVService : IEAVService
             .GetProjectionRepository<AttributeConfigurationProjectionDocument>();
         _entityConfigurationProjectionRepository = _projectionRepositoryFactory
             .GetProjectionRepository<EntityConfigurationProjectionDocument>();
+
+        _entityInstanceFromDictionaryDeserializer = new EntityInstanceFromDictionaryDeserializer(_mapper);
     }
 
     #region EntityConfiguration
@@ -238,7 +242,7 @@ public class EAVService : IEAVService
                 (AttributeConfigurationCreateUpdateRequest)attribute
             );
         }
-        
+
         if (!await CheckAttributesListMachineNameUnique(entityUpdateRequest.Attributes, cancellationToken))
         {
             return (
@@ -246,7 +250,7 @@ public class EAVService : IEAVService
                 new ValidationErrorResponse(nameof(entityUpdateRequest.Attributes), "Attributes machine name must be unique")
             )!;
         }
-        
+
         var entityConfiguration = await _entityConfigurationRepository.LoadAsync(
             entityUpdateRequest.Id,
             entityUpdateRequest.Id.ToString(),
@@ -321,7 +325,7 @@ public class EAVService : IEAVService
     }
 
     public async Task<(EntityConfigurationViewModel?, ProblemDetails?)> AddAttributeToEntityConfiguration(
-        Guid attributeId, 
+        Guid attributeId,
         Guid entityConfigurationId,
         CancellationToken cancellationToken = default
     )
@@ -379,20 +383,20 @@ public class EAVService : IEAVService
         );
 
         if (!await IsAttributeMachineNameUniqueForEntityConfiguration(
-                attributeConfigurationCreateUpdateRequest.MachineName, 
+                attributeConfigurationCreateUpdateRequest.MachineName,
                 entityConfiguration,
                 cancellationToken
             )
         )
         {
             return (
-                null, 
+                null,
                 new ValidationErrorResponse(nameof(attributeConfigurationCreateUpdateRequest.MachineName), "Machine name already exists in this configuration. Please consider using different name")
             )!;
         }
 
         AttributeConfigurationViewModel createdAttribute = await CreateAttribute(attributeConfigurationCreateUpdateRequest, cancellationToken);
-        
+
         entityConfiguration.AddAttribute(createdAttribute.Id);
         await _entityConfigurationRepository.SaveAsync(_userInfo, entityConfiguration, cancellationToken);
 
@@ -526,7 +530,7 @@ public class EAVService : IEAVService
             entity.EntityConfigurationId.ToString(),
             cancellationToken
         );
-        
+
         if (entityConfiguration == null)
         {
             return (null, new ValidationErrorResponse("EntityConfigurationId", "Configuration not found"))!;
@@ -583,7 +587,7 @@ public class EAVService : IEAVService
     public async Task<(EntityInstanceViewModel, ProblemDetails)> UpdateEntityInstance(string partitionKey, EntityInstanceUpdateRequest updateRequest, CancellationToken cancellationToken)
     {
         EntityInstance? entityInstance = await _entityInstanceRepository.LoadAsync(updateRequest.Id, partitionKey, cancellationToken);
-        
+
         if (entityInstance == null)
         {
             return (null, new ValidationErrorResponse(nameof(updateRequest.Id), "Entity instance not found"))!;
@@ -685,7 +689,7 @@ public class EAVService : IEAVService
         return (_mapper.Map<EntityInstanceViewModel>(entityInstance), null)!;
     }
 
-    public async Task<ProjectionQueryResult<Dictionary<string, object?>>> QueryInstances(
+    public async Task<ProjectionQueryResult<EntityInstanceViewModel>> QueryInstances(
         Guid entityConfigurationId,
         ProjectionQuery query,
         CancellationToken cancellationToken = default(CancellationToken)
@@ -708,7 +712,10 @@ public class EAVService : IEAVService
         var projectionRepository = _projectionRepositoryFactory.GetProjectionRepository(schema);
 
         var results = await projectionRepository.Query(query, entityConfigurationId.ToString(), cancellationToken);
-        return results;
+
+        return results.TransformResultDocuments(
+            r => _entityInstanceFromDictionaryDeserializer.Deserialize(entityConfiguration, attributes, r)
+        );
     }
 
     private async Task<List<AttributeConfiguration>> GetAttributeConfigurationsForEntityConfiguration(
@@ -760,7 +767,7 @@ public class EAVService : IEAVService
         {
             return true;
         }
-        
+
         // create attributes filter
         var attributes = await GetAttributesByIds(attributesIds, cancellationToken);
 
@@ -768,10 +775,10 @@ public class EAVService : IEAVService
         {
             return false;
         }
-        
+
         return true;
     }
-    
+
     private async Task<bool> CheckAttributesListMachineNameUnique(List<EntityAttributeConfigurationCreateUpdateRequest> attributesRequest, CancellationToken cancellationToken)
     {
         // validate reference attributes don't have the same machine name
@@ -788,7 +795,7 @@ public class EAVService : IEAVService
                 .Select(x => x.Document?.MachineName!)
                 .ToList();
         }
-        
+
         // validate new attributes don't have the same machine name
         var newAttributes = attributesRequest.Where(x => x is AttributeConfigurationCreateUpdateRequest);
 
@@ -811,7 +818,7 @@ public class EAVService : IEAVService
     {
         // create attributes filter
         Filter attributeIdFilter = new(nameof(AttributeConfigurationProjectionDocument.Id), FilterOperator.Equal, attributesIds[0]);
-        
+
         foreach (Guid attributesId in attributesIds.Skip(1))
         {
             attributeIdFilter.Filters.Add(
@@ -819,7 +826,7 @@ public class EAVService : IEAVService
                     FilterLogic.Or, new Filter(nameof(AttributeConfigurationProjectionDocument.Id), FilterOperator.Equal, attributesId))
             );
         }
-        
+
         ProjectionQueryResult<AttributeConfigurationListItemViewModel> attributes = await ListAttributes(
             new ProjectionQuery
             {

@@ -934,6 +934,9 @@ public class Tests
         );
 
         EntityInstanceCreateRequest entityInstanceCreateRequest = EntityInstanceFactory.CreateValidBoardGameEntityInstanceCreateRequest(createdConfiguration.Id);
+        entityInstanceCreateRequest.Attributes.RemoveAll(a =>
+            a.ConfigurationAttributeMachineName == changedAttributeName
+        );
         entityInstanceCreateRequest.Attributes.Add(new NumberAttributeInstanceCreateUpdateRequest
         {
             ConfigurationAttributeMachineName = changedAttributeName,

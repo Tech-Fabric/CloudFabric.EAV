@@ -68,36 +68,6 @@ public static class EntityConfigurationFactory
                     },
                     TenantId = tenantId
                 },
-                new ArrayAttributeConfigurationCreateUpdateRequest()
-                {
-                    MachineName = "images",
-                    Name = new List<LocalizedStringCreateRequest>()
-                    {
-                        new LocalizedStringCreateRequest()
-                        {
-                            CultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID,
-                            String = "Images"
-                        },
-                        new LocalizedStringCreateRequest()
-                        {
-                            CultureInfoId = CultureInfo.GetCultureInfo("RU-ru").LCID,
-                            String = "Изображения"
-                        }
-                    },
-                    ItemsType = EavAttributeType.Image,
-                    ItemsAttributeConfiguration = new ImageAttributeConfigurationCreateUpdateRequest()
-                    {
-                        ThumbnailsConfiguration = new List<ImageThumbnailDefinitionCreateUpdateRequest>()
-                        {
-                            new ImageThumbnailDefinitionCreateUpdateRequest()
-                            {
-                                MaxHeight = 400,
-                                MaxWidth = 400
-                            }
-                        }
-                    },
-                    TenantId = tenantId
-                },
                 new NumberAttributeConfigurationCreateUpdateRequest()
                 {
                     MachineName = "players_min",
@@ -171,25 +141,6 @@ public static class EntityConfigurationFactory
                     IsRequired = true,
                     TenantId = tenantId
                 },
-                new ValueFromListAttributeConfigurationCreateUpdateRequest
-                {
-                    MachineName = "version",
-                    Name = new List<LocalizedStringCreateRequest>
-                    {
-                        new LocalizedStringCreateRequest
-                        {
-                            CultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID,
-                            String = "Version"
-                        }
-                    },
-                    AttributeMachineNameToAffect = "price",
-                    ValuesList = new List<ValueFromListOptionCreateUpdateRequest>
-                    {
-                        new ValueFromListOptionCreateUpdateRequest("EU", "eu", 100),
-                        new ValueFromListOptionCreateUpdateRequest("Extra", "extra", 500)
-                    },
-                    TenantId = tenantId
-                },
                 new DateRangeAttributeConfigurationUpdateRequest
                 {
                     MachineName = "release_date",
@@ -197,14 +148,62 @@ public static class EntityConfigurationFactory
                     {
                         new LocalizedStringCreateRequest
                         {
-                            CultureInfoId =
-                                CultureInfo.GetCultureInfo("EN-us").LCID,
+                            CultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID,
                             String = "Release date"
                         }
                     },
                     TenantId = tenantId,
                     DateRangeAttributeType = DateRangeAttributeType.SingleDate
-                }
+                },
+                new ArrayAttributeConfigurationCreateUpdateRequest()
+                {
+                    MachineName = "images",
+                    Name = new List<LocalizedStringCreateRequest>()
+                    {
+                        new LocalizedStringCreateRequest()
+                        {
+                            CultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID,
+                            String = "Images"
+                        },
+                        new LocalizedStringCreateRequest()
+                        {
+                            CultureInfoId = CultureInfo.GetCultureInfo("RU-ru").LCID,
+                            String = "Изображения"
+                        }
+                    },
+                    ItemsType = EavAttributeType.Image,
+                    ItemsAttributeConfiguration = new ImageAttributeConfigurationCreateUpdateRequest()
+                    {
+                        ThumbnailsConfiguration = new List<ImageThumbnailDefinitionCreateUpdateRequest>()
+                        {
+                            new ImageThumbnailDefinitionCreateUpdateRequest()
+                            {
+                                MaxHeight = 400,
+                                MaxWidth = 400
+                            }
+                        }
+                    },
+                    TenantId = tenantId
+                },
+                // new ValueFromListAttributeConfigurationCreateUpdateRequest
+                // {
+                //     MachineName = "version",
+                //     Name = new List<LocalizedStringCreateRequest>
+                //     {
+                //         new LocalizedStringCreateRequest
+                //         {
+                //             CultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID,
+                //             String = "Version"
+                //         }
+                //     },
+                //     AttributeMachineNameToAffect = "price",
+                //     ValuesList = new List<ValueFromListOptionCreateUpdateRequest>
+                //     {
+                //         new ValueFromListOptionCreateUpdateRequest("EU", "eu", 100),
+                //         new ValueFromListOptionCreateUpdateRequest("Extra", "extra", 500)
+                //     },
+                //     TenantId = tenantId
+                // }
             }
         };
     }
