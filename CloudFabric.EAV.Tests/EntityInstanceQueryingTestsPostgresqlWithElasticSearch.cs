@@ -8,11 +8,13 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace CloudFabric.EAV.Tests;
 
-//[TestClass]
+[TestClass]
 public class EntityInstanceQueryingTestsPostgresqlWithElasticSearch : EntityInstanceQueryingTests
 {
     private IEventStore _eventStore;
     private ProjectionRepositoryFactory _projectionRepositoryFactory;
+
+    protected override TimeSpan ProjectionsUpdateDelay { get; set; } = TimeSpan.FromMilliseconds(1000);
 
     public EntityInstanceQueryingTestsPostgresqlWithElasticSearch()
     {
