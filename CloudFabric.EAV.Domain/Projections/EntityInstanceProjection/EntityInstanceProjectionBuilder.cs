@@ -6,7 +6,8 @@ using CloudFabric.Projections;
 namespace CloudFabric.EAV.Domain.Projections.EntityInstanceProjection;
 
 public class EntityInstanceProjectionBuilder : ProjectionBuilder,
-    IHandleEvent<EntityInstanceCreated>//,
+    IHandleEvent<EntityInstanceCreated>,
+    IHandleEvent<AggregateUpdatedEvent<EntityInstance>>
     // IHandleEvent<AttributeInstanceAdded>,
     // IHandleEvent<AttributeInstanceUpdated>,
     // IHandleEvent<AttributeInstanceRemoved>
@@ -52,7 +53,7 @@ public class EntityInstanceProjectionBuilder : ProjectionBuilder,
 
         var document = new Dictionary<string, object?>()
         {
-            { "Id", @event.Id.ToString() },
+            { "Id", @event.AggregateId.ToString() },
             { "EntityConfigurationId", @event.EntityConfigurationId.ToString() },
             { "TenantId", @event.TenantId.ToString() }
         };
@@ -65,7 +66,8 @@ public class EntityInstanceProjectionBuilder : ProjectionBuilder,
         await UpsertDocument(
             projectionDocumentSchema,
             document,
-            @event.PartitionKey
+            @event.PartitionKey,
+            @event.Timestamp
         );
     }
     //
@@ -124,4 +126,17 @@ public class EntityInstanceProjectionBuilder : ProjectionBuilder,
     //         }
     //     );
     // }
+
+    public async Task On(AggregateUpdatedEvent<EntityInstance> @event)
+    {
+        var entityInstance = await _aggregateRepositoryFactory
+            .GetAggregateRepository<EntityInstance>()
+            .LoadAsyncOrThrowNotFound(@event.AggregateId!.Value, @event.AggregateId!.Value.ToString());
+
+        var schema = await BuildProjectionDocumentSchemaForEntityConfigurationId(
+            entityInstance.EntityConfigurationId
+        );
+
+        await SetDocumentUpdatedAt(schema, @event.AggregateId!.Value, @event.PartitionKey, @event.UpdatedAt);
+    }
 }
