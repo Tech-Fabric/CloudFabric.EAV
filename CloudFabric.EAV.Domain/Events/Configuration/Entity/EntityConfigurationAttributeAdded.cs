@@ -3,5 +3,17 @@ using CloudFabric.EventSourcing.EventStore;
 
 namespace CloudFabric.EAV.Domain.Events.Configuration.Entity;
 
-public record EntityConfigurationAttributeAdded(Guid EntityConfigurationId, EntityConfigurationAttributeReference attributeReference) : Event;
+public record EntityConfigurationAttributeAdded : Event
+{
+    public EntityConfigurationAttributeAdded()
+    {
+    }
 
+    public EntityConfigurationAttributeAdded(Guid entityConfigurationId, EntityConfigurationAttributeReference attributeReference)
+    {
+        AggregateId = entityConfigurationId;
+        AttributeReference = attributeReference;
+    }
+
+    public EntityConfigurationAttributeReference AttributeReference { get; set; }
+}

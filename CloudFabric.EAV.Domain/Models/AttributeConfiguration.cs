@@ -122,7 +122,7 @@ namespace CloudFabric.EAV.Domain.Models
 
         public void On(AttributeConfigurationCreated @event)
         {
-            Id = @event.Id;
+            Id = @event.AggregateId!.Value;
             MachineName = @event.MachineName;
             Name = new List<LocalizedString>(@event.Name).AsReadOnly();
             Description = @event.Description == null
