@@ -5,6 +5,7 @@ using System.Xml.Serialization;
 
 using AutoMapper;
 
+using CloudFabric.EAV.Domain.Enums;
 using CloudFabric.EAV.Domain.Models;
 using CloudFabric.EAV.Domain.Models.Base;
 using CloudFabric.EAV.Domain.Projections.AttributeConfigurationProjection;
@@ -183,7 +184,10 @@ public class EAVService : IEAVService
 
             if (attributeConfiguration.IsDeleted)
             {
-                throw new NotFoundException("Attribute not found");
+                return (
+                    null,
+                    new ValidationErrorResponse(nameof(entityConfigurationCreateRequest.Attributes), "One or more attribute not found")
+                )!;
             }
         }
 
@@ -251,7 +255,7 @@ public class EAVService : IEAVService
 
         if (entityConfiguration == null)
         {
-            throw new NotFoundException();
+            return (null, new ValidationErrorResponse(nameof(entityUpdateRequest.Id), "Entity configuration not found"))!;
         }
 
         // Update config name
@@ -330,7 +334,7 @@ public class EAVService : IEAVService
 
         if (attributeConfiguration.IsDeleted)
         {
-            throw new NotFoundException("Attribute not found");
+            return (null, new ValidationErrorResponse(nameof(attributeId), "Attribute not found"));
         }
         
         var entityConfiguration = await _entityConfigurationRepository.LoadAsyncOrThrowNotFound(
@@ -407,15 +411,9 @@ public class EAVService : IEAVService
 
         foreach (var attributeId in attributesIds)
         {
-            var attributeConfiguration = await _attributeConfigurationRepository.LoadAsync(
-            attributeId,
-            attributeId.ToString(),
-            cancellationToken
-            );
-
-            if (attributeConfiguration != null && listAttributesConfigurations.Any(x => x.Id == attributeId))
+            if (listAttributesConfigurations.Any(x => x.Id == attributeId))
             {
-                entityConfiguration.RemoveAttribute(attributeConfiguration.Id);
+                entityConfiguration.RemoveAttribute(attributeId);
             }
         }
 
@@ -432,7 +430,7 @@ public class EAVService : IEAVService
             cancellationToken
             );
 
-            if (attributeConfiguration != null)
+            if (attributeConfiguration != null && !attributeConfiguration.IsDeleted)
             {
                 attributeConfiguration.Delete();
 
@@ -588,7 +586,7 @@ public class EAVService : IEAVService
         
         if (entityInstance == null)
         {
-            throw new NotFoundException("Entity Instance was not found");
+            return (null, new ValidationErrorResponse(nameof(updateRequest.Id), "Entity instance not found"))!;
         }
 
         EntityConfiguration? entityConfiguration = await _entityConfigurationRepository.LoadAsync(
@@ -599,7 +597,7 @@ public class EAVService : IEAVService
 
         if (entityConfiguration == null)
         {
-            throw new NotFoundException("Entity Configuration was not found");
+            return (null, new ValidationErrorResponse(nameof(updateRequest.EntityConfigurationId), "Entity configuration not found"))!;
         }
 
         var entityConfigurationAttributeConfigurations = await GetAttributeConfigurationsForEntityConfiguration(

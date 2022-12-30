@@ -70,10 +70,10 @@ public class EntityConfigurationProjectionBuilder : ProjectionBuilder<EntityConf
             @event.PartitionKey,
             (document) =>
             {
-                // var attributes = document.Attributes) as List<AttributeConfiguration>;
-                // attributes ??= new();
-
-                //attributes.Add(@event.Attribute);
+                document.Attributes.Add(new AttributeConfigurationReference
+                {
+                    AttributeConfigurationId = @event.attributeReference.AttributeConfigurationId
+                });
             }
         );
     }
@@ -88,7 +88,7 @@ public class EntityConfigurationProjectionBuilder : ProjectionBuilder<EntityConf
 
                 if (attributeToRemove != null)
                 {
-                    document.Attributes = document.Attributes.Where(a => a.AttributeConfigurationId != attributeToRemove.AttributeConfigurationId).ToList();
+                    document.Attributes.Remove(attributeToRemove);
                 }
             }
         );
