@@ -27,6 +27,13 @@ public abstract class EntityInstanceQueryingTests
     private IEventStore _eventStore;
     private ILogger<EAVService> _logger;
 
+    /// <summary>
+    /// Some projection engines take time to catch events and update projection records
+    /// (like cosmosdb with change feed event observer).
+    /// For example, elasticsearch test overrides this with a value of 1000ms
+    /// </summary>
+    protected virtual TimeSpan ProjectionsUpdateDelay { get; set; } = TimeSpan.FromMilliseconds(0);
+
     [TestInitialize]
     public async Task SetUp()
     {
@@ -134,6 +141,8 @@ public abstract class EntityInstanceQueryingTests
         {
             Filters = new List<Filter>() { { new Filter("Id", FilterOperator.Equal, createdInstance.Id.ToString()) } }
         };
+
+        await Task.Delay(ProjectionsUpdateDelay);
 
         var results = await _eavService
             .QueryInstances(createdConfiguration.Id, query);
