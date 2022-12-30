@@ -1,6 +1,7 @@
 using CloudFabric.EAV.Domain.Events.Configuration.Entity;
 using CloudFabric.EAV.Domain.Models;
 using CloudFabric.EAV.Domain.Models.Base;
+using CloudFabric.EAV.Domain.Projections.AttributeConfigurationProjection;
 using CloudFabric.Projections;
 
 namespace CloudFabric.EAV.Domain.Projections.EntityConfigurationProjection;
@@ -20,17 +21,26 @@ public class EntityConfigurationProjectionBuilder : ProjectionBuilder<EntityConf
 
     public async Task On(EntityConfigurationCreated @event)
     {
-        await UpsertDocument(
-            new EntityConfigurationProjectionDocument
+        List<AttributeConfigurationReference> attributes = new();
+
+        foreach (var eventAttribute in @event.Attributes)
+        {
+            attributes.Add(new AttributeConfigurationReference
             {
-                Id = @event.AggregateId,
-                Name = @event.Name,
-                MachineName = @event.MachineName,
-                TenantId = @event.TenantId
-            },
-            @event.PartitionKey,
-            @event.Timestamp
-        );
+                AttributeConfigurationId = eventAttribute.AttributeConfigurationId
+            });
+        }
+
+        await UpsertDocument(new EntityConfigurationProjectionDocument
+        {
+            Id = @event.AggregateId,
+            Name = @event.Name,
+            MachineName = @event.MachineName,
+            TenantId = @event.TenantId,
+            Attributes = attributes
+        },
+        @event.PartitionKey,
+        @event.Timestamp);
     }
 
     public async Task On(EntityConfigurationNameUpdated @event)
@@ -65,10 +75,10 @@ public class EntityConfigurationProjectionBuilder : ProjectionBuilder<EntityConf
             @event.Timestamp,
             (document) =>
             {
-                // var attributes = document.Attributes) as List<AttributeConfiguration>;
-                // attributes ??= new();
-
-                //attributes.Add(@event.Attribute);
+                document.Attributes.Add(new AttributeConfigurationReference
+                {
+                    AttributeConfigurationId = @event.AttributeReference.AttributeConfigurationId
+                });
             }
         );
     }
@@ -80,13 +90,12 @@ public class EntityConfigurationProjectionBuilder : ProjectionBuilder<EntityConf
             @event.Timestamp,
             (document) =>
             {
-                // var attributes = document[nameof(EntityConfigurationProjectionDocument.Attributes)] as List<AttributeConfiguration>;
-                // var attributeToRemove = attributes?.FirstOrDefault(x => x. == @event..AttributeMachineName);
-                //
-                // if (attributeToRemove != null)
-                // {
-                //     attributes.Remove(attributeToRemove);
-                // }
+                var attributeToRemove = document.Attributes.FirstOrDefault(a => a.AttributeConfigurationId == @event.AttributeConfigurationId);
+
+                if (attributeToRemove != null)
+                {
+                    document.Attributes.Remove(attributeToRemove);
+                }
             }
         );
     }

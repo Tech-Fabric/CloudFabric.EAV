@@ -18,6 +18,7 @@ public class EntityConfigurationMappingProfile: Profile
         CreateMap<EntityConfiguration, EntityConfigurationViewModel>();
 
         CreateMap<EntityConfigurationProjectionDocument, EntityConfigurationViewModel>();
+        CreateMap<AttributeConfigurationReference, EntityConfigurationAttributeReferenceViewModel>();
         CreateMap<ProjectionQueryResult<EntityConfigurationProjectionDocument>, ProjectionQueryResult<EntityConfigurationViewModel>>();
         CreateMap<QueryResultDocument<EntityConfigurationProjectionDocument>, QueryResultDocument<EntityConfigurationViewModel>>();
     }
