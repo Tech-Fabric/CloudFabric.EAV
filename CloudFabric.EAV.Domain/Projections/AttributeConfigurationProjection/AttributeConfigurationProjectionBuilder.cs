@@ -1,5 +1,6 @@
 using CloudFabric.EAV.Domain.Events.Configuration.Attribute;
 using CloudFabric.EAV.Domain.Events.Instance.Entity;
+using CloudFabric.EAV.Domain.Models;
 using CloudFabric.EAV.Domain.Models.Base;
 using CloudFabric.Projections;
 using CloudFabric.Projections.Queries;
@@ -14,7 +15,8 @@ public class AttributeConfigurationProjectionBuilder : ProjectionBuilder<Attribu
     IHandleEvent<AttributeConfigurationDeleted>,
     IHandleEvent<EntityInstanceCreated>,
     IHandleEvent<AttributeInstanceAdded>,
-    IHandleEvent<AttributeInstanceRemoved>
+    IHandleEvent<AttributeInstanceRemoved>,
+    IHandleEvent<AggregateUpdatedEvent<AttributeConfiguration>>
 {
     public AttributeConfigurationProjectionBuilder(
         ProjectionRepositoryFactory projectionRepositoryFactory
@@ -27,7 +29,7 @@ public class AttributeConfigurationProjectionBuilder : ProjectionBuilder<Attribu
         await UpsertDocument(
             new AttributeConfigurationProjectionDocument()
             {
-                Id = @event.Id,
+                Id = @event.AggregateId,
                 IsRequired = @event.IsRequired,
                 Name = @event.Name.Select(x =>
                     new SearchableLocalizedString
@@ -43,14 +45,16 @@ public class AttributeConfigurationProjectionBuilder : ProjectionBuilder<Attribu
                 UpdatedAt = @event.Timestamp,
                 AttributeType = @event.ValueType
             },
-            @event.PartitionKey
+            @event.PartitionKey,
+            @event.Timestamp
         );
     }
 
     public async Task On(AttributeConfigurationNameUpdated @event)
     {
-        await UpdateDocument(@event.Id,
+        await UpdateDocument(@event.AggregateId!.Value,
             @event.PartitionKey,
+            @event.Timestamp,
             (document) =>
             {
                 SearchableLocalizedString? name = document.Name.FirstOrDefault(n => n.CultureInfoId == @event.CultureInfoId);
@@ -75,8 +79,9 @@ public class AttributeConfigurationProjectionBuilder : ProjectionBuilder<Attribu
 
     public async Task On(AttributeConfigurationDescriptionUpdated @event)
     {
-        await UpdateDocument(@event.Id,
+        await UpdateDocument(@event.AggregateId!.Value,
             @event.PartitionKey,
+            @event.Timestamp,
             (document) =>
             {
                 LocalizedString? description = document.Description.FirstOrDefault(n => n.CultureInfoId == @event.CultureInfoId);
@@ -101,8 +106,9 @@ public class AttributeConfigurationProjectionBuilder : ProjectionBuilder<Attribu
 
     public async Task On(AttributeConfigurationIsRequiredFlagUpdated @event)
     {
-        await UpdateDocument(@event.Id,
+        await UpdateDocument(@event.AggregateId!.Value,
             @event.PartitionKey,
+            @event.Timestamp,
             (document) =>
             {
                 document.IsRequired = @event.NewIsRequired;
@@ -112,7 +118,7 @@ public class AttributeConfigurationProjectionBuilder : ProjectionBuilder<Attribu
 
     public async Task On(AttributeConfigurationDeleted @event)
     {
-        await DeleteDocument(@event.Id, @event.PartitionKey);
+        await DeleteDocument(@event.AggregateId!.Value, @event.PartitionKey);
     }
 
     public async Task On(EntityInstanceCreated @event)
@@ -145,6 +151,7 @@ public class AttributeConfigurationProjectionBuilder : ProjectionBuilder<Attribu
                 await UpdateDocument(
                     attributeConfig.Id!.Value,
                     attributeConfig.PartitionKey!,
+                    @event.Timestamp,
                     (document) =>
                     {
                         document.NumberOfEntityInstancesWithAttribute++;
@@ -180,6 +187,7 @@ public class AttributeConfigurationProjectionBuilder : ProjectionBuilder<Attribu
             await UpdateDocument(
                 attributeConfig.Id!.Value,
                 attributeConfig.PartitionKey!,
+                @event.Timestamp,
                 (document) =>
                 {
                     document.NumberOfEntityInstancesWithAttribute++;
@@ -214,11 +222,17 @@ public class AttributeConfigurationProjectionBuilder : ProjectionBuilder<Attribu
             await UpdateDocument(
                 attributeConfig.Id!.Value,
                 attributeConfig.PartitionKey!,
+                @event.Timestamp,
                 (document) =>
                 {
                     document.NumberOfEntityInstancesWithAttribute--;
                 }
             );
         }
+    }
+
+    public async Task On(AggregateUpdatedEvent<AttributeConfiguration> @event)
+    {
+        await SetDocumentUpdatedAt(@event.AggregateId!.Value, @event.PartitionKey, @event.UpdatedAt);
     }
 }

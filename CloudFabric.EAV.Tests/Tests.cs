@@ -258,9 +258,6 @@ public class Tests
     [TestMethod]
     public async Task DeleteAttribute_Success()
     {
-        var aggregateRepositoryFactory = new AggregateRepositoryFactory(_eventStore);
-        var attributeConfigurationRepository = _aggregateRepositoryFactory.GetAggregateRepository<AttributeConfiguration>();
-
         var configurationCreateRequest = EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
         (EntityConfigurationViewModel entityConfig, ProblemDetails? _) = await _eavService.CreateEntityConfiguration(configurationCreateRequest, CancellationToken.None);
 
@@ -274,8 +271,19 @@ public class Tests
         Func<Task> act = async () => await _eavService.GetAttribute(attributeToDelete, attributeToDelete.ToString());
         await act.Should().ThrowAsync<NotFoundException>();
 
-        var attributeConfiguration = await attributeConfigurationRepository.LoadAsync(attributeToDelete, attributeToDelete.ToString(), CancellationToken.None);
-        attributeConfiguration.IsDeleted.Should().BeTrue();
+        ProjectionQueryResult<AttributeConfigurationListItemViewModel> attributesProjections = await _eavService.ListAttributes(new ProjectionQuery
+        {
+            Filters = new List<Filter>
+                {
+                    new Filter
+                    {
+                        PropertyName = nameof(AttributeConfigurationProjectionDocument.Id),
+                        Operator = FilterOperator.Equal,
+                        Value = attributeToDelete
+                    }
+                }
+        });
+        attributesProjections.Records.Count.Should().Be(0);
     }
 
     [TestMethod]
@@ -926,6 +934,9 @@ public class Tests
         );
 
         EntityInstanceCreateRequest entityInstanceCreateRequest = EntityInstanceFactory.CreateValidBoardGameEntityInstanceCreateRequest(createdConfiguration.Id);
+        entityInstanceCreateRequest.Attributes.RemoveAll(a =>
+            a.ConfigurationAttributeMachineName == changedAttributeName
+        );
         entityInstanceCreateRequest.Attributes.Add(new NumberAttributeInstanceCreateUpdateRequest
         {
             ConfigurationAttributeMachineName = changedAttributeName,
