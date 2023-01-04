@@ -100,6 +100,11 @@ RUN dotnet restore /src/CloudFabric.EAV.Tests/CloudFabric.EAV.Tests.csproj
 #---------------------------------------------------------------------
 COPY /. /src
 
+ARG PULLREQUEST_TARGET_BRANCH
+ARG PULLREQUEST_BRANCH
+ARG PULLREQUEST_ID
+ARG BRANCH_NAME
+
 # Start Sonar Scanner
 # Sonar scanner has two different modes - PR and regular with different set of options
 RUN if [ -n "$SONAR_TOKEN" ] && [ -n "$PULLREQUEST_TARGET_BRANCH" ] ; then echo "Running sonarscanner in pull request mode: sonar.pullrequest.base=$PULLREQUEST_TARGET_BRANCH, sonar.pullrequest.branch=$PULLREQUEST_BRANCH, sonar.pullrequest.key=$PULLREQUEST_ID" && dotnet sonarscanner begin \
