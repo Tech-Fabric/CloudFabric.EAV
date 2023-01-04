@@ -221,6 +221,8 @@ public abstract class EntityInstanceQueryingTests
 
         updateErrors.Should().BeNull();
 
+        await Task.Delay(ProjectionsUpdateDelay);
+
         var searchResultsAfterUpdate = await _eavService
             .QueryInstances(createdConfiguration.Id, query);
 

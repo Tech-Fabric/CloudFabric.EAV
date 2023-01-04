@@ -118,7 +118,7 @@ public class AttributeConfigurationProjectionBuilder : ProjectionBuilder<Attribu
 
     public async Task On(AttributeConfigurationDeleted @event)
     {
-        await DeleteDocument(@event.AggregateId!.Value, @event.PartitionKey);
+        await DeleteDocument(@event.AggregateId, @event.PartitionKey);
     }
 
     public async Task On(EntityInstanceCreated @event)
