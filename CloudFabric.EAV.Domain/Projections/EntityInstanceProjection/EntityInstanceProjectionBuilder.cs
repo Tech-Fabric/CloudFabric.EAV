@@ -93,7 +93,7 @@ public class EntityInstanceProjectionBuilder : ProjectionBuilder,
 
         var document = new Dictionary<string, object?>()
         {
-            { "Id", @event.Id },
+            { "Id", @event.AggregateId },
             { "EntityConfigurationId", @event.EntityConfigurationId },
             { "TenantId", @event.TenantId },
             {"CategoryPath", @event.CategoryPath},
@@ -181,6 +181,7 @@ public class EntityInstanceProjectionBuilder : ProjectionBuilder,
                 await UpdateDocument(childProjectionDocumentSchema,
                     child.Id.Value,
                     child.PartitionKey!,
+                    updatedAt: DateTime.Now, 
                     dict =>
                     {
                         dict["ParentalAttributes"] = parentalAttributes;
@@ -250,12 +251,12 @@ public class EntityInstanceProjectionBuilder : ProjectionBuilder,
     {
         var entityInstance = await _aggregateRepositoryFactory
             .GetAggregateRepository<EntityInstance>()
-            .LoadAsyncOrThrowNotFound(@event.AggregateId!.Value, @event.AggregateId!.Value.ToString());
+            .LoadAsyncOrThrowNotFound(@event.AggregateId, @event.AggregateId.ToString());
 
         var schema = await BuildProjectionDocumentSchemaForEntityConfigurationId(
-            entityInstance.EntityConfigurationId
+            entityInstance.EntityConfigurationId, null
         );
 
-        await SetDocumentUpdatedAt(schema, @event.AggregateId!.Value, @event.PartitionKey, @event.UpdatedAt);
+        await SetDocumentUpdatedAt(schema, @event.AggregateId, @event.PartitionKey, @event.UpdatedAt);
     }
 }

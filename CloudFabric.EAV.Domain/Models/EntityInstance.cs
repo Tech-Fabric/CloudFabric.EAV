@@ -50,7 +50,7 @@ public class EntityInstance : AggregateBase
 
     public void On(EntityInstanceCreated @event)
     {
-        Id = @event.AggregateId!.Value;
+        Id = @event.AggregateId;
         EntityConfigurationId = @event.EntityConfigurationId;
         Attributes = new List<AttributeInstance>(@event.Attributes).AsReadOnly();
         TenantId = @event.TenantId;
