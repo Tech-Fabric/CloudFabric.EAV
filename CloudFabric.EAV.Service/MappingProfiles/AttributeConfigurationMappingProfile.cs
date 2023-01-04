@@ -113,6 +113,18 @@ public class AttributeConfigurationProfile : Profile
                 return r;
             });
 
+        CreateMap<BooleanAttributeConfigurationCreateUpdateRequest, BooleanAttributeConfiguration>()
+            .ConvertUsing((o, dst, ctx) => new BooleanAttributeConfiguration(
+                Guid.NewGuid(),
+                o.MachineName,
+                ctx.Mapper.Map<List<LocalizedString>>(o.Name),
+                o.TrueDisplayValue,
+                o.FalseDisplayValue,
+                ctx.Mapper.Map<List<LocalizedString>>(o.Description),
+                o.IsRequired,
+                o.TenantId
+            ));
+
         CreateMap<ValueFromListOptionCreateUpdateRequest, ValueFromListOptionConfiguration>();
 
         CreateMap<EntityConfigurationAttributeReference, EntityConfigurationAttributeReferenceViewModel>();
@@ -129,6 +141,7 @@ public class AttributeConfigurationProfile : Profile
         CreateMap<NumberAttributeConfiguration, NumberAttributeConfigurationViewModel>();
         CreateMap<TextAttributeConfiguration, TextAttributeConfigurationViewModel>();
         CreateMap<DateRangeAttributeConfiguration, DateRangeAttributeConfigurationViewModel>();
+        CreateMap<BooleanAttributeConfiguration, BooleanAttributeConfigurationViewModel>();
 
         CreateMap<ValueFromListAttributeConfiguration, ValueFromListAttributeConfigurationViewModel>();
 

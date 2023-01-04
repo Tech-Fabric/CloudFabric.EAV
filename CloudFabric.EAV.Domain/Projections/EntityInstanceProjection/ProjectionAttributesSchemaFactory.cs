@@ -45,6 +45,23 @@ namespace CloudFabric.EAV.Domain.Projections.EntityInstanceProjection
             };
         }
 
+        public static ProjectionDocumentPropertySchema GetBooleanAttributeSchema(AttributeConfiguration attributeConfiguration)
+        {
+            if (attributeConfiguration is not BooleanAttributeConfiguration)
+            {
+                throw new ArgumentException("Invalid attribute type");
+            }
+
+            return new ProjectionDocumentPropertySchema
+            {
+                PropertyName = attributeConfiguration.MachineName,
+                PropertyType = GetPropertyType(attributeConfiguration.ValueType).GetValueOrDefault(),
+                IsRetrievable = true,
+                IsFilterable = true,
+                IsSortable = true
+            };
+        }
+
         public static ProjectionDocumentPropertySchema GetHtmlTextAttributeSchema(AttributeConfiguration attributeConfiguration)
         {
             if (attributeConfiguration is not HtmlTextAttributeConfiguration)
@@ -169,6 +186,7 @@ namespace CloudFabric.EAV.Domain.Projections.EntityInstanceProjection
             {
                 EavAttributeType.Number => null,
                 EavAttributeType.Text => null,
+                EavAttributeType.Boolean => null,
                 EavAttributeType.HtmlText => null,
                 EavAttributeType.EntityReference => null,
                 EavAttributeType.LocalizedText => GetLocalizedTextAttributeNestedProperties(),
@@ -357,6 +375,9 @@ namespace CloudFabric.EAV.Domain.Projections.EntityInstanceProjection
                 case EavAttributeType.HtmlText:
                 case EavAttributeType.EntityReference:
                     propertyType = TypeCode.String;
+                    break;
+                case EavAttributeType.Boolean:
+                    propertyType = TypeCode.Boolean;
                     break;
                 case EavAttributeType.LocalizedText:
                 case EavAttributeType.ValueFromList:
