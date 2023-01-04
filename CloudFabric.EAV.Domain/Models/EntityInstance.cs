@@ -32,19 +32,19 @@ public class EntityInstance : AggregateBase
 
     public void UpdateAttributeInstance(AttributeInstance attribute)
     {
-        Apply(new AttributeInstanceUpdated(Id, attribute));
+        Apply(new AttributeInstanceUpdated(Id, EntityConfigurationId, attribute));
     }
 
     public void RemoveAttributeInstance(string attributeMachineName)
     {
-        Apply(new AttributeInstanceRemoved(Id, attributeMachineName));
+        Apply(new AttributeInstanceRemoved(Id, EntityConfigurationId, attributeMachineName));
     }
 
     #region Event Handlers
 
     public void On(EntityInstanceCreated @event)
     {
-        Id = @event.AggregateId!.Value;
+        Id = @event.AggregateId;
         EntityConfigurationId = @event.EntityConfigurationId;
         Attributes = new List<AttributeInstance>(@event.Attributes).AsReadOnly();
         TenantId = @event.TenantId;

@@ -51,7 +51,7 @@ public class AttributeConfigurationProjectionBuilder : ProjectionBuilder<Attribu
 
     public async Task On(AttributeConfigurationNameUpdated @event)
     {
-        await UpdateDocument(@event.AggregateId!.Value,
+        await UpdateDocument(@event.AggregateId,
             @event.PartitionKey,
             @event.Timestamp,
             (document) =>
@@ -78,7 +78,7 @@ public class AttributeConfigurationProjectionBuilder : ProjectionBuilder<Attribu
 
     public async Task On(AttributeConfigurationDescriptionUpdated @event)
     {
-        await UpdateDocument(@event.AggregateId!.Value,
+        await UpdateDocument(@event.AggregateId,
             @event.PartitionKey,
             @event.Timestamp,
             (document) =>
@@ -105,7 +105,7 @@ public class AttributeConfigurationProjectionBuilder : ProjectionBuilder<Attribu
 
     public async Task On(AttributeConfigurationIsRequiredFlagUpdated @event)
     {
-        await UpdateDocument(@event.AggregateId!.Value,
+        await UpdateDocument(@event.AggregateId,
             @event.PartitionKey,
             @event.Timestamp,
             (document) =>
@@ -227,6 +227,6 @@ public class AttributeConfigurationProjectionBuilder : ProjectionBuilder<Attribu
 
     public async Task On(AggregateUpdatedEvent<AttributeConfiguration> @event)
     {
-        await SetDocumentUpdatedAt(@event.AggregateId!.Value, @event.PartitionKey, @event.UpdatedAt);
+        await SetDocumentUpdatedAt(@event.AggregateId, @event.PartitionKey, @event.UpdatedAt);
     }
 }

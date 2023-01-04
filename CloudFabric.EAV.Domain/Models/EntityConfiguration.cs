@@ -78,7 +78,7 @@ namespace CloudFabric.EAV.Domain.Models
         #region EventHandlers
         public void On(EntityConfigurationCreated @event)
         {
-            Id = @event.AggregateId!.Value;
+            Id = @event.AggregateId;
             Name = new List<LocalizedString>(@event.Name).AsReadOnly();
             MachineName = @event.MachineName;
             Attributes = new List<EntityConfigurationAttributeReference>(@event.Attributes).AsReadOnly();
