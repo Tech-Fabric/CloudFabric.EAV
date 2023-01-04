@@ -54,6 +54,7 @@ public class EntityInstanceFactory
     {
         return new EntityInstanceCreateRequest()
         {
+            CategoryPath = "",
             EntityConfigurationId = entityConfigurationId,
             Attributes = new List<AttributeInstanceCreateUpdateRequest>()
             {
