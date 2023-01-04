@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Globalization;
 using System.Reflection;
 
 using AutoMapper;
@@ -6,6 +7,8 @@ using AutoMapper;
 using CloudFabric.EAV.Domain.Models;
 using CloudFabric.EAV.Domain.Projections.AttributeConfigurationProjection;
 using CloudFabric.EAV.Domain.Projections.EntityInstanceProjection;
+using CloudFabric.EAV.Models.RequestModels;
+using CloudFabric.EAV.Models.RequestModels.Attributes;
 using CloudFabric.EAV.Service;
 using CloudFabric.EAV.Tests.Factories;
 using CloudFabric.EventSourcing.Domain;
@@ -139,7 +142,7 @@ public abstract class EntityInstanceQueryingTests
 
         var query = new ProjectionQuery()
         {
-            Filters = new List<Filter>() { { new Filter("Id", FilterOperator.Equal, createdInstance.Id.ToString()) } }
+            Filters = new List<Filter>() { { new Filter("Id", FilterOperator.Equal, createdInstance.Id) } }
         };
 
         await Task.Delay(ProjectionsUpdateDelay);
@@ -150,6 +153,88 @@ public abstract class EntityInstanceQueryingTests
         results?.TotalRecordsFound.Should().BeGreaterThan(0);
 
         results?.Records.Select(r => r.Document).First().Should().BeEquivalentTo(createdInstance);
+    }
+
+
+    [TestMethod]
+    public async Task TestCreateInstanceUpdateAndQuery()
+    {
+        var configurationCreateRequest = EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
+
+        var (createdConfiguration, _) = await _eavService.CreateEntityConfiguration(
+            configurationCreateRequest,
+            CancellationToken.None
+        );
+
+        var configuration = await _eavService.GetEntityConfiguration(
+            createdConfiguration.Id,
+            createdConfiguration.PartitionKey
+        );
+
+        configuration.Should().BeEquivalentTo(createdConfiguration);
+
+        var instanceCreateRequest =
+            EntityInstanceFactory.CreateValidBoardGameEntityInstanceCreateRequest(createdConfiguration.Id);
+
+        var (createdInstance, createProblemDetails) = await _eavService.CreateEntityInstance(instanceCreateRequest);
+
+        createdInstance.Should().BeEquivalentTo(instanceCreateRequest);
+
+        var query = new ProjectionQuery()
+        {
+            Filters = new List<Filter>() { { new Filter("Id", FilterOperator.Equal, createdInstance.Id) } }
+        };
+
+        await Task.Delay(ProjectionsUpdateDelay);
+
+        var results = await _eavService
+            .QueryInstances(createdConfiguration.Id, query);
+
+        results?.TotalRecordsFound.Should().BeGreaterThan(0);
+
+        results?.Records.Select(r => r.Document).First().Should().BeEquivalentTo(createdInstance);
+
+        var updatedAttributes = new List<AttributeInstanceCreateUpdateRequest>(instanceCreateRequest.Attributes);
+        var nameAttributeValue = (LocalizedTextAttributeInstanceCreateUpdateRequest)updatedAttributes
+            .First(a => a.ConfigurationAttributeMachineName == "name");
+        nameAttributeValue.Value = new List<LocalizedStringCreateRequest>()
+        {
+            new LocalizedStringCreateRequest()
+            {
+                CultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID, String = "Azul 2"
+            },
+            new LocalizedStringCreateRequest()
+            {
+                CultureInfoId = CultureInfo.GetCultureInfo("RU-ru").LCID, String = "Азул 2"
+            }
+        };
+
+        var (updateResult, updateErrors) = await _eavService.UpdateEntityInstance(createdConfiguration.Id.ToString(),
+            new EntityInstanceUpdateRequest()
+            {
+                Id = createdInstance.Id,
+                EntityConfigurationId = createdInstance.EntityConfigurationId,
+                Attributes = updatedAttributes
+            },
+            CancellationToken.None
+        );
+
+        updateErrors.Should().BeNull();
+
+        var searchResultsAfterUpdate = await _eavService
+            .QueryInstances(createdConfiguration.Id, query);
+
+        searchResultsAfterUpdate?.TotalRecordsFound.Should().BeGreaterThan(0);
+
+        var nameAttributeAfterUpdate = (LocalizedTextAttributeInstanceViewModel)searchResultsAfterUpdate?.Records
+            .Select(r => r.Document).First()
+            ?.Attributes.First(a => a.ConfigurationAttributeMachineName == "name")!;
+
+        nameAttributeAfterUpdate.Value.First(v => v.CultureInfoId == CultureInfo.GetCultureInfo("EN-us").LCID).String.Should()
+            .Be("Azul 2");
+
+        nameAttributeAfterUpdate.Value.First(v => v.CultureInfoId == CultureInfo.GetCultureInfo("RU-ru").LCID).String.Should()
+            .Be("Азул 2");
     }
 
     protected abstract IEventsObserver GetEventStoreEventsObserver();
