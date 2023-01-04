@@ -7,7 +7,7 @@ on:
     branches: [ "main" ]
 
 env:
-  PACKAGE_VERSION: 0.0.17
+  PACKAGE_VERSION: 0.0.21
 
 jobs:
 
@@ -26,7 +26,17 @@ jobs:
     - name: Print GITHUB_REF
       run: echo "$GITHUB_REF"
     - name: Build the Docker image
-      run: docker build . --file Dockerfile --build-arg SONAR_TOKEN=${{ secrets.SONAR_TOKEN }} --build-arg GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }} --build-arg PACKAGE_VERSION=$PACKAGE_VERSION --build-arg NUGET_API_KEY=${{ secrets.NUGET_API_KEY }} --tag artifacts:$(date +%s)
+      run: |
+        docker build . --file Dockerfile \
+        --build-arg SONAR_TOKEN=${{ secrets.SONAR_TOKEN }} \
+        --build-arg GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }} \
+        --build-arg PACKAGE_VERSION=$PACKAGE_VERSION \
+        --build-arg NUGET_API_KEY=${{ secrets.NUGET_API_KEY }} \
+        --build-arg PULLREQUEST_TARGET_BRANCH=$GITHUB_BASE_REF \
+        --build-arg PULLREQUEST_BRANCH=$GITHUB_HEAD_REF \
+        --build-arg BRANCH_NAME=$GITHUB_REF_NAME \
+        --build-arg PULLREQUEST_ID=${{ github.event.number }} \
+        --tag artifacts:$(date +%s)
     - name: Copy artifacts
       run: containerId=$(docker create $(docker images --format='{{.ID}}' | head -1)) && docker cp $containerId:/artifacts/ ./artifacts
     - name: Codecov

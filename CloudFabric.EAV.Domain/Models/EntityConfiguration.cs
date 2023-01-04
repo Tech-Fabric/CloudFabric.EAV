@@ -78,7 +78,7 @@ namespace CloudFabric.EAV.Domain.Models
         #region EventHandlers
         public void On(EntityConfigurationCreated @event)
         {
-            Id = @event.Id;
+            Id = @event.AggregateId!.Value;
             Name = new List<LocalizedString>(@event.Name).AsReadOnly();
             MachineName = @event.MachineName;
             Attributes = new List<EntityConfigurationAttributeReference>(@event.Attributes).AsReadOnly();
@@ -115,7 +115,7 @@ namespace CloudFabric.EAV.Domain.Models
         public void On(EntityConfigurationAttributeAdded @event)
         {
             var newCollection = new List<EntityConfigurationAttributeReference>(Attributes);
-            newCollection.Add(@event.attributeReference);
+            newCollection.Add(@event.AttributeReference);
             Attributes = newCollection.AsReadOnly();
         }
 

@@ -1,47 +1,39 @@
-using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.Linq;
+using System.Diagnostics;
 using System.Reflection;
-using System.Threading;
-using System.Threading.Tasks;
 
 using AutoMapper;
 
 using CloudFabric.EAV.Domain.LocalEventSourcingPackages.Projections.EntityInstanceProjection;
 using CloudFabric.EAV.Domain.Models;
 using CloudFabric.EAV.Domain.Projections.AttributeConfigurationProjection;
-using CloudFabric.EAV.Domain.Projections.EntityConfigurationProjection;
 using CloudFabric.EAV.Domain.Projections.EntityInstanceProjection;
-using CloudFabric.EAV.Models.RequestModels;
-using CloudFabric.EAV.Models.RequestModels.Attributes;
-using CloudFabric.EAV.Models.ViewModels;
-using CloudFabric.EAV.Models.ViewModels.EAV;
 using CloudFabric.EAV.Service;
 using CloudFabric.EAV.Tests.Factories;
 using CloudFabric.EventSourcing.Domain;
 using CloudFabric.EventSourcing.EventStore;
 using CloudFabric.EventSourcing.EventStore.Persistence;
-using CloudFabric.EventSourcing.EventStore.Postgresql;
 using CloudFabric.Projections;
-using CloudFabric.Projections.InMemory;
-using CloudFabric.Projections.Postgresql;
 using CloudFabric.Projections.Queries;
 
 using FluentAssertions;
 
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace CloudFabric.EAV.Tests;
 
-[TestClass]
-public class EntityInstanceQueryingTests
+public abstract class EntityInstanceQueryingTests
 {
     private EAVService _eavService;
     private IEventStore _eventStore;
     private ILogger<EAVService> _logger;
+
+    /// <summary>
+    /// Some projection engines take time to catch events and update projection records
+    /// (like cosmosdb with change feed event observer).
+    /// For example, elasticsearch test overrides this with a value of 1000ms
+    /// </summary>
+    protected virtual TimeSpan ProjectionsUpdateDelay { get; set; } = TimeSpan.FromMilliseconds(0);
 
     [TestInitialize]
     public async Task SetUp()
@@ -62,11 +54,7 @@ public class EntityInstanceQueryingTests
                                + "Database=cloudfabric_eventsourcing_test;"
                                + "Maximum Pool Size=1000";
 
-        _eventStore = new PostgresqlEventStore(
-            connectionString,
-            "eav_tests_event_store"
-        );
-
+        _eventStore = GetEventStore();
         await _eventStore.Initialize();
 
         var aggregateRepositoryFactory = new AggregateRepositoryFactory(_eventStore);
@@ -77,7 +65,7 @@ public class EntityInstanceQueryingTests
         var entityInstanceRepository = aggregateRepositoryFactory
             .GetAggregateRepository<EntityInstance>();
 
-        var projectionRepositoryFactory = new PostgresqlProjectionRepositoryFactory(connectionString);
+        var projectionRepositoryFactory = GetProjectionRepositoryFactory();
 
         // Projections engine - takes events from events observer and passes them to multiple projection builders
         var projectionsEngine = new ProjectionsEngine(
@@ -141,7 +129,7 @@ public class EntityInstanceQueryingTests
             createdConfiguration.PartitionKey
         );
 
-        //configuration.Should().BeEquivalentTo(createdConfiguration);
+        configuration.Should().BeEquivalentTo(createdConfiguration);
 
         var instanceCreateRequest =
             EntityInstanceFactory.CreateValidBoardGameEntityInstanceCreateRequest(createdConfiguration.Id);
@@ -152,17 +140,44 @@ public class EntityInstanceQueryingTests
 
         var query = new ProjectionQuery()
         {
-            Filters = new List<Filter>() { { new Filter("Id", FilterOperator.Equal, createdInstance.Id) } }
+            Filters = new List<Filter>() { { new Filter("Id", FilterOperator.Equal, createdInstance.Id.ToString()) } }
         };
+
+        await Task.Delay(ProjectionsUpdateDelay);
 
         var results = await _eavService
             .QueryInstances(createdConfiguration.Id, query);
 
-        results.TotalRecordsFound.Value.Should().BeGreaterThan(0);
+        results?.TotalRecordsFound.Should().BeGreaterThan(0);
+
+        results?.Records.Select(r => r.Document).First().Should().BeEquivalentTo(createdInstance);
     }
 
-    private IEventsObserver GetEventStoreEventsObserver()
+    protected abstract IEventsObserver GetEventStoreEventsObserver();
+
+    //[TestMethod]
+    public async Task LoadTest()
     {
-        return new PostgresqlEventStoreEventObserver((PostgresqlEventStore)_eventStore);
+        var watch = Stopwatch.StartNew();
+
+        var tasks = new List<Task>();
+
+        for (var i = 0; i < 100; i++)
+        {
+            for (var j = 0; j < 10; j++)
+            {
+                tasks.Add(TestCreateInstanceAndQuery());
+            }
+
+            await Task.WhenAll(tasks);
+            tasks.Clear();
+        }
+
+        watch.Stop();
+
+        Console.WriteLine($"It took {watch.Elapsed}!");
     }
+
+    protected abstract IEventStore GetEventStore();
+    protected abstract ProjectionRepositoryFactory GetProjectionRepositoryFactory();
 }

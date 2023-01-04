@@ -28,6 +28,8 @@ namespace CloudFabric.EAV.Domain.Models
         
         public Guid? TenantId { get; protected set; }
 
+        public bool IsDeleted { get; protected set; }
+
         public virtual List<string> Validate(AttributeInstance? instance)
         {
             if (IsRequired && instance == null)
@@ -88,6 +90,11 @@ namespace CloudFabric.EAV.Domain.Models
             Apply(new AttributeConfigurationIsRequiredFlagUpdated(Id, newIsRequiredFlag));
         }
 
+        public void Delete()
+        {
+            Apply(new AttributeConfigurationDeleted(Id));
+        }
+
         public override bool Equals(object obj)
         {
             if (ReferenceEquals(null, obj))
@@ -122,7 +129,7 @@ namespace CloudFabric.EAV.Domain.Models
 
         public void On(AttributeConfigurationCreated @event)
         {
-            Id = @event.Id;
+            Id = @event.AggregateId!.Value;
             MachineName = @event.MachineName;
             Name = new List<LocalizedString>(@event.Name).AsReadOnly();
             Description = @event.Description == null
@@ -183,6 +190,10 @@ namespace CloudFabric.EAV.Domain.Models
             IsRequired = @event.NewIsRequired;
         }
 
+        public void On(AttributeConfigurationDeleted @event)
+        {
+            IsDeleted = true;
+        }
         #endregion
     }
 }

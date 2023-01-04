@@ -256,6 +256,56 @@ public class Tests
 
         configuration.Should().BeEquivalentTo(createdConfiguration);
     }
+
+    [TestMethod]
+    public async Task DeleteAttribute_Success()
+    {
+        var configurationCreateRequest = EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
+        (EntityConfigurationViewModel entityConfig, ProblemDetails? _) = await _eavService.CreateEntityConfiguration(configurationCreateRequest, CancellationToken.None);
+
+        Guid attributeToDelete = entityConfig.Attributes.Select(x => x.AttributeConfigurationId).FirstOrDefault();
+
+        await _eavService.DeleteAttributes(new List<Guid> { attributeToDelete }, CancellationToken.None);
+
+        var entityConfAfterAttributeDeleted = await _eavService.GetEntityConfiguration(entityConfig.Id, entityConfig.Id.ToString());
+        entityConfAfterAttributeDeleted.Attributes.Count().Should().Be(entityConfig.Attributes.Count() - 1);
+
+        Func<Task> act = async () => await _eavService.GetAttribute(attributeToDelete, attributeToDelete.ToString());
+        await act.Should().ThrowAsync<NotFoundException>();
+
+        ProjectionQueryResult<AttributeConfigurationListItemViewModel> attributesProjections = await _eavService.ListAttributes(new ProjectionQuery
+        {
+            Filters = new List<Filter>
+                {
+                    new Filter
+                    {
+                        PropertyName = nameof(AttributeConfigurationProjectionDocument.Id),
+                        Operator = FilterOperator.Equal,
+                        Value = attributeToDelete
+                    }
+                }
+        });
+        attributesProjections.Records.Count.Should().Be(0);
+    }
+
+    [TestMethod]
+    public async Task DeleteEntityAttributeFromEntity_EntityNotFound()
+    {
+        Func<Task> act = async () => await _eavService.DeleteAttributesFromEntityConfiguration(new List<Guid> { Guid.NewGuid() }, Guid.NewGuid(), CancellationToken.None);
+        await act.Should().ThrowAsync<NotFoundException>();
+    }
+
+    [TestMethod]
+    public async Task DeleteEntityAttributeFromEntity_DeleteNotExistingAttribute()
+    {
+        var configurationCreateRequest = EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
+        (EntityConfigurationViewModel entityConfig, ProblemDetails? _) = await _eavService.CreateEntityConfiguration(configurationCreateRequest, CancellationToken.None);
+
+        await _eavService.DeleteAttributesFromEntityConfiguration(new List<Guid> { Guid.NewGuid() }, entityConfig.Id, CancellationToken.None);
+        var entityConfigAfterDeletingNotExistingAttribute = await _eavService.GetEntityConfiguration(entityConfig.Id, entityConfig.Id.ToString());
+        entityConfigAfterDeletingNotExistingAttribute.Attributes.Count.Should().Be(entityConfig.Attributes.Count);
+    }
+
     //
     // [TestMethod]
     //  public async Task UpdateEntityConfiguration_ChangeLocalizedStringAttribute_Success()
@@ -850,7 +900,7 @@ public class Tests
             Id = createdInstance.Id
         };
 
-        (EntityInstanceViewModel updatedInstance, _) = await _eavService.UpdateEntityInstance(createdInstance.Id.ToString(), updateRequest, CancellationToken.None);
+        (EntityInstanceViewModel updatedInstance, _) = await _eavService.UpdateEntityInstance(createdConfiguration.Id.ToString(), updateRequest, CancellationToken.None);
 
         ProjectionQueryResult<AttributeConfigurationListItemViewModel> attributeConfigurations = await _eavService.ListAttributes(
             new ProjectionQuery
@@ -886,6 +936,9 @@ public class Tests
         );
 
         EntityInstanceCreateRequest entityInstanceCreateRequest = EntityInstanceFactory.CreateValidBoardGameEntityInstanceCreateRequest(createdConfiguration.Id);
+        entityInstanceCreateRequest.Attributes.RemoveAll(a =>
+            a.ConfigurationAttributeMachineName == changedAttributeName
+        );
         entityInstanceCreateRequest.Attributes.Add(new NumberAttributeInstanceCreateUpdateRequest
         {
             ConfigurationAttributeMachineName = changedAttributeName,

@@ -10,11 +10,11 @@ using ProjectionDocumentSchemaFactory = CloudFabric.EAV.Domain.Projections.Entit
 namespace CloudFabric.EAV.Domain.LocalEventSourcingPackages.Projections.EntityInstanceProjection;
 
 public class EntityInstanceProjectionBuilder : ProjectionBuilder,
-    IHandleEvent<EntityInstanceCreated>
-//    IHandleEvent<AttributeInstanceAdded>,
-//    IHandleEvent<AttributeInstanceUpdated>,
-//    IHandleEvent<AttributeInstanceRemoved>,
-//    IHandleEvent<EntityInstanceCategoryPathChanged>
+    IHandleEvent<EntityInstanceCreated>,
+    IHandleEvent<AggregateUpdatedEvent<EntityInstance>>
+    // IHandleEvent<AttributeInstanceAdded>,
+    // IHandleEvent<AttributeInstanceUpdated>,
+    // IHandleEvent<AttributeInstanceRemoved>
 {
     private readonly AggregateRepositoryFactory _aggregateRepositoryFactory;
 
@@ -107,7 +107,8 @@ public class EntityInstanceProjectionBuilder : ProjectionBuilder,
         await UpsertDocument(
             projectionDocumentSchema,
             document,
-            @event.PartitionKey
+            @event.PartitionKey,
+            @event.Timestamp
         );
     }
 
@@ -244,4 +245,17 @@ public class EntityInstanceProjectionBuilder : ProjectionBuilder,
     //         }
     //     );
     // }
+
+    public async Task On(AggregateUpdatedEvent<EntityInstance> @event)
+    {
+        var entityInstance = await _aggregateRepositoryFactory
+            .GetAggregateRepository<EntityInstance>()
+            .LoadAsyncOrThrowNotFound(@event.AggregateId!.Value, @event.AggregateId!.Value.ToString());
+
+        var schema = await BuildProjectionDocumentSchemaForEntityConfigurationId(
+            entityInstance.EntityConfigurationId
+        );
+
+        await SetDocumentUpdatedAt(schema, @event.AggregateId!.Value, @event.PartitionKey, @event.UpdatedAt);
+    }
 }

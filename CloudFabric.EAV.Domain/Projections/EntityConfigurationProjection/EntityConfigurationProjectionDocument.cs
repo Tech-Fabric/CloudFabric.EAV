@@ -1,6 +1,5 @@
 using CloudFabric.EAV.Domain.Models.Base;
-using CloudFabric.EAV.Domain.Models;
-using System.Collections.Generic;
+using CloudFabric.EAV.Domain.Projections.AttributeConfigurationProjection;
 using CloudFabric.Projections;
 using CloudFabric.Projections.Attributes;
 
@@ -17,4 +16,7 @@ public class EntityConfigurationProjectionDocument : ProjectionDocument
 
     [ProjectionDocumentProperty(IsFilterable = true)]
     public Guid? TenantId { get; set; }
+
+    [ProjectionDocumentProperty(IsNestedArray = true)]
+    public List<AttributeConfigurationReference> Attributes { get; set; }
 }
