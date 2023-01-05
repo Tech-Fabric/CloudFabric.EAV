@@ -58,7 +58,8 @@ public class Tests
                                + "Username=cloudfabric_eventsourcing_test;"
                                + "Password=cloudfabric_eventsourcing_test;"
                                + "Database=cloudfabric_eventsourcing_test;"
-                               + "Maximum Pool Size=1000";
+                               + "Maximum Pool Size=1000;"
+                               + "Port=5433";
 
         _eventStore = new PostgresqlEventStore(
             connectionString,
@@ -1124,23 +1125,23 @@ public class Tests
             CancellationToken.None
         );
 
-        var configuration = await _eavService.GetEntityConfiguration(
+        await _eavService.GetEntityConfiguration(
             createdConfiguration.Id,
             createdConfiguration.PartitionKey
         );
 
-        //configuration.Should().BeEquivalentTo(createdConfiguration);
 
         var instanceCreateRequest =
             EntityInstanceFactory.CreateValidBoardGameEntityInstanceCreateRequest(createdConfiguration.Id);
 
-        var (createdInstance, createProblemDetails) = await _eavService.CreateEntityInstance(instanceCreateRequest);
+        var (createdInstance, _) = await _eavService.CreateEntityInstance(instanceCreateRequest);
 
         createdInstance.Should().BeEquivalentTo(instanceCreateRequest);
 
         var query = new ProjectionQuery()
         {
-            Filters = new List<Filter>() { { new Filter("Id", FilterOperator.Equal, createdInstance.Id) } }
+            Filters = new List<Filter>() { new Filter("Id", FilterOperator.Equal, createdInstance.Id)
+            }
         };
 
         await _eavService
@@ -1200,6 +1201,24 @@ public class Tests
         
         (EntityInstanceViewModel childCreatedInstance, ProblemDetails childValidationErrors) =
             await _eavService.CreateEntityInstance(childEntityInstanceCreateRequest);
+
+        // Edit
+        List<AttributeInstanceCreateUpdateRequest> attributesRequest = parentEntityInstanceCreateRequest.Attributes;
+
+        attributesRequest.Add(new NumberAttributeInstanceCreateUpdateRequest
+        {
+            ConfigurationAttributeMachineName = "avg_time_mins",
+            Value = 30
+        });
+
+        var updateRequest = new EntityInstanceUpdateRequest
+        {
+            EntityConfigurationId = parentCreatedConfiguration.Id,
+            Attributes = attributesRequest,
+            Id = parentCreatedInstance.Id
+        };
+
+        (EntityInstanceViewModel updatedInstance, _) = await _eavService.UpdateEntityInstance(parentCreatedInstance.Id.ToString(), updateRequest, childCreatedConfiguration.Id, CancellationToken.None);
 
     }
 

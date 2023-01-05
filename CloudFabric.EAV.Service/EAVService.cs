@@ -24,6 +24,8 @@ using CloudFabric.Projections.Queries;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 
+using ProjectionDocumentSchemaFactory = CloudFabric.EAV.Domain.LocalEventSourcingPackages.Projections.ProjectionDocumentSchemaFactory;
+
 namespace CloudFabric.EAV.Service;
 
 public class EAVService : IEAVService
@@ -586,7 +588,10 @@ public class EAVService : IEAVService
         return _mapper.Map<EntityInstanceViewModel>(entityInstance);
     }
 
-    public async Task<(EntityInstanceViewModel, ProblemDetails)> UpdateEntityInstance(string partitionKey, EntityInstanceUpdateRequest updateRequest, CancellationToken cancellationToken)
+    public async Task<(EntityInstanceViewModel, ProblemDetails)> UpdateEntityInstance(string partitionKey, 
+        EntityInstanceUpdateRequest updateRequest, 
+        Guid? entityConfigurationIdToReindex,
+        CancellationToken cancellationToken)
     {
         EntityInstance? entityInstance = await _entityInstanceRepository.LoadAsync(updateRequest.Id, partitionKey, cancellationToken);
 
@@ -661,7 +666,7 @@ public class EAVService : IEAVService
                 {
                     if (!newAttribute.Equals(currentAttribute))
                     {
-                        entityInstance.UpdateAttributeInstance(newAttribute);
+                        entityInstance.UpdateAttributeInstance(newAttribute, entityConfigurationIdToReindex);
                     }
                 }
                 else
@@ -708,7 +713,7 @@ public class EAVService : IEAVService
             cancellationToken
         );
 
-        var schema = CloudFabric.EAV.Domain.Projections.EntityInstanceProjection.ProjectionDocumentSchemaFactory
+        var schema = ProjectionDocumentSchemaFactory
             .FromEntityConfiguration(entityConfiguration, attributes, null);
 
         var projectionRepository = _projectionRepositoryFactory.GetProjectionRepository(schema);

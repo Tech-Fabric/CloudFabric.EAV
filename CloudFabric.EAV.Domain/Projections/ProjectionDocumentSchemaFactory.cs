@@ -1,13 +1,56 @@
 using CloudFabric.EAV.Domain.Enums;
 using CloudFabric.EAV.Domain.Models;
-using CloudFabric.EAV.Domain.Models.Attributes;
-using CloudFabric.EAV.Domain.Models.Base;
+using CloudFabric.EAV.Domain.Projections.EntityInstanceProjection;
 using CloudFabric.Projections;
 
-namespace CloudFabric.EAV.Domain.Projections.EntityInstanceProjection;
+namespace CloudFabric.EAV.Domain.LocalEventSourcingPackages.Projections;
 
 public static class ProjectionDocumentSchemaFactory
 {
+    public static ProjectionDocumentSchema SimplifiedSchema()
+    {
+        var schema = new ProjectionDocumentSchema()
+        {
+            SchemaName = "SimplifiedSchema",
+            Properties = new List<ProjectionDocumentPropertySchema>()
+        };
+        schema.Properties.Add(
+            new ProjectionDocumentPropertySchema()
+            {
+                PropertyName = "EntityConfigurationId",
+                PropertyType = TypeCode.String,
+                IsKey = false,
+                IsSearchable = false,
+                IsRetrievable = true,
+                IsFilterable = true,
+                IsSortable = false,
+                IsFacetable = false
+            }
+        );
+        schema.Properties.Add(new ProjectionDocumentPropertySchema()
+        {
+            PropertyName = "CategoryPath",
+            PropertyType = TypeCode.String,
+            IsRetrievable = true,    
+            IsFacetable = false,
+            IsNestedArray = false
+        });
+        schema.Properties.Add(
+            new ProjectionDocumentPropertySchema()
+            {
+                PropertyName = "Id",
+                PropertyType = TypeCode.String,
+                IsKey = true,
+                IsSearchable = false,
+                IsRetrievable = true,
+                IsFilterable = true,
+                IsSortable = false,
+                IsFacetable = false
+            }
+        );
+        return schema;
+    }
+    
     public static ProjectionDocumentSchema FromEntityConfiguration(
         EntityConfiguration entityConfiguration,
         List<AttributeConfiguration> attributeConfigurations,
@@ -48,14 +91,6 @@ public static class ProjectionDocumentSchemaFactory
         );
 
         schema.Properties.AddRange(attributeConfigurations.Select(GetAttributeProjectionPropertySchema));
-
-        /*
-         * 
-    [ProjectionDocumentProperty(IsNestedArray = true)]
-    // public Dictionary<string, List<AttributeInstance>?> ParentalAttributes { get; set; } // REFACTOR
-
-    public string CategoryPath { get; set; }
-         */
         
         schema.Properties.Add(
             new ProjectionDocumentPropertySchema()
@@ -72,7 +107,6 @@ public static class ProjectionDocumentSchemaFactory
                 NestedObjectProperties = parentAttributeConfigurations?.Select(GetAttributeProjectionPropertySchema).ToList() ?? new List<ProjectionDocumentPropertySchema>()
             }
         );
-   // public List<KeyValuePair<string, List<AttributeInstance>>>? ParentalAttributes { get; set; }
 
         schema.Properties.Add(new ProjectionDocumentPropertySchema()
         {

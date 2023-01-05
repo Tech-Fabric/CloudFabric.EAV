@@ -31,9 +31,9 @@ public class EntityInstance : AggregateBase
         Apply(new AttributeInstanceAdded(Id, attribute));
     }
 
-    public void UpdateAttributeInstance(AttributeInstance attribute)
+    public void UpdateAttributeInstance(AttributeInstance attribute, Guid? entityConfigurationIdToReindex)
     {
-        Apply(new AttributeInstanceUpdated(Id, attribute));
+        Apply(new AttributeInstanceUpdated(Id, attribute, entityConfigurationIdToReindex, CategoryPath));
     }
 
     public void RemoveAttributeInstance(string attributeMachineName)
