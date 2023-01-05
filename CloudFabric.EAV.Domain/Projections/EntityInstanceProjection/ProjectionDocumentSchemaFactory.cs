@@ -60,6 +60,8 @@ public static class ProjectionDocumentSchemaFactory
                 return ProjectionAttributesSchemaFactory.GetNumberAttributeSchema(attributeConfiguration);
             case EavAttributeType.Text:
                 return ProjectionAttributesSchemaFactory.GetTextAttributeSchema(attributeConfiguration);
+            case EavAttributeType.Boolean:
+                return ProjectionAttributesSchemaFactory.GetBooleanAttributeSchema(attributeConfiguration);
             case EavAttributeType.HtmlText:
                 return ProjectionAttributesSchemaFactory.GetHtmlTextAttributeSchema(attributeConfiguration);
             case EavAttributeType.EntityReference:

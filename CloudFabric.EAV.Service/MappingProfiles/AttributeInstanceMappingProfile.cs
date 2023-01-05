@@ -24,6 +24,7 @@ public class AttributeInstanceProfile : Profile
         CreateMap<TextAttributeInstanceCreateUpdateRequest, TextAttributeInstance>();
         CreateMap<ValueFromListAttributeInstanceCreateUpdateRequest, ValueFromListAttributeInstance>();
         CreateMap<DateRangeAttributeInstanceCreateUpdateRequest, DateRangeAttributeInstance>();
+        CreateMap<BooleanAttributeInstanceCreateUpdateRequest, BooleanAttributeInstance>();
 
         CreateMap<AttributeInstance, AttributeInstanceViewModel>().IncludeAllDerived();
         CreateMap<ArrayAttributeInstance, ArrayAttributeInstanceViewModel>();
@@ -38,5 +39,6 @@ public class AttributeInstanceProfile : Profile
         CreateMap<TextAttributeInstance, TextAttributeInstanceViewModel>();
         CreateMap<ValueFromListAttributeInstance, ValueFromListAttributeInstanceViewModel>();
         CreateMap<DateRangeAttributeInstance, DateRangeAttributeConfigurationViewModel>();
+        CreateMap<BooleanAttributeInstance, BooleanAttributeInstanceViewModel>();
     }
 }
