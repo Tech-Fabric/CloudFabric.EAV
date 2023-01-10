@@ -34,12 +34,17 @@ namespace CloudFabric.EAV.Domain.LocalEventSourcingPackages.Projections.Category
             string partitionKey,
             string currentCategoryPath,
             List<AttributeInstance>? newAttributes = null,
+            List<EntityConfigurationAttributeReference>? newAttributesReferences = null,
+
             string newCategoryPath = "")
         {
+            // For children it's category path + category Id
             var childrenCategoryPath = currentCategoryPath + $"/{instanceId}";
             
+            // Get all branch attributes and their configurations
             (List<AttributeConfiguration> allBranchAttributesConfigurations, Dictionary<string, object> allBranchAttributes) = await BuildBranchAttributes(childrenCategoryPath);
 
+            // Build children document schema considering all branch attributes as parent attributes
             var childProjectionDocumentSchema = await BuildProjectionDocumentSchemaForEntityConfigurationId(
                 childrenConfigurationId,
                 allBranchAttributesConfigurations
@@ -56,9 +61,10 @@ namespace CloudFabric.EAV.Domain.LocalEventSourcingPackages.Projections.Category
                 idsToAdd = newCategoryIds.Except(currentCategoryIds).ToList();
             }
 
-            var childrenRepo = ProjectionRepositoryFactory.GetProjectionRepository(childProjectionDocumentSchema);
-            var parenRepo = _aggregateRepositoryFactory.GetAggregateRepository<EntityCategory>();
             
+            var childrenRepo = ProjectionRepositoryFactory.GetProjectionRepository(childProjectionDocumentSchema);
+
+            // Get all children entities on this level of tree
             var children = await childrenRepo.Query(new ProjectionQuery
             {
                 Filters = new List<Filter>
@@ -74,6 +80,8 @@ namespace CloudFabric.EAV.Domain.LocalEventSourcingPackages.Projections.Category
 
             if (children.TotalRecordsFound > 0)
             {
+                
+                // Update children one by one
                 foreach (var resultDocument in children.Records)
                 {
                     var child = resultDocument.Document;
@@ -81,12 +89,20 @@ namespace CloudFabric.EAV.Domain.LocalEventSourcingPackages.Projections.Category
                     {
                         //TODO: Log error
                     }
+                    
+                    // Get current child parental attributes
                     Dictionary<string, object> parentalAttributes = child["ParentalAttributes"] as Dictionary<string, object> ?? new Dictionary<string, object>();
+                    
+                    // Add to it all attributes from the new branch levels (e.g. if there is a new category in the the middle of the path)
                     if (idsToAdd != null)
                     {
+                        // for each new level
                         foreach (var id in idsToAdd)
                         {
+                            // get all attributes and configurations from the new level
                             (List<AttributeConfiguration> parentAttributesConfigurations, ReadOnlyCollection<AttributeInstance> parentAttributes) = await ExtractAttributesAndAttributeConfigurations(id);
+                            
+                            // add them to the global pull of configurations and attributes
                             allBranchAttributesConfigurations.AddRange(parentAttributesConfigurations);
                             foreach (var attribute in parentAttributes)
                             {
@@ -94,40 +110,51 @@ namespace CloudFabric.EAV.Domain.LocalEventSourcingPackages.Projections.Category
                             }
                         }
                     }
-    
+                    
+                    // Remove all attributes and configs that are no longer in the new branch
+                    
                     if (idsToRemove != null)
                     {
                         
                         foreach (var id in idsToRemove)
                         {
                             (List<AttributeConfiguration> parentAttributesConfigurations, ReadOnlyCollection<AttributeInstance> parentAttributes) = await ExtractAttributesAndAttributeConfigurations(id);
-                            allBranchAttributesConfigurations.RemoveAll(ac => parentAttributesConfigurations.Contains(ac.MachineName))               
-                            parentalAttributes.Remove(parentalAttributes.FirstOrDefault(x => x.Key == id));
+                            allBranchAttributesConfigurations.RemoveAll(ac => parentAttributesConfigurations.Any(pac => pac.MachineName == ac.MachineName));
+                            foreach (AttributeInstance ai in parentAttributes)
+                            {
+                                parentalAttributes.Remove(ai.ConfigurationAttributeMachineName);
+                            }
                         }
                     }
-                    if (newAttributes != null)
+                    
+                    // If there are new attributes in the CURRENT category itself add them to the global pull as well 
+                    if (newAttributes != null && newAttributesReferences != null)
                     {
-                        parentalAttributes.Remove(parentalAttributes.FirstOrDefault(x => x.Key == instanceId.ToString()));
-                        parentalAttributes.Add(new KeyValuePair<string, List<AttributeInstance>>(instanceId.ToString(), newAttributes));
+                        var newAttributeConfigs = await BuildAttributesListFromAttributesReferences(newAttributesReferences);
+                        allBranchAttributesConfigurations.AddRange(newAttributeConfigs);
+                        foreach (var attribute in newAttributes)
+                        {
+                            allBranchAttributes[attribute.ConfigurationAttributeMachineName] = attribute.GetValue();
+                        }
                     }
-    
-                    // TODO: cache 
+                    
+                    // Build a new schema for the child considering updated list of branch attributes and configs
                     childProjectionDocumentSchema = await BuildProjectionDocumentSchemaForEntityConfigurationId(
-                        child.EntityConfigurationId,
-                        null
+                        childrenConfigurationId,
+                        allBranchAttributesConfigurations
                     );
+
                     await UpdateDocument(childProjectionDocumentSchema,
-                        child.Id.Value,
-                        child.PartitionKey!,
-                        updatedAt: DateTime.Now, 
+                        new Guid(child["Id"] as string) ,
+                        child["PartitionKey"] as string,
+                        updatedAt: DateTime.Now,
                         dict =>
                         {
                             dict["ParentalAttributes"] = parentalAttributes;
-                            dict["CategoryPath"] = string.IsNullOrEmpty(newCategoryPath) ? currentCategoryPath : newCategoryPath;
+                            dict["CategoryPath"] = string.IsNullOrEmpty(newCategoryPath) ? childrenCategoryPath : newCategoryPath + $"/{instanceId}";
                         });
                 }
             }
-            */
         }
 
     }
