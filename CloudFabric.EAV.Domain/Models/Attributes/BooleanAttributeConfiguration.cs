@@ -24,7 +24,7 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
 
             if (instance is not BooleanAttributeInstance)
             {
-                errors.Add("Cannot validate attribute. Expected attribute type: Number)");
+                errors.Add("Cannot validate attribute. Expected attribute type: Boolean");
                 return errors;
             }
             
