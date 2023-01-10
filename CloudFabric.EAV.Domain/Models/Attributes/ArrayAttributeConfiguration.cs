@@ -28,12 +28,24 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
             Guid? tenantId = null
         ) : base(id, machineName, name, EavAttributeType.Array, description, isRequired, tenantId)
         {
-            Update(itemsType, itemsAttributeConfigurationId);
+            Apply(new ArrayAttributeConfigurationUpdated(id, itemsType, itemsAttributeConfigurationId));
         }
 
-        public void Update(EavAttributeType newItemsType, Guid newItemsAttributeConfiguration)
+        public override void UpdateAttribute(AttributeConfiguration updatedAttribute)
         {
-            Apply(new ArrayAttributeConfigurationUpdated(newItemsType, newItemsAttributeConfiguration));
+            var updated = updatedAttribute as ArrayAttributeConfiguration;
+
+            if (updated == null)
+            {
+                throw new ArgumentException("Invalid attribute type");
+            }
+
+            base.UpdateAttribute(updatedAttribute);
+
+            if (ItemsType != updated.ItemsType || ItemsAttributeConfigurationId != updated.ItemsAttributeConfigurationId)
+            {
+                Apply(new ArrayAttributeConfigurationUpdated(Id, updated.ItemsType, updated.ItemsAttributeConfigurationId));
+            }
         }
 
         #region EventHandlers

@@ -12,6 +12,7 @@ public class AttributeConfigurationProjectionBuilder : ProjectionBuilder<Attribu
     IHandleEvent<AttributeConfigurationNameUpdated>,
     IHandleEvent<AttributeConfigurationDescriptionUpdated>,
     IHandleEvent<AttributeConfigurationIsRequiredFlagUpdated>,
+    IHandleEvent<AttributeConfigurationUpdated>,
     IHandleEvent<AttributeConfigurationDeleted>,
     IHandleEvent<EntityInstanceCreated>,
     IHandleEvent<AttributeInstanceAdded>,
@@ -112,6 +113,28 @@ public class AttributeConfigurationProjectionBuilder : ProjectionBuilder<Attribu
             (document) =>
             {
                 document.IsRequired = @event.NewIsRequired;
+            }
+        );
+    }
+
+    public async Task On(AttributeConfigurationUpdated @event)
+    {
+        await UpdateDocument(@event.AggregateId,
+            @event.PartitionKey,
+            @event.Timestamp,
+            (document) =>
+            {
+                document.Name = @event.Name.ConvertAll(x =>
+                    new SearchableLocalizedString
+                    {
+                        CultureInfoId = x.CultureInfoId,
+                        String = x.String
+                    }
+                );
+
+                document.Description = @event.Description;
+                document.IsRequired = @event.IsRequired;
+                document.TenantId = @event.TenantId;
             }
         );
     }

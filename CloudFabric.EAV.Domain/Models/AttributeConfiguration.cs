@@ -90,6 +90,22 @@ namespace CloudFabric.EAV.Domain.Models
             Apply(new AttributeConfigurationIsRequiredFlagUpdated(Id, newIsRequiredFlag));
         }
 
+        public virtual void UpdateAttribute(AttributeConfiguration updatedAttribute)
+        {
+            if (!Equals(updatedAttribute))
+            {
+                Apply(
+                    new AttributeConfigurationUpdated(
+                        Id,
+                        updatedAttribute.Name.ToList(),
+                        updatedAttribute.Description.ToList(),
+                        updatedAttribute.IsRequired,
+                        updatedAttribute.TenantId
+                    )
+                );
+            }
+        }
+
         public void Delete()
         {
             Apply(new AttributeConfigurationDeleted(Id));
@@ -188,6 +204,14 @@ namespace CloudFabric.EAV.Domain.Models
         public void On(AttributeConfigurationIsRequiredFlagUpdated @event)
         {
             IsRequired = @event.NewIsRequired;
+        }
+
+        public void On(AttributeConfigurationUpdated @event)
+        {
+            Name = @event.Name.AsReadOnly();
+            Description = @event.Description.AsReadOnly();
+            IsRequired = @event.IsRequired;
+            TenantId = @event.TenantId;
         }
 
         public void On(AttributeConfigurationDeleted @event)

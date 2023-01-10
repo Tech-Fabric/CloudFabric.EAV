@@ -11,6 +11,7 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
         public DateRangeAttributeConfiguration(IEnumerable<IEvent> events) : base(events)
         {
         }
+
         public DateRangeAttributeConfiguration(Guid id,
             string machineName,
             List<LocalizedString> name,
@@ -20,9 +21,11 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
             bool isRequired = false,
             Guid? TenantId = null) : base(id, machineName, name, valueType, description, isRequired, TenantId)
         {
-            Apply(new DateRangeAttributeConfigurationUpdated(dateRangeAttributeType));
+            Apply(new DateRangeAttributeConfigurationUpdated(id, dateRangeAttributeType));
         }
+
         public DateRangeAttributeType DateRangeAttributeType { get; set; }
+
         public override EavAttributeType ValueType => EavAttributeType.DateRange;
 
         public override List<string> Validate(AttributeInstance? instance)
@@ -40,6 +43,23 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
                 return errors;
             }
             return errors;
+        }
+
+        public override void UpdateAttribute(AttributeConfiguration updatedAttribute)
+        {
+            var updated = updatedAttribute as DateRangeAttributeConfiguration;
+
+            if (updated == null)
+            {
+                throw new ArgumentException("Invalid attribute type");
+            }
+
+            base.UpdateAttribute(updatedAttribute);
+
+            if (DateRangeAttributeType != updated.DateRangeAttributeType)
+            {
+                Apply(new DateRangeAttributeConfigurationUpdated(Id, updated.DateRangeAttributeType));
+            }
         }
 
         public override bool Equals(object obj)

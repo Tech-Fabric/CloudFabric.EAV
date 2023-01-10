@@ -49,6 +49,23 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
             Apply(new BooleanAttributeConfigurationUpdated(id, trueDisplayValue, falseDisplayValue));
         }
 
+        public override void UpdateAttribute(AttributeConfiguration updatedAttribute)
+        {
+            var updated = updatedAttribute as BooleanAttributeConfiguration;
+
+            if (updated == null)
+            {
+                throw new ArgumentException("Invalid attribute type");
+            }
+
+            base.UpdateAttribute(updatedAttribute);
+
+            if (TrueDisplayValue != updated.TrueDisplayValue || FalseDisplayValue != updated.FalseDisplayValue)
+            {
+                Apply(new BooleanAttributeConfigurationUpdated(Id, updated.TrueDisplayValue, updated.FalseDisplayValue));
+            }
+        }
+
         public override bool Equals(object obj)
         {
             return this.Equals(obj as BooleanAttributeConfiguration);
