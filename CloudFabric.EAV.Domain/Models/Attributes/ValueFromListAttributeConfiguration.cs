@@ -10,7 +10,6 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
 
         public ValueFromListAttributeConfiguration(IEnumerable<IEvent> events) : base(events)
         {
-
         }
         public ValueFromListAttributeConfiguration(Guid id,
             string machineName,
@@ -33,6 +32,24 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
         public List<ValueFromListOptionConfiguration> ValuesList { get; set; }
         public string? AttributeMachineNameToAffect { get; set; }
         public override EavAttributeType ValueType => EavAttributeType.ValueFromList;
+
+        public override List<string> Validate(AttributeInstance? instance)
+        {
+            var errors = base.Validate(instance);
+
+            if (instance == null)
+            {
+                return errors;
+            }
+
+            if (instance is not ValueFromListAttributeInstance)
+            {
+                errors.Add("Cannot validate attribute. Expected attribute type: Dropdown");
+                return errors;
+            }
+
+            return errors;
+        }
 
         public override void UpdateAttribute(AttributeConfiguration updatedAttribute)
         {
@@ -88,6 +105,12 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
 
         public void On(ValueFromListConfigurationUpdated @event)
         {
+            if (@event.ValueFromListOptions.GroupBy(x => x.MachineName).Any(x => x.Count() > 1)
+                || @event.ValueFromListOptions.GroupBy(x => x.Name).Any(x => x.Count() > 1))
+            {
+                throw new Exception("Identical options' names not allowed");
+            }
+
             ValueFromListAttributeType = @event.ValueFromListAttributeType;
             ValuesList = @event.ValueFromListOptions;
             AttributeMachineNameToAffect = @event.AttributeMachineNameToAffect;
