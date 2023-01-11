@@ -8,7 +8,7 @@ namespace CloudFabric.EAV.Domain.Models
 {
     public class CategoryInstance: AggregateBase
     {
-        public override string PartitionKey => Id.ToString(); 
+        public override string PartitionKey => EntityConfigurationId.ToString();
         public Guid EntityConfigurationId { get; protected set; }
         public ReadOnlyCollection<AttributeInstance> Attributes { get; protected set; }
         public Guid? TenantId { get; protected set; }
@@ -21,12 +21,12 @@ namespace CloudFabric.EAV.Domain.Models
 
         public CategoryInstance(Guid id, Guid entityConfigurationId, string categoryPath, ReadOnlyCollection<AttributeInstance> attributes, Guid? tenantId, Guid childEntityConfigurationId)
         {
-            Apply(new CategoryCreated(id, PartitionKey, entityConfigurationId, attributes, tenantId, categoryPath, childEntityConfigurationId, DateTime.Now));
+            Apply(new CategoryCreated(id, entityConfigurationId.ToString(), entityConfigurationId, attributes, tenantId, categoryPath, childEntityConfigurationId, DateTime.Now));
         }
         
         public async Task ChangeCategoryPath(string newCategoryPath, Guid childEntityConfigurationId)
         {
-            Apply(new CategoryPathChanged(EntityConfigurationId, CategoryPath, newCategoryPath, childEntityConfigurationId));
+            Apply(new CategoryPathChanged(Id, EntityConfigurationId, CategoryPath, newCategoryPath, childEntityConfigurationId));
         }
         
         public void On(CategoryCreated @event) {
@@ -35,7 +35,7 @@ namespace CloudFabric.EAV.Domain.Models
             TenantId = @event.TenantId;
             CategoryPath = @event.CategoryPath;
             ChildEntityConfigurationId = @event.ChildEntityConfigurationId;
-            Id = @event.Id;
+            Id = @event.AggregateId;
         }
         
         public void On(CategoryPathChanged @event) {

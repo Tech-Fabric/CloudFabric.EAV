@@ -73,7 +73,8 @@ public class EAVService : IEAVService
             .GetAggregateRepository<EntityConfiguration>();
         _entityInstanceRepository = _aggregateRepositoryFactory
             .GetAggregateRepository<EntityInstance>();
-
+        _categoryInstanceRepository = _aggregateRepositoryFactory.GetAggregateRepository<CategoryInstance>();
+        
         _attributeConfigurationProjectionRepository = _projectionRepositoryFactory
             .GetProjectionRepository<AttributeConfigurationProjectionDocument>();
         _entityConfigurationProjectionRepository = _projectionRepositoryFactory

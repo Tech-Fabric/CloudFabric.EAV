@@ -13,7 +13,7 @@ namespace CloudFabric.EAV.Domain.LocalEventSourcingPackages.Projections.Category
         IHandleEvent<CategoryPathChanged>
     {
 
-        protected CategoryInstanceProjectionBuilder(AggregateRepositoryFactory aggregateRepositoryFactory, ProjectionRepositoryFactory projectionRepositoryFactory) : base(projectionRepositoryFactory, aggregateRepositoryFactory)
+        public CategoryInstanceProjectionBuilder(AggregateRepositoryFactory aggregateRepositoryFactory, ProjectionRepositoryFactory projectionRepositoryFactory) : base(projectionRepositoryFactory, aggregateRepositoryFactory)
         {
         }
 

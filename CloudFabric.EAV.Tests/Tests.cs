@@ -4,6 +4,7 @@ using System.Text.Json;
 using AutoMapper;
 
 using CloudFabric.EAV.Domain.Enums;
+using CloudFabric.EAV.Domain.LocalEventSourcingPackages.Projections.CategoryInstanceProjection;
 using CloudFabric.EAV.Domain.LocalEventSourcingPackages.Projections.EntityInstanceProjection;
 using CloudFabric.EAV.Domain.Models;
 using CloudFabric.EAV.Domain.Projections.AttributeConfigurationProjection;
@@ -84,11 +85,14 @@ public class Tests
         var ordersListProjectionBuilder = new EntityConfigurationProjectionBuilder(_projectionRepositoryFactory);
 
         var entityInstanceProjectionBuilder = new EntityInstanceProjectionBuilder(_aggregateRepositoryFactory, _projectionRepositoryFactory);
+        var categoryProjectionBuilder = new CategoryInstanceProjectionBuilder(_aggregateRepositoryFactory, _projectionRepositoryFactory);
+        
         projectionsEngine.AddProjectionBuilder(attributeConfigurationProjectionBuilder);
         projectionsEngine.AddProjectionBuilder(ordersListProjectionBuilder);
         
         projectionsEngine.AddProjectionBuilder(entityInstanceProjectionBuilder);
-
+        projectionsEngine.AddProjectionBuilder(categoryProjectionBuilder);
+        
         await projectionsEngine.StartAsync("TestInstance");
 
 
