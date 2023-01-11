@@ -1,5 +1,7 @@
 using System.Globalization;
 
+using CloudFabric.EAV.Domain.Models;
+using CloudFabric.EAV.Models.LocalEventSourcingPackages.RequestModels;
 using CloudFabric.EAV.Models.RequestModels;
 using CloudFabric.EAV.Models.RequestModels.Attributes;
 
@@ -7,7 +9,29 @@ namespace CloudFabric.EAV.Tests.Factories;
 
 public class EntityInstanceFactory
 {
-
+    public static CategoryInstanceCreateRequest CreateCategoryInstanceRequest(Guid entityConfigurationId, 
+        string categoryPath, 
+        Guid childEntityConfigurationId,
+        int attributeIndexFrom = 0, 
+        int attributeIndexTo = 1)
+    {
+        var attributeInstances = new List<AttributeInstanceCreateUpdateRequest>();
+        for (var i = attributeIndexFrom; i < attributeIndexTo; i++)
+        {
+            attributeInstances.Add(new NumberAttributeInstanceCreateUpdateRequest()
+            {
+                ConfigurationAttributeMachineName = $"category_attribute_{i}",
+                Value = i
+            });
+        }
+        return new CategoryInstanceCreateRequest()
+        {
+            EntityConfigurationId = entityConfigurationId,
+            Attributes = attributeInstances,
+            CategoryPath = categoryPath,
+            ChildEntityConfigurationId = childEntityConfigurationId,
+        };
+    }
     public static EntityInstanceCreateRequest CreateValidTireEntityInstanceCreateRequest(Guid entityConfigurationId)
     {
         return new EntityInstanceCreateRequest()

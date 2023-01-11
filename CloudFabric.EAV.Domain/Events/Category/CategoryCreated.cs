@@ -6,7 +6,7 @@ using CloudFabric.EventSourcing.EventStore;
 namespace CloudFabric.EAV.Domain.LocalEventSourcingPackages.Events.Category
 {
     public record CategoryCreated(
-        Guid AggregateId,
+        Guid Id,
         string PartitionKey,
         Guid EntityConfigurationId,
         ReadOnlyCollection<AttributeInstance> Attributes,

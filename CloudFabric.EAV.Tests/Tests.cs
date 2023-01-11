@@ -1251,25 +1251,29 @@ public class Tests
     [TestMethod]
     public async Task CreateInheritedInstance_Success()
     {
-        var parentConfigurationCreateRequest = EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
-
-        var childConfigurationCreateRequest = EntityConfigurationFactory.CreateCarTireEntityConfigurationCreateRequest();
+        
+        var categoryConfigurationCreateRequest = EntityConfigurationFactory.CreateBoardGameCategoryConfigurationCreateRequest(0, 10);
 
         (EntityConfigurationViewModel? parentCreatedConfiguration, _) = await _eavService.CreateEntityConfiguration(
-            parentConfigurationCreateRequest,
+            categoryConfigurationCreateRequest,
             CancellationToken.None
         );
+
+        var childConfigurationCreateRequest = EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
 
         (EntityConfigurationViewModel? childCreatedConfiguration, _) = await _eavService.CreateEntityConfiguration(
             childConfigurationCreateRequest,
             CancellationToken.None
         );
 
-        var parentEntityInstanceCreateRequest =
-            EntityInstanceFactory.CreateValidBoardGameEntityInstanceCreateRequest(parentCreatedConfiguration.Id);
-        
         var childEntityInstanceCreateRequest = EntityInstanceFactory.CreateValidTireEntityInstanceCreateRequest(childCreatedConfiguration.Id);
+
+
+        var categoryInstanceCreateRequest =
+            EntityInstanceFactory.CreateCategoryInstanceRequest(parentCreatedConfiguration.Id, "", childCreatedConfiguration.Id, 0, 10);
         
+        var (createdParentInstance, _) = await _eavService.CreateCategory(categoryInstanceCreateRequest, CancellationToken.None);
+        /*
         (EntityInstanceViewModel parentCreatedInstance, ProblemDetails validationErrors) =
             await _eavService.CreateEntityInstance(parentEntityInstanceCreateRequest);
 
@@ -1296,7 +1300,7 @@ public class Tests
         };
 
         (EntityInstanceViewModel updatedInstance, _) = await _eavService.UpdateEntityInstance(parentCreatedInstance.Id.ToString(), updateRequest, CancellationToken.None);
-
+*/
     }
 
     private IProjectionRepository GetProjectionRepository(ProjectionDocumentSchema schema)

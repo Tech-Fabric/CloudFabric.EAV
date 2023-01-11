@@ -10,6 +10,60 @@ namespace CloudFabric.EAV.Tests.Factories;
 
 public static class EntityConfigurationFactory
 {
+    public static EntityConfigurationCreateRequest CreateBoardGameCategoryConfigurationCreateRequest(int attributeIndexFrom = 0, int attributeIndexTo = 1)
+    {
+        var tenantId = Guid.NewGuid();
+        var attributes = new List<EntityAttributeConfigurationCreateUpdateRequest>();
+        for (int i = attributeIndexFrom; i < attributeIndexTo; i++)
+        {
+            attributes.Add(new NumberAttributeConfigurationCreateUpdateRequest()
+            {
+                DefaultValue = i,
+                Description = new List<LocalizedStringCreateRequest>()
+                {
+                    new LocalizedStringCreateRequest()
+                    {
+                        CultureInfoId =
+                            CultureInfo.GetCultureInfo("en-US").LCID,
+                        String = $"Description {i}"
+                    }
+                },
+                IsRequired = false,
+                MachineName = $"category_attribute_{i}",
+                Name = new List<LocalizedStringCreateRequest>()
+                {
+                    new LocalizedStringCreateRequest()
+                    {
+                        CultureInfoId =
+                            CultureInfo.GetCultureInfo("en-US").LCID,
+                        String = $"Category {i}"
+                    }
+                },
+                NumberType = NumberAttributeType.Integer,
+            });
+        }
+        
+        return new EntityConfigurationCreateRequest()
+        {
+            Name = new List<LocalizedStringCreateRequest>()
+            {
+                new LocalizedStringCreateRequest()
+                {
+                    CultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID,
+                    String = "Board Game"
+                },
+                new LocalizedStringCreateRequest()
+                {
+                    CultureInfoId = CultureInfo.GetCultureInfo("RU-ru").LCID,
+                    String = "Настольная Игра"
+                }
+            },
+            MachineName = "BoardGames_category",
+            TenantId = tenantId,
+            Attributes = attributes
+        };
+    }
+
     public static EntityConfigurationCreateRequest CreateBoardGameEntityConfigurationCreateRequest()
     {
         var tenantId = Guid.NewGuid();

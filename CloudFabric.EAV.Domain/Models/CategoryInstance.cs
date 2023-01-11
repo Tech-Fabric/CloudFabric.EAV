@@ -8,7 +8,7 @@ namespace CloudFabric.EAV.Domain.Models
 {
     public class CategoryInstance: AggregateBase
     {
-        public override string PartitionKey { get; }
+        public override string PartitionKey => Id.ToString(); 
         public Guid EntityConfigurationId { get; protected set; }
         public ReadOnlyCollection<AttributeInstance> Attributes { get; protected set; }
         public Guid? TenantId { get; protected set; }
@@ -35,7 +35,7 @@ namespace CloudFabric.EAV.Domain.Models
             TenantId = @event.TenantId;
             CategoryPath = @event.CategoryPath;
             ChildEntityConfigurationId = @event.ChildEntityConfigurationId;
-            Id = @event.AggregateId;
+            Id = @event.Id;
         }
         
         public void On(CategoryPathChanged @event) {
