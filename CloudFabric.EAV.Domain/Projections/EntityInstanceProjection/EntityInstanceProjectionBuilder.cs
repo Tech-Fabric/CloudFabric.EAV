@@ -1,76 +1,39 @@
 using CloudFabric.EAV.Domain.Events.Instance.Entity;
 using CloudFabric.EAV.Domain.Models;
 using CloudFabric.EventSourcing.Domain;
-using CloudFabric.EventSourcing.EventStore;
 using CloudFabric.Projections;
 
-namespace CloudFabric.EAV.Domain.Projections.EntityInstanceProjection;
+namespace CloudFabric.EAV.Domain.LocalEventSourcingPackages.Projections.EntityInstanceProjection;
 
-public class EntityInstanceProjectionBuilder : ProjectionBuilder,
+public class EntityInstanceProjectionBuilder : InstanceProjectionBuilder,
     IHandleEvent<EntityInstanceCreated>,
+    IHandleEvent<AggregateUpdatedEvent<EntityInstance>>,
     // IHandleEvent<AttributeInstanceAdded>,
-    IHandleEvent<AttributeInstanceUpdated>,
+    IHandleEvent<AttributeInstanceUpdated>
     // IHandleEvent<AttributeInstanceRemoved>,
-    IHandleEvent<AggregateUpdatedEvent<EntityInstance>>
 {
-    private readonly AggregateRepositoryFactory _aggregateRepositoryFactory;
-
+    
     public EntityInstanceProjectionBuilder(
         AggregateRepositoryFactory aggregateRepositoryFactory,
         ProjectionRepositoryFactory projectionRepositoryFactory
-    ) : base(projectionRepositoryFactory)
+    ) : base(projectionRepositoryFactory, aggregateRepositoryFactory)
     {
-        _aggregateRepositoryFactory = aggregateRepositoryFactory;
     }
-
-    private async Task<ProjectionDocumentSchema> BuildProjectionDocumentSchemaForEntityConfigurationId(
-        Guid entityConfigurationId
-    )
-    {
-        var entityConfiguration = await _aggregateRepositoryFactory
-            .GetAggregateRepository<EntityConfiguration>()
-            .LoadAsyncOrThrowNotFound(entityConfigurationId, entityConfigurationId.ToString());
-
-        List<AttributeConfiguration> attributes = new List<AttributeConfiguration>();
-
-        foreach (var attributeReference in entityConfiguration.Attributes)
-        {
-            var attribute = await _aggregateRepositoryFactory
-                .GetAggregateRepository<AttributeConfiguration>()
-                .LoadAsyncOrThrowNotFound(attributeReference.AttributeConfigurationId,
-                    attributeReference.AttributeConfigurationId.ToString()
-                );
-            attributes.Add(attribute);
-        }
-
-        return ProjectionDocumentSchemaFactory.FromEntityConfiguration(entityConfiguration, attributes);
-    }
-
+    
+    
     public async Task On(EntityInstanceCreated @event)
     {
-        var projectionDocumentSchema = await BuildProjectionDocumentSchemaForEntityConfigurationId(
-            @event.EntityConfigurationId
-        );
-
-        var document = new Dictionary<string, object?>()
-        {
-            { "Id", @event.AggregateId },
-            { "EntityConfigurationId", @event.EntityConfigurationId },
-            { "TenantId", @event.TenantId }
-        };
-
-        foreach (var attribute in @event.Attributes)
-        {
-            document.Add(attribute.ConfigurationAttributeMachineName, attribute.GetValue());
-        }
-
-        await UpsertDocument(
-            projectionDocumentSchema,
-            document,
+        await CreateInstanceProjection(@event.AggregateId,
+            @event.EntityConfigurationId,
+            @event.TenantId,
+            @event.CategoryPath,
+            @event.Attributes.AsReadOnly(),
             @event.PartitionKey,
-            @event.Timestamp
-        );
+            @event.Timestamp);        // Get all parent attributes from inheritance branch
     }
+
+    // Update all children instances if exist after current instance changed
+    
     //
     // public async Task On(AttributeInstanceAdded @event)
     // {
@@ -89,8 +52,11 @@ public class EntityInstanceProjectionBuilder : ProjectionBuilder,
     //
     public async Task On(AttributeInstanceUpdated @event)
     {
+        (List<AttributeConfiguration> allParentalAttributesConfigurations, _) = await BuildBranchAttributes(@event.CategoryPath);
+
         var projectionDocumentSchema = await BuildProjectionDocumentSchemaForEntityConfigurationId(
-            @event.EntityConfigurationId
+            @event.EntityConfigurationId,
+            allParentalAttributesConfigurations
         );
 
         await UpdateDocument(
@@ -132,10 +98,13 @@ public class EntityInstanceProjectionBuilder : ProjectionBuilder,
             .GetAggregateRepository<EntityInstance>()
             .LoadAsyncOrThrowNotFound(@event.AggregateId, @event.PartitionKey);
 
-        var schema = await BuildProjectionDocumentSchemaForEntityConfigurationId(
-            entityInstance.EntityConfigurationId
-        );
+        (List<AttributeConfiguration> allParentalAttributesConfigurations, _) = await BuildBranchAttributes(entityInstance.CategoryPath);
 
+        
+        var schema = await BuildProjectionDocumentSchemaForEntityConfigurationId(
+            entityInstance.EntityConfigurationId, allParentalAttributesConfigurations
+        );
+        
         await SetDocumentUpdatedAt(schema, @event.AggregateId, @event.PartitionKey, @event.UpdatedAt);
     }
 }

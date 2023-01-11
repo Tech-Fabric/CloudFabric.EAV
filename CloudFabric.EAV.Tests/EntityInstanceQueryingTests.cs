@@ -4,6 +4,7 @@ using System.Reflection;
 
 using AutoMapper;
 
+using CloudFabric.EAV.Domain.LocalEventSourcingPackages.Projections.EntityInstanceProjection;
 using CloudFabric.EAV.Domain.Models;
 using CloudFabric.EAV.Domain.Projections.AttributeConfigurationProjection;
 using CloudFabric.EAV.Domain.Projections.EntityInstanceProjection;
@@ -101,7 +102,7 @@ public abstract class EntityInstanceQueryingTests
     [TestCleanup]
     public async Task Cleanup()
     {
-        await _eventStore.DeleteAll();
+       // await _eventStore.DeleteAll();
 
         try
         {

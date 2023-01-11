@@ -1,11 +1,8 @@
-using System;
-using System.Collections.Generic;
-using CloudFabric.EAV.Models.RequestModels.Attributes;
+﻿using CloudFabric.EAV.Models.RequestModels.Attributes;
 
-
-namespace CloudFabric.EAV.Models.RequestModels
+namespace CloudFabric.EAV.Models.LocalEventSourcingPackages.RequestModels
 {
-    public class EntityInstanceCreateRequest
+    public class CategoryInstanceCreateRequest
     {
         public Guid EntityConfigurationId { get; set; }
         
@@ -14,5 +11,8 @@ namespace CloudFabric.EAV.Models.RequestModels
         public Guid? TenantId { get; set; }
         
         public string CategoryPath { get; set; }
+        
+        public Guid ChildEntityConfigurationId { get; set; }
+
     }
 }

@@ -11,20 +11,21 @@ public class EntityInstance : AggregateBase
     public override string PartitionKey => EntityConfigurationId.ToString();
 
     public Guid EntityConfigurationId { get; protected set; }
-
+    
     public ReadOnlyCollection<AttributeInstance> Attributes { get; protected set; }
 
     public Guid? TenantId { get; protected set; }
+    public string CategoryPath { get; protected set; }
 
     public EntityInstance(IEnumerable<IEvent> events) : base(events)
     {
     }
 
-    public EntityInstance(Guid id, Guid entityConfigurationId, List<AttributeInstance> attributes, Guid? tenantId)
+    public EntityInstance(Guid id, Guid entityConfigurationId, string categoryPath, List<AttributeInstance> attributes, Guid? tenantId)
     {
-        Apply(new EntityInstanceCreated(id, entityConfigurationId, attributes, tenantId));
+        Apply(new EntityInstanceCreated(id, entityConfigurationId, categoryPath, attributes, tenantId));
     }
-
+    
     public void AddAttributeInstance(AttributeInstance attribute)
     {
         Apply(new AttributeInstanceAdded(Id, attribute));
@@ -32,12 +33,17 @@ public class EntityInstance : AggregateBase
 
     public void UpdateAttributeInstance(AttributeInstance attribute)
     {
-        Apply(new AttributeInstanceUpdated(Id, EntityConfigurationId, attribute));
+        Apply(new AttributeInstanceUpdated(Id, EntityConfigurationId, attribute, CategoryPath));
     }
 
     public void RemoveAttributeInstance(string attributeMachineName)
     {
         Apply(new AttributeInstanceRemoved(Id, EntityConfigurationId, attributeMachineName));
+    }
+    
+    public void CategoryPathChanged(string categoryPath)
+    {
+        Apply(new EntityInstanceCategoryPathChanged(Id, categoryPath));
     }
 
     #region Event Handlers
@@ -48,6 +54,8 @@ public class EntityInstance : AggregateBase
         EntityConfigurationId = @event.EntityConfigurationId;
         Attributes = new List<AttributeInstance>(@event.Attributes).AsReadOnly();
         TenantId = @event.TenantId;
+        CategoryPath = @event.CategoryPath;
+
     }
 
     public void On(AttributeInstanceAdded @event)
@@ -84,6 +92,11 @@ public class EntityInstance : AggregateBase
 
             Attributes = newCollection.AsReadOnly();
         }
+    }
+    
+    public void On(EntityInstanceCategoryPathChanged @event)
+    {
+        CategoryPath = @event.NewCategoryPath;
     }
 
     #endregion

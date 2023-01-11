@@ -1,5 +1,7 @@
 using System.Globalization;
 
+using CloudFabric.EAV.Domain.Models;
+using CloudFabric.EAV.Models.LocalEventSourcingPackages.RequestModels;
 using CloudFabric.EAV.Models.RequestModels;
 using CloudFabric.EAV.Models.RequestModels.Attributes;
 
@@ -7,10 +9,76 @@ namespace CloudFabric.EAV.Tests.Factories;
 
 public class EntityInstanceFactory
 {
+    public static CategoryInstanceCreateRequest CreateCategoryInstanceRequest(Guid entityConfigurationId, 
+        string categoryPath, 
+        Guid childEntityConfigurationId,
+        int attributeIndexFrom = 0, 
+        int attributeIndexTo = 1)
+    {
+        var attributeInstances = new List<AttributeInstanceCreateUpdateRequest>();
+        for (var i = attributeIndexFrom; i < attributeIndexTo; i++)
+        {
+            attributeInstances.Add(new NumberAttributeInstanceCreateUpdateRequest()
+            {
+                ConfigurationAttributeMachineName = $"category_attribute_{i}",
+                Value = i
+            });
+        }
+        return new CategoryInstanceCreateRequest()
+        {
+            EntityConfigurationId = entityConfigurationId,
+            Attributes = attributeInstances,
+            CategoryPath = categoryPath,
+            ChildEntityConfigurationId = childEntityConfigurationId,
+        };
+    }
+    public static EntityInstanceCreateRequest CreateValidTireEntityInstanceCreateRequest(Guid entityConfigurationId)
+    {
+        return new EntityInstanceCreateRequest()
+        {
+            EntityConfigurationId = entityConfigurationId,
+            Attributes = new List<AttributeInstanceCreateUpdateRequest>()
+            {
+                new LocalizedTextAttributeInstanceCreateUpdateRequest()
+                {
+                    ConfigurationAttributeMachineName = "brand",
+                    Value = new List<LocalizedStringCreateRequest>()
+                    {
+                        new LocalizedStringCreateRequest()
+                        {
+                            CultureInfoId = CultureInfo.GetCultureInfo("en-US").LCID,
+                            String = "Pirelli"
+                        },
+                        new LocalizedStringCreateRequest()
+                        {
+                            CultureInfoId = CultureInfo.GetCultureInfo("de-DE").LCID,
+                            String = "Pirelli"
+                        }
+                    }
+                },
+                new NumberAttributeInstanceCreateUpdateRequest()
+                {
+                    ConfigurationAttributeMachineName = "width",
+                    Value = 205
+                },
+                new NumberAttributeInstanceCreateUpdateRequest()
+                {
+                    ConfigurationAttributeMachineName = "height",
+                    Value = 55
+                },
+                new NumberAttributeInstanceCreateUpdateRequest()
+                {
+                    ConfigurationAttributeMachineName = "diameter",
+                    Value = 16
+                }
+            }
+        };
+    }
     public static EntityInstanceCreateRequest CreateValidBoardGameEntityInstanceCreateRequest(Guid entityConfigurationId)
     {
         return new EntityInstanceCreateRequest()
         {
+            CategoryPath = "",
             EntityConfigurationId = entityConfigurationId,
             Attributes = new List<AttributeInstanceCreateUpdateRequest>()
             {
@@ -101,4 +169,6 @@ public class EntityInstanceFactory
             }
         };
     }
+    
+    
 }

@@ -9,18 +9,19 @@ public record AttributeInstanceUpdated : Event
     {
     }
 
-    public AttributeInstanceUpdated(
-        Guid entityInstanceId,
+    public AttributeInstanceUpdated(Guid entityInstanceId,
         Guid entityConfigurationId,
-        AttributeInstance attributeInstance
-    )
+        AttributeInstance attributeInstance,
+        string categoryPath)
     {
         AggregateId = entityInstanceId;
         EntityConfigurationId = entityConfigurationId;
         AttributeInstance = attributeInstance;
+        CategoryPath = categoryPath;
     }
 
     public Guid EntityConfigurationId { get; set; }
 
     public AttributeInstance AttributeInstance { get; set; }
+    public string CategoryPath { get; set; }
 }

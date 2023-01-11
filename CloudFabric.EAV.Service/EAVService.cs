@@ -10,6 +10,8 @@ using CloudFabric.EAV.Domain.Models;
 using CloudFabric.EAV.Domain.Models.Base;
 using CloudFabric.EAV.Domain.Projections.AttributeConfigurationProjection;
 using CloudFabric.EAV.Domain.Projections.EntityConfigurationProjection;
+using CloudFabric.EAV.Models.LocalEventSourcingPackages.RequestModels;
+using CloudFabric.EAV.Models.LocalEventSourcingPackages.ViewModels;
 using CloudFabric.EAV.Models.RequestModels;
 using CloudFabric.EAV.Models.RequestModels.Attributes;
 using CloudFabric.EAV.Models.ViewModels;
@@ -24,6 +26,8 @@ using CloudFabric.Projections.Queries;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 
+using ProjectionDocumentSchemaFactory = CloudFabric.EAV.Domain.LocalEventSourcingPackages.Projections.ProjectionDocumentSchemaFactory;
+
 namespace CloudFabric.EAV.Service;
 
 public class EAVService : IEAVService
@@ -34,6 +38,7 @@ public class EAVService : IEAVService
     private readonly AggregateRepository<AttributeConfiguration> _attributeConfigurationRepository;
     private readonly AggregateRepository<EntityConfiguration> _entityConfigurationRepository;
     private readonly AggregateRepository<EntityInstance> _entityInstanceRepository;
+    private readonly AggregateRepository<CategoryInstance> _categoryInstanceRepository;
 
     private readonly IProjectionRepository<AttributeConfigurationProjectionDocument>
         _attributeConfigurationProjectionRepository;
@@ -68,7 +73,8 @@ public class EAVService : IEAVService
             .GetAggregateRepository<EntityConfiguration>();
         _entityInstanceRepository = _aggregateRepositoryFactory
             .GetAggregateRepository<EntityInstance>();
-
+        _categoryInstanceRepository = _aggregateRepositoryFactory.GetAggregateRepository<CategoryInstance>();
+        
         _attributeConfigurationProjectionRepository = _projectionRepositoryFactory
             .GetProjectionRepository<AttributeConfigurationProjectionDocument>();
         _entityConfigurationProjectionRepository = _projectionRepositoryFactory
@@ -546,7 +552,8 @@ public class EAVService : IEAVService
     #region EntityInstance
 
     public async Task<(EntityInstanceViewModel, ProblemDetails)> CreateEntityInstance(
-        EntityInstanceCreateRequest entity, CancellationToken cancellationToken = default
+        EntityInstanceCreateRequest entity,
+        CancellationToken cancellationToken = default
     ) {
         EntityConfiguration? entityConfiguration = await _entityConfigurationRepository.LoadAsync(
             entity.EntityConfigurationId,
@@ -568,6 +575,7 @@ public class EAVService : IEAVService
         var entityInstance = new EntityInstance(
             Guid.NewGuid(),
             entity.EntityConfigurationId,
+            entity.CategoryPath ?? "",
             _mapper.Map<List<AttributeInstance>>(entity.Attributes),
             entity.TenantId
         );
@@ -607,7 +615,9 @@ public class EAVService : IEAVService
         return _mapper.Map<EntityInstanceViewModel>(entityInstance);
     }
 
-    public async Task<(EntityInstanceViewModel, ProblemDetails)> UpdateEntityInstance(string partitionKey, EntityInstanceUpdateRequest updateRequest, CancellationToken cancellationToken)
+    public async Task<(EntityInstanceViewModel, ProblemDetails)> UpdateEntityInstance(string partitionKey, 
+        EntityInstanceUpdateRequest updateRequest, 
+        CancellationToken cancellationToken)
     {
         EntityInstance? entityInstance = await _entityInstanceRepository.LoadAsync(updateRequest.Id, partitionKey, cancellationToken);
 
@@ -729,8 +739,8 @@ public class EAVService : IEAVService
             cancellationToken
         );
 
-        var schema = CloudFabric.EAV.Domain.Projections.EntityInstanceProjection.ProjectionDocumentSchemaFactory
-            .FromEntityConfiguration(entityConfiguration, attributes);
+        var schema = ProjectionDocumentSchemaFactory
+            .FromEntityConfiguration(entityConfiguration, attributes, null);
 
         var projectionRepository = _projectionRepositoryFactory.GetProjectionRepository(schema);
 
@@ -763,6 +773,69 @@ public class EAVService : IEAVService
 
     #endregion
 
+    #region Categories
+
+    public async Task<(CategoryInstanceViewModel, ProblemDetails)> CreateCategory(
+        CategoryInstanceCreateRequest entity,
+        CancellationToken cancellationToken = default
+    )
+    {
+        EntityConfiguration? entityConfiguration = await _entityConfigurationRepository.LoadAsync(
+            entity.EntityConfigurationId,
+            entity.EntityConfigurationId.ToString(),
+            cancellationToken
+        );
+
+        if (entityConfiguration == null)
+        {
+            return (null, new ValidationErrorResponse("EntityConfigurationId", "Configuration not found"))!;
+        }
+
+        List<AttributeConfiguration> attributeConfigurations =
+            await GetAttributeConfigurationsForEntityConfiguration(
+                entityConfiguration,
+                cancellationToken
+            );
+
+        var categoryInstance = new CategoryInstance(
+            Guid.NewGuid(),
+            entity.EntityConfigurationId,
+            entity.CategoryPath,
+            _mapper.Map<List<AttributeInstance>>(entity.Attributes).AsReadOnly(),
+            entity.TenantId,
+            entity.ChildEntityConfigurationId
+        );
+
+        //TODO refactor code copypaste
+        var validationErrors = new Dictionary<string, string[]>();
+        foreach (var a in attributeConfigurations)
+        {
+            var attributeValue = categoryInstance.Attributes
+                .FirstOrDefault(attr => a.MachineName == attr.ConfigurationAttributeMachineName);
+
+            var attrValidationErrors = a.Validate(attributeValue);
+            if (attrValidationErrors is { Count: > 0 })
+            {
+                validationErrors.Add(a.MachineName, attrValidationErrors.ToArray());
+            }
+        }
+
+        if (validationErrors.Count > 0)
+        {
+            return (null, new ValidationErrorResponse(validationErrors))!;
+        }
+
+        var saved = await _categoryInstanceRepository.SaveAsync(_userInfo, categoryInstance, cancellationToken);
+        if (!saved)
+        {
+            //TODO: What do we want to do with internal exceptions and unsuccessful flow?
+            throw new Exception("Category was not saved");
+        }
+
+        return (_mapper.Map<CategoryInstanceViewModel>(categoryInstance), null)!;
+    }
+
+    #endregion
     private void EnsureAttributeMachineNameIsAdded(AttributeConfigurationCreateUpdateRequest attributeRequest)
     {
         if (string.IsNullOrWhiteSpace(attributeRequest.MachineName))

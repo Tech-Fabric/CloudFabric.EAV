@@ -4,6 +4,8 @@ using System.Text.Json;
 using AutoMapper;
 
 using CloudFabric.EAV.Domain.Enums;
+using CloudFabric.EAV.Domain.LocalEventSourcingPackages.Projections.CategoryInstanceProjection;
+using CloudFabric.EAV.Domain.LocalEventSourcingPackages.Projections.EntityInstanceProjection;
 using CloudFabric.EAV.Domain.Models;
 using CloudFabric.EAV.Domain.Projections.AttributeConfigurationProjection;
 using CloudFabric.EAV.Domain.Projections.EntityConfigurationProjection;
@@ -36,7 +38,6 @@ public class Tests
 {
     private AggregateRepositoryFactory _aggregateRepositoryFactory;
     private PostgresqlProjectionRepositoryFactory _projectionRepositoryFactory;
-
     private EAVService _eavService;
 
     private IEventStore _eventStore;
@@ -59,7 +60,8 @@ public class Tests
                                + "Username=cloudfabric_eventsourcing_test;"
                                + "Password=cloudfabric_eventsourcing_test;"
                                + "Database=cloudfabric_eventsourcing_test;"
-                               + "Maximum Pool Size=1000";
+                               + "Maximum Pool Size=1000;"
+                               + "Port=5433";
 
         _eventStore = new PostgresqlEventStore(
             connectionString,
@@ -82,10 +84,15 @@ public class Tests
         );
         var ordersListProjectionBuilder = new EntityConfigurationProjectionBuilder(_projectionRepositoryFactory);
 
+        var entityInstanceProjectionBuilder = new EntityInstanceProjectionBuilder(_aggregateRepositoryFactory, _projectionRepositoryFactory);
+        var categoryProjectionBuilder = new CategoryInstanceProjectionBuilder(_aggregateRepositoryFactory, _projectionRepositoryFactory);
+        
         projectionsEngine.AddProjectionBuilder(attributeConfigurationProjectionBuilder);
         projectionsEngine.AddProjectionBuilder(ordersListProjectionBuilder);
-
-
+        
+        projectionsEngine.AddProjectionBuilder(entityInstanceProjectionBuilder);
+        projectionsEngine.AddProjectionBuilder(categoryProjectionBuilder);
+        
         await projectionsEngine.StartAsync("TestInstance");
 
 
@@ -101,7 +108,7 @@ public class Tests
     [TestCleanup]
     public async Task Cleanup()
     {
-        await _eventStore.DeleteAll();
+        //await _eventStore.DeleteAll();
 
         try
         {
@@ -111,11 +118,11 @@ public class Tests
             var attributeConfigurationProjectionRepository = _projectionRepositoryFactory
                 .GetProjectionRepository<AttributeConfigurationProjectionDocument>();
 
-            await entityConfigurationProjectionRepository.DeleteAll();
-            await attributeConfigurationProjectionRepository.DeleteAll();
+            //await entityConfigurationProjectionRepository.DeleteAll();
+            //await attributeConfigurationProjectionRepository.DeleteAll();
 
             var rebuildStateRepository = GetProjectionRebuildStateRepository();
-            await rebuildStateRepository.DeleteAll();
+            //await rebuildStateRepository.DeleteAll();
         }
         catch
         {
@@ -1199,23 +1206,23 @@ public class Tests
             CancellationToken.None
         );
 
-        var configuration = await _eavService.GetEntityConfiguration(
+        await _eavService.GetEntityConfiguration(
             createdConfiguration.Id,
             createdConfiguration.PartitionKey
         );
 
-        //configuration.Should().BeEquivalentTo(createdConfiguration);
 
         var instanceCreateRequest =
             EntityInstanceFactory.CreateValidBoardGameEntityInstanceCreateRequest(createdConfiguration.Id);
 
-        var (createdInstance, createProblemDetails) = await _eavService.CreateEntityInstance(instanceCreateRequest);
+        var (createdInstance, _) = await _eavService.CreateEntityInstance(instanceCreateRequest);
 
         createdInstance.Should().BeEquivalentTo(instanceCreateRequest);
 
         var query = new ProjectionQuery()
         {
-            Filters = new List<Filter>() { { new Filter("Id", FilterOperator.Equal, createdInstance.Id) } }
+            Filters = new List<Filter>() { new Filter("Id", FilterOperator.Equal, createdInstance.Id)
+            }
         };
 
         await _eavService
@@ -1243,6 +1250,61 @@ public class Tests
         AttributeConfigurationCreateUpdateRequest attribute = JsonSerializer.Deserialize<AttributeConfigurationCreateUpdateRequest>(jsonString, deserializeOptions)!;
         attribute.As<NumberAttributeConfigurationCreateUpdateRequest>().ValueType.Should().Be(EavAttributeType.Number);
         attribute.MachineName.Should().Be("test");
+    }
+    
+    [TestMethod]
+    public async Task CreateInheritedInstance_Success()
+    {
+        
+        var categoryConfigurationCreateRequest = EntityConfigurationFactory.CreateBoardGameCategoryConfigurationCreateRequest(0, 10);
+
+        (EntityConfigurationViewModel? parentCreatedConfiguration, _) = await _eavService.CreateEntityConfiguration(
+            categoryConfigurationCreateRequest,
+            CancellationToken.None
+        );
+
+        var childConfigurationCreateRequest = EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
+
+        (EntityConfigurationViewModel? childCreatedConfiguration, _) = await _eavService.CreateEntityConfiguration(
+            childConfigurationCreateRequest,
+            CancellationToken.None
+        );
+
+        var childEntityInstanceCreateRequest = EntityInstanceFactory.CreateValidTireEntityInstanceCreateRequest(childCreatedConfiguration.Id);
+
+
+        var categoryInstanceCreateRequest =
+            EntityInstanceFactory.CreateCategoryInstanceRequest(parentCreatedConfiguration.Id, "", childCreatedConfiguration.Id, 0, 10);
+        
+        var (createdParentInstance, _) = await _eavService.CreateCategory(categoryInstanceCreateRequest, CancellationToken.None);
+        /*
+        (EntityInstanceViewModel parentCreatedInstance, ProblemDetails validationErrors) =
+            await _eavService.CreateEntityInstance(parentEntityInstanceCreateRequest);
+
+        var parentId = parentCreatedInstance.Id;
+        childEntityInstanceCreateRequest.CategoryPath = $"/{parentId}";
+        
+        (EntityInstanceViewModel childCreatedInstance, ProblemDetails childValidationErrors) =
+            await _eavService.CreateEntityInstance(childEntityInstanceCreateRequest);
+
+        // Edit
+        List<AttributeInstanceCreateUpdateRequest> attributesRequest = parentEntityInstanceCreateRequest.Attributes;
+
+        attributesRequest.Add(new NumberAttributeInstanceCreateUpdateRequest
+        {
+            ConfigurationAttributeMachineName = "avg_time_mins",
+            Value = 30
+        });
+
+        var updateRequest = new EntityInstanceUpdateRequest
+        {
+            EntityConfigurationId = parentCreatedConfiguration.Id,
+            Attributes = attributesRequest,
+            Id = parentCreatedInstance.Id
+        };
+
+        (EntityInstanceViewModel updatedInstance, _) = await _eavService.UpdateEntityInstance(parentCreatedInstance.Id.ToString(), updateRequest, CancellationToken.None);
+*/
     }
 
     private IProjectionRepository GetProjectionRepository(ProjectionDocumentSchema schema)
