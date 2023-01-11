@@ -170,6 +170,7 @@ public class EAVService : IEAVService
             return (null, new ValidationErrorResponse(nameof(updateRequest.ValueType), "Attribute type cannot be changed"));
         }
 
+        updateRequest.MachineName = attribute.MachineName;
         AttributeConfiguration updatedAttribute = _mapper.Map<AttributeConfiguration>(updateRequest);
 
         attribute.UpdateAttribute(updatedAttribute);
