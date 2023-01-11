@@ -31,14 +31,14 @@ public class EntityInstance : AggregateBase
         Apply(new AttributeInstanceAdded(Id, attribute));
     }
 
-    public void UpdateAttributeInstance(AttributeInstance attribute, Guid? entityConfigurationIdToReindex)
+    public void UpdateAttributeInstance(AttributeInstance attribute)
     {
-        Apply(new AttributeInstanceUpdated(Id, attribute, entityConfigurationIdToReindex, CategoryPath));
+        Apply(new AttributeInstanceUpdated(Id, EntityConfigurationId, attribute, CategoryPath));
     }
 
     public void RemoveAttributeInstance(string attributeMachineName)
     {
-        Apply(new AttributeInstanceRemoved(Id, attributeMachineName));
+        Apply(new AttributeInstanceRemoved(Id, EntityConfigurationId, attributeMachineName));
     }
     
     public void CategoryPathChanged(string categoryPath)

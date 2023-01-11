@@ -25,7 +25,7 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
             ValueFromListAttributeType = valueFromListAttributeType;
             ValuesList = valuesList;
             AttributeMachineNameToAffect = attributeMachineNameToAffect;
-            Apply(new ValueFromListConfigurationUpdated(valueFromListAttributeType, valuesList));
+            Apply(new ValueFromListConfigurationUpdated(id, valueFromListAttributeType, valuesList, attributeMachineNameToAffect));
 
         }
 
@@ -33,6 +33,26 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
         public List<ValueFromListOptionConfiguration> ValuesList { get; set; }
         public string? AttributeMachineNameToAffect { get; set; }
         public override EavAttributeType ValueType => EavAttributeType.ValueFromList;
+
+        public override void UpdateAttribute(AttributeConfiguration updatedAttribute)
+        {
+            var updated = updatedAttribute as ValueFromListAttributeConfiguration;
+
+            if (updated == null)
+            {
+                throw new ArgumentException("Invalid attribute type");
+            }
+
+            base.UpdateAttribute(updatedAttribute);
+
+            if (ValueFromListAttributeType != updated.ValueFromListAttributeType
+                || !ValuesList.Equals(updated.ValuesList)
+                || AttributeMachineNameToAffect != updated.AttributeMachineNameToAffect
+            )
+            {
+                Apply(new ValueFromListConfigurationUpdated(Id, updated.ValueFromListAttributeType, updated.ValuesList, updated.AttributeMachineNameToAffect));
+            }
+        }
 
         protected bool Equals(ValueFromListAttributeConfiguration other)
         {
@@ -70,6 +90,7 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
         {
             ValueFromListAttributeType = @event.ValueFromListAttributeType;
             ValuesList = @event.ValueFromListOptions;
+            AttributeMachineNameToAffect = @event.AttributeMachineNameToAffect;
         }
 
         #endregion

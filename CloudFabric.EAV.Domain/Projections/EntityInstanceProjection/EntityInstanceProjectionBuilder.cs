@@ -2,9 +2,6 @@ using CloudFabric.EAV.Domain.Events.Instance.Entity;
 using CloudFabric.EAV.Domain.Models;
 using CloudFabric.EventSourcing.Domain;
 using CloudFabric.Projections;
-using CloudFabric.Projections.Queries;
-
-using ProjectionDocumentSchemaFactory = CloudFabric.EAV.Domain.LocalEventSourcingPackages.Projections.ProjectionDocumentSchemaFactory;
 
 namespace CloudFabric.EAV.Domain.LocalEventSourcingPackages.Projections.EntityInstanceProjection;
 
@@ -13,7 +10,7 @@ public class EntityInstanceProjectionBuilder : InstanceProjectionBuilder,
     IHandleEvent<AggregateUpdatedEvent<EntityInstance>>,
     // IHandleEvent<AttributeInstanceAdded>,
     IHandleEvent<AttributeInstanceUpdated>
-    // IHandleEvent<AttributeInstanceRemoved>
+    // IHandleEvent<AttributeInstanceRemoved>,
 {
     
     public EntityInstanceProjectionBuilder(
@@ -55,24 +52,24 @@ public class EntityInstanceProjectionBuilder : InstanceProjectionBuilder,
     //
     public async Task On(AttributeInstanceUpdated @event)
     {
-        var repo = _aggregateRepositoryFactory.GetAggregateRepository<EntityInstance>();
-        // await UpdateDocument(@event.EntityInstanceId,
-        //     @event.PartitionKey,
-        //     (document) =>
-        //     {
-        //         var attributes =
-        //             document[nameof(EntityInstanceProjectionDocument.Attributes)] as List<AttributeInstance>;
-        //         var attributeToUpdate = attributes?.FirstOrDefault(x =>
-        //             x.ConfigurationAttributeMachineName == @event.AttributeInstance.ConfigurationAttributeMachineName
-        //         );
-        //
-        //         if (attributeToUpdate != null)
-        //         {
-        //             attributes.Remove(attributeToUpdate);
-        //             attributes.Add(@event.AttributeInstance);
-        //         }
-        //     }
-        // );
+        (List<AttributeConfiguration> allParentalAttributesConfigurations, _) = await BuildBranchAttributes(@event.CategoryPath);
+
+        var projectionDocumentSchema = await BuildProjectionDocumentSchemaForEntityConfigurationId(
+            @event.EntityConfigurationId,
+            allParentalAttributesConfigurations
+        );
+
+        await UpdateDocument(
+            projectionDocumentSchema,
+            @event.AggregateId,
+            @event.PartitionKey,
+            @event.Timestamp,
+            (document) =>
+            {
+                document[@event.AttributeInstance.ConfigurationAttributeMachineName] =
+                    @event.AttributeInstance.GetValue();
+            }
+        );
     }
     //
     // public async Task On(AttributeInstanceRemoved @event)
@@ -99,7 +96,7 @@ public class EntityInstanceProjectionBuilder : InstanceProjectionBuilder,
     {
         var entityInstance = await _aggregateRepositoryFactory
             .GetAggregateRepository<EntityInstance>()
-            .LoadAsyncOrThrowNotFound(@event.AggregateId, @event.AggregateId.ToString());
+            .LoadAsyncOrThrowNotFound(@event.AggregateId, @event.PartitionKey);
 
         var schema = await BuildProjectionDocumentSchemaForEntityConfigurationId(
             entityInstance.EntityConfigurationId, null

@@ -27,11 +27,12 @@ public class EntityInstanceFromDictionaryDeserializer
     {
         var entityInstance = new EntityInstanceViewModel()
         {
-            Id = Guid.Parse((string)record["Id"]!),
-            TenantId = record.ContainsKey("TenantId") && !string.IsNullOrEmpty((string?)record["TenantId"])
-                ? Guid.Parse((string)record["TenantId"]!)
+            Id = (Guid)record["Id"]!,
+            TenantId = record.ContainsKey("TenantId") && record["TenantId"] != null
+                ? (Guid)record["TenantId"]!
                 : null,
-            EntityConfigurationId = Guid.Parse((string)record["EntityConfigurationId"]!),
+            EntityConfigurationId = (Guid)record["EntityConfigurationId"]!,
+            PartitionKey = (string)record["PartitionKey"]!,
             Attributes = attributesConfigurations
                 .Select(attributeConfig =>
                     DeserializeAttribute(attributeConfig, record[attributeConfig.MachineName])
@@ -121,6 +122,12 @@ public class EntityInstanceFromDictionaryDeserializer
                 {
                     PreselectedOptionsMachineNames = new List<string>(),
                     UnavailableOptionsMachineNames = new List<string>()
+                };
+                break;
+            case EavAttributeType.Boolean:
+                attributeInstance = new BooleanAttributeInstanceViewModel()
+                {
+                    Value = (bool)attributeValue
                 };
                 break;
             default:

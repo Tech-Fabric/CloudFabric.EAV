@@ -14,6 +14,8 @@ namespace CloudFabric.EAV.Models.ViewModels.EAV
         public List<AttributeInstanceViewModel> Attributes { get; set; }
         
         public Guid? TenantId { get; set; }
+
+        public string PartitionKey { get; set; }
         
         public string CategoryPath { get; set; }
     }

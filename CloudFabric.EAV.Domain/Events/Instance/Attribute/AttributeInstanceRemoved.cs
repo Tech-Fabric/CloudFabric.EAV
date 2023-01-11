@@ -8,11 +8,14 @@ public record AttributeInstanceRemoved : Event
     {
     }
 
-    public AttributeInstanceRemoved(Guid entityInstanceId, string attributeMachineName)
+    public AttributeInstanceRemoved(Guid entityInstanceId, Guid entityConfigurationId, string attributeMachineName)
     {
         AggregateId = entityInstanceId;
+        EntityConfigurationId = entityConfigurationId;
         AttributeMachineName = attributeMachineName;
     }
+
+    public Guid EntityConfigurationId { get; set; }
 
     public string AttributeMachineName { get; set; }
 }

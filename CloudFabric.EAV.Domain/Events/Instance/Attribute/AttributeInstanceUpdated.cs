@@ -10,18 +10,18 @@ public record AttributeInstanceUpdated : Event
     }
 
     public AttributeInstanceUpdated(Guid entityInstanceId,
+        Guid entityConfigurationId,
         AttributeInstance attributeInstance,
-        Guid? entityConfigurationIdToReIndex,
         string categoryPath)
     {
         AggregateId = entityInstanceId;
+        EntityConfigurationId = entityConfigurationId;
         AttributeInstance = attributeInstance;
-        EntityConfigurationIdToReIndex = entityConfigurationIdToReIndex;
         CategoryPath = categoryPath;
     }
 
+    public Guid EntityConfigurationId { get; set; }
+
     public AttributeInstance AttributeInstance { get; set; }
-    public Guid? EntityConfigurationIdToReIndex { get; set; }
     public string CategoryPath { get; set; }
 }
-

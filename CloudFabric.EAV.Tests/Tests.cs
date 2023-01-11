@@ -11,6 +11,7 @@ using CloudFabric.EAV.Domain.Projections.EntityConfigurationProjection;
 using CloudFabric.EAV.Models.RequestModels;
 using CloudFabric.EAV.Models.RequestModels.Attributes;
 using CloudFabric.EAV.Models.ViewModels;
+using CloudFabric.EAV.Models.ViewModels.Attributes;
 using CloudFabric.EAV.Models.ViewModels.EAV;
 using CloudFabric.EAV.Service;
 using CloudFabric.EAV.Tests.Factories;
@@ -256,6 +257,82 @@ public class Tests
         );
 
         configuration.Should().BeEquivalentTo(createdConfiguration);
+    }
+
+    [TestMethod]
+    public async Task UpdateAttribute_Success()
+    {
+        var cultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID;
+        var numberAttribute = new NumberAttributeConfigurationCreateUpdateRequest()
+        {
+            MachineName = "number_attribute",
+            Description =
+                new List<LocalizedStringCreateRequest>
+                {
+                    new LocalizedStringCreateRequest
+                    {
+                        CultureInfoId = cultureInfoId,
+                        String = "Number attribute description"
+                    }
+                },
+            Name = new List<LocalizedStringCreateRequest>
+            {
+                new LocalizedStringCreateRequest
+                {
+                    CultureInfoId = cultureInfoId,
+                    String = "New Number Attribute"
+                }
+            },
+            DefaultValue = 15,
+            IsRequired = true,
+            MaximumValue = 100,
+            MinimumValue = -100
+        };
+
+        var configCreateRequest = new EntityConfigurationCreateRequest()
+        {
+            MachineName = "test",
+            Name = new List<LocalizedStringCreateRequest>
+            {
+                new LocalizedStringCreateRequest
+                {
+                    CultureInfoId = cultureInfoId,
+                    String = "test"
+                }
+            },
+            Attributes = new List<EntityAttributeConfigurationCreateUpdateRequest>
+            {
+                numberAttribute
+            }
+        };
+
+        (EntityConfigurationViewModel? created, _) = await _eavService.CreateEntityConfiguration(configCreateRequest, CancellationToken.None);
+        created.Attributes.Count.Should().Be(1);
+
+        // update added attribute
+        numberAttribute.Name[0].String = "Another number name";
+        numberAttribute.IsRequired = false;
+        numberAttribute.MinimumValue = 0;
+        numberAttribute.MaximumValue = 50;
+
+        (AttributeConfigurationViewModel? _, ProblemDetails? error) = await _eavService.UpdateAttribute(
+            created.Attributes[0].AttributeConfigurationId,
+            numberAttribute,
+            CancellationToken.None
+        );
+
+        error.Should().BeNull();
+
+        AttributeConfigurationViewModel updatedAttribute = await _eavService.GetAttribute(
+            created.Attributes[0].AttributeConfigurationId,
+            created.Attributes[0].AttributeConfigurationId.ToString(),
+            CancellationToken.None
+        );
+
+        updatedAttribute.Name[0].String.Should().Be(numberAttribute.Name[0].String);
+        updatedAttribute.IsRequired.Should().Be(numberAttribute.IsRequired);
+        updatedAttribute.As<NumberAttributeConfigurationViewModel>().MaximumValue.Should().Be(numberAttribute.MaximumValue);
+        updatedAttribute.As<NumberAttributeConfigurationViewModel>().MinimumValue.Should().Be(numberAttribute.MinimumValue);
     }
 
     [TestMethod]

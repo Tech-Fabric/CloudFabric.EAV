@@ -25,12 +25,24 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
             Guid? tenantId = null
         ) : base(id, machineName, name, EavAttributeType.LocalizedText, description, isRequired, tenantId)
         {
-            Update(defaultValue);
+            Apply(new LocalizedTextAttributeConfigurationUpdated(id, defaultValue));
         }
 
-        public void Update(LocalizedString defaultValue)
+        public override void UpdateAttribute(AttributeConfiguration updatedAttribute)
         {
-            Apply(new LocalizedTextAttributeConfigurationUpdated(defaultValue));
+            var updated = updatedAttribute as LocalizedTextAttributeConfiguration;
+
+            if (updated == null)
+            {
+                throw new ArgumentException("Invalid attribute type");
+            }
+
+            base.UpdateAttribute(updatedAttribute);
+
+            if (DefaultValue != updated.DefaultValue)
+            {
+                Apply(new LocalizedTextAttributeConfigurationUpdated(Id, updated.DefaultValue));
+            }
         }
 
         #region EventHandlers

@@ -1,6 +1,5 @@
-using System;
-using System.Collections.Generic;
 using CloudFabric.EAV.Models.RequestModels.Attributes;
+
 
 
 namespace CloudFabric.EAV.Models.RequestModels
