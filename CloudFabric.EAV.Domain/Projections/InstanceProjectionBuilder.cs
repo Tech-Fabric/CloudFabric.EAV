@@ -78,6 +78,16 @@ namespace CloudFabric.EAV.Domain.LocalEventSourcingPackages.Projections
             return ProjectionDocumentSchemaFactory.FromEntityConfiguration(entityConfiguration, attributes, parentAttributeConfigurations);
         }
 
+        protected async Task<ProjectionDocumentSchema> BuildEmptyProjectionDocumentSchemaForEntityConfigurationId(
+            Guid entityConfigurationId)
+        {
+            var entityConfiguration = await _aggregateRepositoryFactory
+                .GetAggregateRepository<EntityConfiguration>()
+                .LoadAsyncOrThrowNotFound(entityConfigurationId, entityConfigurationId.ToString());
+            
+            return ProjectionDocumentSchemaFactory.FromEntityConfiguration(entityConfiguration, new List<AttributeConfiguration>(), null);
+        }
+        
         protected async Task<List<AttributeConfiguration>> BuildAttributesListFromAttributesReferences(List<EntityConfigurationAttributeReference> references)
         {
             List<AttributeConfiguration> attributes = new List<AttributeConfiguration>();

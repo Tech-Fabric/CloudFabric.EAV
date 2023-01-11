@@ -25,10 +25,12 @@ namespace CloudFabric.EAV.Domain.LocalEventSourcingPackages.Projections.Category
                 @event.Attributes,
                 @event.PartitionKey,
                 @event.Timestamp);
+        
+            
         }
-
-
-        private async Task UpdateChildrenEntities(Guid instanceId,
+        
+        
+        private async Task UpdateChildren(Guid instanceId,
             ProjectionDocumentSchema categorySchema,
             Guid childrenConfigurationId,
             string partitionKey,
@@ -41,13 +43,10 @@ namespace CloudFabric.EAV.Domain.LocalEventSourcingPackages.Projections.Category
             // For children it's category path + category Id
             var childrenCategoryPath = currentCategoryPath + $"/{instanceId}";
             
-            // Get all branch attributes and their configurations
-            (List<AttributeConfiguration> allBranchAttributesConfigurations, Dictionary<string, object> allBranchAttributes) = await BuildBranchAttributes(childrenCategoryPath);
 
             // Build children document schema considering all branch attributes as parent attributes
-            var childProjectionDocumentSchema = await BuildProjectionDocumentSchemaForEntityConfigurationId(
-                childrenConfigurationId,
-                allBranchAttributesConfigurations
+            var simplifiedChildProjectionDocumentSchema = await BuildEmptyProjectionDocumentSchemaForEntityConfigurationId(
+                childrenConfigurationId
             );
 
             // Manage changes in the CategoryPath
@@ -61,10 +60,8 @@ namespace CloudFabric.EAV.Domain.LocalEventSourcingPackages.Projections.Category
                 idsToAdd = newCategoryIds.Except(currentCategoryIds).ToList();
             }
 
-            
-            var childrenRepo = ProjectionRepositoryFactory.GetProjectionRepository(childProjectionDocumentSchema);
-
-            // Get all children entities on this level of tree
+            // Get all children entities using simplified schema
+            var childrenRepo = ProjectionRepositoryFactory.GetProjectionRepository(simplifiedChildProjectionDocumentSchema);
             var children = await childrenRepo.Query(new ProjectionQuery
             {
                 Filters = new List<Filter>
@@ -83,12 +80,25 @@ namespace CloudFabric.EAV.Domain.LocalEventSourcingPackages.Projections.Category
                 
                 // Update children one by one
                 foreach (var resultDocument in children.Records)
-                {
-                    var child = resultDocument.Document;
-                    if (child == null)
+                {                    
+                    var childDocument = resultDocument.Document;
+                    
+                    if (childDocument == null)
                     {
                         //TODO: Log error
                     }
+                    
+                    // Get all branch attributes and their configurations
+                    (List<AttributeConfiguration> allBranchAttributesConfigurations, Dictionary<string, object> allBranchAttributes) = await BuildBranchAttributes(childDocument["CategoryPath"] as string);
+
+                    var childProjectionDocumentSchema = await BuildProjectionDocumentSchemaForEntityConfigurationId(
+                        new Guid(childDocument["ConfigurationId"] as string),
+                        allBranchAttributesConfigurations
+                    );      
+                    
+                    // Get expanded child document
+                    var childRepo = ProjectionRepositoryFactory.GetProjectionRepository(childProjectionDocumentSchema);
+                    var child = await childRepo.Single(new Guid(childDocument["Aggregateid"] as string), childDocument["PartitionKey"] as string, CancellationToken.None);
                     
                     // Get current child parental attributes
                     Dictionary<string, object> parentalAttributes = child["ParentalAttributes"] as Dictionary<string, object> ?? new Dictionary<string, object>();
@@ -112,10 +122,8 @@ namespace CloudFabric.EAV.Domain.LocalEventSourcingPackages.Projections.Category
                     }
                     
                     // Remove all attributes and configs that are no longer in the new branch
-                    
                     if (idsToRemove != null)
                     {
-                        
                         foreach (var id in idsToRemove)
                         {
                             (List<AttributeConfiguration> parentAttributesConfigurations, ReadOnlyCollection<AttributeInstance> parentAttributes) = await ExtractAttributesAndAttributeConfigurations(id);
