@@ -6,7 +6,7 @@ using CloudFabric.EventSourcing.EventStore;
 
 namespace CloudFabric.EAV.Domain.Models
 {
-    public class EntityCategory: AggregateBase
+    public class CategoryInstance: AggregateBase
     {
         public override string PartitionKey { get; }
         public Guid EntityConfigurationId { get; protected set; }
@@ -15,13 +15,13 @@ namespace CloudFabric.EAV.Domain.Models
         public string CategoryPath { get; protected set; }
         public Guid ChildEntityConfigurationId { get; set; }
 
-        public EntityCategory(IEnumerable<IEvent> events) : base(events)
+        public CategoryInstance(IEnumerable<IEvent> events) : base(events)
         {
         }
 
-        public EntityCategory(Guid id, string partitionKey, Guid entityConfigurationId, ReadOnlyCollection<AttributeInstance> attributes, Guid? tenantId, string categoryPath, Guid childEntityConfigurationId)
+        public CategoryInstance(Guid id, Guid entityConfigurationId, string categoryPath, ReadOnlyCollection<AttributeInstance> attributes, Guid? tenantId, Guid childEntityConfigurationId)
         {
-            Apply(new CategoryCreated(id, partitionKey, entityConfigurationId, attributes, tenantId, categoryPath, childEntityConfigurationId, DateTime.Now));
+            Apply(new CategoryCreated(id, PartitionKey, entityConfigurationId, attributes, tenantId, categoryPath, childEntityConfigurationId, DateTime.Now));
         }
         
         public async Task ChangeCategoryPath(string newCategoryPath, Guid childEntityConfigurationId)
