@@ -1295,7 +1295,7 @@ public class Tests
             Id = parentCreatedInstance.Id
         };
 
-        (EntityInstanceViewModel updatedInstance, _) = await _eavService.UpdateEntityInstance(parentCreatedInstance.Id.ToString(), updateRequest, childCreatedConfiguration.Id, CancellationToken.None);
+        (EntityInstanceViewModel updatedInstance, _) = await _eavService.UpdateEntityInstance(parentCreatedInstance.Id.ToString(), updateRequest, CancellationToken.None);
 
     }
 

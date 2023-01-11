@@ -98,10 +98,13 @@ public class EntityInstanceProjectionBuilder : InstanceProjectionBuilder,
             .GetAggregateRepository<EntityInstance>()
             .LoadAsyncOrThrowNotFound(@event.AggregateId, @event.PartitionKey);
 
-        var schema = await BuildProjectionDocumentSchemaForEntityConfigurationId(
-            entityInstance.EntityConfigurationId, null
-        );
+        (List<AttributeConfiguration> allParentalAttributesConfigurations, _) = await BuildBranchAttributes(entityInstance.CategoryPath);
 
+        
+        var schema = await BuildProjectionDocumentSchemaForEntityConfigurationId(
+            entityInstance.EntityConfigurationId, allParentalAttributesConfigurations
+        );
+        
         await SetDocumentUpdatedAt(schema, @event.AggregateId, @event.PartitionKey, @event.UpdatedAt);
     }
 }
