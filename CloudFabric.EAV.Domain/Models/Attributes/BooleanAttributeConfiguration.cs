@@ -24,7 +24,7 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
 
             if (instance is not BooleanAttributeInstance)
             {
-                errors.Add("Cannot validate attribute. Expected attribute type: Number)");
+                errors.Add("Cannot validate attribute. Expected attribute type: Boolean");
                 return errors;
             }
             
@@ -47,6 +47,23 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
         ) : base(id, machineName, name, EavAttributeType.Boolean, description, isRequired, tenantId)
         {
             Apply(new BooleanAttributeConfigurationUpdated(id, trueDisplayValue, falseDisplayValue));
+        }
+
+        public override void UpdateAttribute(AttributeConfiguration updatedAttribute)
+        {
+            var updated = updatedAttribute as BooleanAttributeConfiguration;
+
+            if (updated == null)
+            {
+                throw new ArgumentException("Invalid attribute type");
+            }
+
+            base.UpdateAttribute(updatedAttribute);
+
+            if (TrueDisplayValue != updated.TrueDisplayValue || FalseDisplayValue != updated.FalseDisplayValue)
+            {
+                Apply(new BooleanAttributeConfigurationUpdated(Id, updated.TrueDisplayValue, updated.FalseDisplayValue));
+            }
         }
 
         public override bool Equals(object obj)

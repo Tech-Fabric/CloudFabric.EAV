@@ -156,6 +156,28 @@ public class EAVService : IEAVService
         return _mapper.Map<AttributeConfigurationViewModel>(attribute);
     }
 
+    public async Task<(AttributeConfigurationViewModel?, ProblemDetails?)> UpdateAttribute(Guid id, AttributeConfigurationCreateUpdateRequest updateRequest, CancellationToken cancellationToken = default)
+    {
+        AttributeConfiguration? attribute = await _attributeConfigurationRepository.LoadAsync(id, id.ToString(), CancellationToken.None);
+
+        if (attribute == null || attribute.IsDeleted)
+        {
+            return (null, new ValidationErrorResponse(nameof(id), "Attribute not found"));
+        }
+
+        if (attribute.ValueType != updateRequest.ValueType)
+        {
+            return (null, new ValidationErrorResponse(nameof(updateRequest.ValueType), "Attribute type cannot be changed"));
+        }
+
+        AttributeConfiguration updatedAttribute = _mapper.Map<AttributeConfiguration>(updateRequest);
+
+        attribute.UpdateAttribute(updatedAttribute);
+        await _attributeConfigurationRepository.SaveAsync(_userInfo, attribute, cancellationToken);
+
+        return (_mapper.Map<AttributeConfigurationViewModel>(attribute), null);
+    }
+
     public async Task<(EntityConfigurationViewModel?, ProblemDetails?)> CreateEntityConfiguration(
         EntityConfigurationCreateRequest entityConfigurationCreateRequest,
         CancellationToken cancellationToken

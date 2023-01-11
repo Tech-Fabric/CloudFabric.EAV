@@ -32,7 +32,7 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
             Guid? tenantId = null
         ) : base(id, machineName, name, EavAttributeType.Text, description, isRequired, tenantId) 
         {
-            Apply(new TextAttributeConfigurationUpdated(defaultValue, maxLength, isSearchable));
+            Apply(new TextAttributeConfigurationUpdated(id, defaultValue, maxLength, isSearchable));
         }
         
         public override List<string> Validate(AttributeInstance? instance)
@@ -62,6 +62,26 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
             }
             
             return errors;
+        }
+
+        public override void UpdateAttribute(AttributeConfiguration updatedAttribute)
+        {
+            var updated = updatedAttribute as TextAttributeConfiguration;
+
+            if (updated == null)
+            {
+                throw new ArgumentException("Invalid attribute type");
+            }
+
+            base.UpdateAttribute(updatedAttribute);
+
+            if (DefaultValue != updated.DefaultValue
+                || MaxLength != updated.MaxLength
+                || IsSearchable != updated.IsSearchable
+            )
+            {
+                Apply(new TextAttributeConfigurationUpdated(Id, updated.DefaultValue, updated.MaxLength, updated.IsSearchable));
+            }
         }
         
         public override bool Equals(object obj)
