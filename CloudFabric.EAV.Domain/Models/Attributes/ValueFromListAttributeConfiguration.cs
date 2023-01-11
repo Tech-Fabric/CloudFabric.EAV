@@ -37,11 +37,6 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
         {
             var errors = base.Validate(instance);
 
-            if (instance == null)
-            {
-                return errors;
-            }
-
             if (instance is not ValueFromListAttributeInstance)
             {
                 errors.Add("Cannot validate attribute. Expected attribute type: Dropdown");
