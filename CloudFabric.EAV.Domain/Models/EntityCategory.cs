@@ -24,6 +24,11 @@ namespace CloudFabric.EAV.Domain.Models
             Apply(new CategoryCreated(id, partitionKey, entityConfigurationId, attributes, tenantId, categoryPath, childEntityConfigurationId, DateTime.Now));
         }
         
+        public async Task ChangeCategoryPath(string newCategoryPath, Guid childEntityConfigurationId)
+        {
+            Apply(new CategoryPathChanged(EntityConfigurationId, CategoryPath, newCategoryPath, childEntityConfigurationId));
+        }
+        
         public void On(CategoryCreated @event) {
             EntityConfigurationId = @event.EntityConfigurationId;
             Attributes = @event.Attributes;
@@ -31,6 +36,10 @@ namespace CloudFabric.EAV.Domain.Models
             CategoryPath = @event.CategoryPath;
             ChildEntityConfigurationId = @event.ChildEntityConfigurationId;
             Id = @event.AggregateId;
+        }
+        
+        public void On(CategoryPathChanged @event) {
+            CategoryPath = @event.newCategoryPath;
         }
     }
 }

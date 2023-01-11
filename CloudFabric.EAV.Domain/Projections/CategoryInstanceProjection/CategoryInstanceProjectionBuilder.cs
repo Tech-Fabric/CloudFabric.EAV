@@ -9,7 +9,8 @@ using CloudFabric.Projections.Queries;
 namespace CloudFabric.EAV.Domain.LocalEventSourcingPackages.Projections.CategoryInstanceProjection
 {
     public class CategoryInstanceProjectionBuilder : InstanceProjectionBuilder,
-        IHandleEvent<CategoryCreated>
+        IHandleEvent<CategoryCreated>,
+        IHandleEvent<CategoryPathChanged>
     {
 
         protected CategoryInstanceProjectionBuilder(AggregateRepositoryFactory aggregateRepositoryFactory, ProjectionRepositoryFactory projectionRepositoryFactory) : base(projectionRepositoryFactory, aggregateRepositoryFactory)
@@ -33,7 +34,6 @@ namespace CloudFabric.EAV.Domain.LocalEventSourcingPackages.Projections.Category
         private async Task UpdateChildren(Guid instanceId,
             ProjectionDocumentSchema categorySchema,
             Guid childrenConfigurationId,
-            string partitionKey,
             string currentCategoryPath,
             List<AttributeInstance>? newAttributes = null,
             List<EntityConfigurationAttributeReference>? newAttributesReferences = null,
@@ -44,6 +44,7 @@ namespace CloudFabric.EAV.Domain.LocalEventSourcingPackages.Projections.Category
             var childrenCategoryPath = currentCategoryPath + $"/{instanceId}";
             
 
+            
             // Build children document schema considering all branch attributes as parent attributes
             var simplifiedChildProjectionDocumentSchema = await BuildEmptyProjectionDocumentSchemaForEntityConfigurationId(
                 childrenConfigurationId
@@ -165,5 +166,41 @@ namespace CloudFabric.EAV.Domain.LocalEventSourcingPackages.Projections.Category
             }
         }
 
+        // Move category with all children to a new category
+        public async Task On(CategoryPathChanged @event)
+        {
+            (List<AttributeConfiguration> parentAttributesConfigurations, _) = await ExtractAttributesAndAttributeConfigurations(@event.AggregateId.ToString());   
+            var categorySchema = await BuildProjectionDocumentSchemaForEntityConfigurationId(
+                @event.entityConfigurationId,
+                parentAttributesConfigurations
+            );
+            await UpdateDocument(categorySchema,
+                @event.AggregateId ,
+                @event.PartitionKey,
+                updatedAt: @event.Timestamp,
+                async dict =>
+                {
+                    dict["CategoryPath"] = @event.newCategoryPath;
+                    // Update child entities
+                    await UpdateChildren(@event.AggregateId,
+                        categorySchema,
+                        @event.childConfigurationId,
+                        @event.currentCategoryPath,
+                        null,
+                        null,
+                        @event.newCategoryPath);
+                    
+                    // Update subcategories
+                    await UpdateChildren(@event.AggregateId,
+                        categorySchema,
+                        @event.entityConfigurationId,
+                        @event.currentCategoryPath,
+                        null,
+                        null,
+                        @event.newCategoryPath);
+                });        
+        }
+        
+        //TODO: Manage attribute changes
     }
 }

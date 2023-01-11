@@ -26,38 +26,13 @@ public class EntityInstanceProjectionBuilder : InstanceProjectionBuilder,
     
     public async Task On(EntityInstanceCreated @event)
     {
-        // Get all parent attributes from inheritance branch
-        (List<AttributeConfiguration> allParentalAttributesConfigurations, Dictionary<string, object> allParentalAttributes) = await BuildBranchAttributes(@event.CategoryPath);
-
-        // Build schema for entity instance considering all parent attributes and their configurations
-        var projectionDocumentSchema = await BuildProjectionDocumentSchemaForEntityConfigurationId(
+        await CreateInstanceProjection(@event.AggregateId,
             @event.EntityConfigurationId,
-            allParentalAttributesConfigurations
-        );
-
-        var document = new Dictionary<string, object?>()
-        {
-            { "Id", @event.AggregateId },
-            { "EntityConfigurationId", @event.EntityConfigurationId },
-            { "TenantId", @event.TenantId },
-            {"CategoryPath", @event.CategoryPath},
-            {"ParentalAttributes", allParentalAttributes},
-            {"Attributes", new Dictionary<string, object?>()}
-        };
-        
-        // fill attributes
-        foreach (var attribute in @event.Attributes)
-        {
-            document.Add(attribute.ConfigurationAttributeMachineName, attribute.GetValue());
-        }
-        
-        // Add document
-        await UpsertDocument(
-            projectionDocumentSchema,
-            document,
+            @event.TenantId,
+            @event.CategoryPath,
+            @event.Attributes.AsReadOnly(),
             @event.PartitionKey,
-            @event.Timestamp
-        );
+            @event.Timestamp);        // Get all parent attributes from inheritance branch
     }
 
     // Update all children instances if exist after current instance changed

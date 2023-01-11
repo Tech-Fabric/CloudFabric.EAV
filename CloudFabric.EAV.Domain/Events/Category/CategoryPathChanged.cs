@@ -2,5 +2,5 @@
 
 namespace CloudFabric.EAV.Domain.LocalEventSourcingPackages.Events.Category
 {
-    public record CategoryPathChanged(string newCategoryPath): Event;
+    public record CategoryPathChanged(Guid entityConfigurationId, string currentCategoryPath, string newCategoryPath, Guid childConfigurationId): Event;
 }
