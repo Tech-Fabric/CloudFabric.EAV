@@ -14,5 +14,6 @@ public enum EavAttributeType
     Image,
     LocalizedText,
     DateRange,
-    Boolean
+    Boolean,
+    File
 }

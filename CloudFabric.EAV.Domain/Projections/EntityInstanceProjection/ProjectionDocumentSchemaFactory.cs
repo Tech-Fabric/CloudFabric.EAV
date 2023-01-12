@@ -74,6 +74,8 @@ public static class ProjectionDocumentSchemaFactory
                 return ProjectionAttributesSchemaFactory.GetDateAttributeSchema(attributeConfiguration);
             case EavAttributeType.Image:
                 return ProjectionAttributesSchemaFactory.GetImageAttributeSchema(attributeConfiguration);
+            case EavAttributeType.File:
+                return ProjectionAttributesSchemaFactory.GetFileAttributeSchema(attributeConfiguration);
             case EavAttributeType.Array:
                 return ProjectionAttributesSchemaFactory.GetArrayAttributeSchema(attributeConfiguration);
             default:

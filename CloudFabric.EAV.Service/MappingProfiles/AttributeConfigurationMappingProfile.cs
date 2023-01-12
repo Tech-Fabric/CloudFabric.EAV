@@ -125,6 +125,17 @@ public class AttributeConfigurationProfile : Profile
                 o.TenantId
             ));
 
+        CreateMap<FileAttributeConfigurationCreateUpdateRequest, FileAttributeConfiguration>()
+            .ConvertUsing((o, dst, ctx) => new FileAttributeConfiguration(
+                Guid.NewGuid(),
+                o.MachineName,
+                ctx.Mapper.Map<List<LocalizedString>>(o.Name),
+                o.IsDownloadable,
+                ctx.Mapper.Map<List<LocalizedString>>(o.Description),
+                o.IsRequired,
+                o.TenantId
+            ));
+
         CreateMap<ValueFromListOptionCreateUpdateRequest, ValueFromListOptionConfiguration>();
 
         CreateMap<EntityConfigurationAttributeReference, EntityConfigurationAttributeReferenceViewModel>();
@@ -142,6 +153,7 @@ public class AttributeConfigurationProfile : Profile
         CreateMap<TextAttributeConfiguration, TextAttributeConfigurationViewModel>();
         CreateMap<DateRangeAttributeConfiguration, DateRangeAttributeConfigurationViewModel>();
         CreateMap<BooleanAttributeConfiguration, BooleanAttributeConfigurationViewModel>();
+        CreateMap<FileAttributeConfiguration, FileAttributeConfigurationViewModel>();
 
         CreateMap<ValueFromListAttributeConfiguration, ValueFromListAttributeConfigurationViewModel>();
 
