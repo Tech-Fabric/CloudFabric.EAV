@@ -46,6 +46,9 @@ public class Tests
     private IEventStore _eventStore;
     private ILogger<EAVService> _logger;
 
+    private const long _maxFileSize = 1024;
+    private const string _allowedFileExtensions = ".pdf|.png";
+
     [TestInitialize]
     public async Task SetUp()
     {
@@ -99,7 +102,11 @@ public class Tests
             _aggregateRepositoryFactory,
             _projectionRepositoryFactory,
             new EventUserInfo(Guid.NewGuid()),
-            Options.Create(new AttributeValidationRuleOptions())
+            Options.Create(new AttributeValidationRuleOptions
+            {
+                MaxFileSizeInBytes = _maxFileSize,
+                AllowedFileExtensions = _allowedFileExtensions
+            })
         );
     }
 
@@ -668,7 +675,7 @@ public class Tests
     }
 
     [TestMethod]
-    public async Task TestCreateFileAttribute_Success()
+    public async Task CreateFileAttribute_Success()
     {
         var cultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID;
         var fileAttribute = new FileAttributeConfigurationCreateUpdateRequest()
@@ -723,6 +730,197 @@ public class Tests
 
         createdAttribute.Name.Should().BeEquivalentTo(fileAttribute.Name);
         createdAttribute.As<FileAttributeConfigurationViewModel>().IsDownloadable.Should().Be(fileAttribute.IsDownloadable);
+    }
+
+    [TestMethod]
+    public async Task UpdateFileAttribute_Success()
+    {
+        var cultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID;
+        var fileAttribute = new FileAttributeConfigurationCreateUpdateRequest()
+        {
+            MachineName = "testAttr",
+            Name = new List<LocalizedStringCreateRequest>
+            {
+                new LocalizedStringCreateRequest
+                {
+                    CultureInfoId = cultureInfoId,
+                    String = "testAttrName"
+                }
+            },
+            IsRequired = true,
+            IsDownloadable = true
+        };
+
+        var configCreateRequest = new EntityConfigurationCreateRequest()
+        {
+            MachineName = "test",
+            Name = new List<LocalizedStringCreateRequest>
+            {
+                new LocalizedStringCreateRequest
+                {
+                    CultureInfoId = cultureInfoId,
+                    String = "test"
+                }
+            },
+            Attributes = new List<EntityAttributeConfigurationCreateUpdateRequest>
+            {
+                fileAttribute
+            }
+        };
+
+        (EntityConfigurationViewModel? created, _) = await _eavService.CreateEntityConfiguration(configCreateRequest, CancellationToken.None);
+        created!.Attributes.Count.Should().Be(1);
+
+        fileAttribute.IsDownloadable = false;
+        fileAttribute.IsRequired = false;
+
+        (AttributeConfigurationViewModel? updated, _) = await _eavService.UpdateAttribute(
+            created.Attributes[0].AttributeConfigurationId,
+            fileAttribute,
+            CancellationToken.None
+        );
+
+        var createdAttribute = await _eavService.GetAttribute(updated!.Id, updated.Id.ToString(), CancellationToken.None);
+
+        createdAttribute.IsRequired.Should().Be(fileAttribute.IsRequired);
+        createdAttribute.As<FileAttributeConfigurationViewModel>().IsDownloadable.Should().Be(fileAttribute.IsDownloadable);
+    }
+
+    [TestMethod]
+    public async Task CreateFileAttributeInstance_Success()
+    {
+        var cultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID;
+        var fileAttribute = new FileAttributeConfigurationCreateUpdateRequest()
+        {
+            MachineName = "testAttr",
+            Name = new List<LocalizedStringCreateRequest>
+            {
+                new LocalizedStringCreateRequest
+                {
+                    CultureInfoId = cultureInfoId,
+                    String = "testAttrName"
+                }
+            },
+            IsRequired = true,
+            IsDownloadable = true
+        };
+
+        var configCreateRequest = new EntityConfigurationCreateRequest()
+        {
+            MachineName = "test",
+            Name = new List<LocalizedStringCreateRequest>
+            {
+                new LocalizedStringCreateRequest
+                {
+                    CultureInfoId = cultureInfoId,
+                    String = "test"
+                }
+            },
+            Attributes = new List<EntityAttributeConfigurationCreateUpdateRequest>
+            {
+                fileAttribute
+            }
+        };
+
+        (EntityConfigurationViewModel? createdConfig, _) = await _eavService.CreateEntityConfiguration(configCreateRequest, CancellationToken.None);
+        createdConfig!.Attributes.Count.Should().Be(1);
+
+        var instanceRequest = new EntityInstanceCreateRequest
+        {
+            EntityConfigurationId = createdConfig!.Id,
+            TenantId = createdConfig.TenantId,
+            Attributes = new List<AttributeInstanceCreateUpdateRequest>
+            {
+                new FileAttributeInstanceCreateUpdateRequest
+                {
+                    ConfigurationAttributeMachineName = fileAttribute.MachineName,
+                    Value = new FileAttributeValueCreateUpdateRequest
+                    {
+                        Filename = "test.pdf",
+                        Url = "/test.pdf",
+                        Filesize = 1000
+                    }
+                }
+            }
+        };
+
+        (EntityInstanceViewModel createdInstance, ProblemDetails _) = await _eavService.CreateEntityInstance(instanceRequest, CancellationToken.None);
+
+        createdInstance.Should().NotBeNull();
+
+        createdInstance = await _eavService.GetEntityInstance(createdInstance.Id, createdConfig.Id.ToString());
+        createdInstance.Attributes.Count.Should().Be(1);
+        createdInstance.Attributes[0]
+            .As<FileAttributeInstanceViewModel>()
+            .Value
+            .Url
+            .Should()
+            .Be("/test.pdf");
+    }
+
+    [TestMethod]
+    public async Task CreateFileAttributeInstance_InvalidData()
+    {
+        var cultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID;
+        var fileAttribute = new FileAttributeConfigurationCreateUpdateRequest()
+        {
+            MachineName = "testAttr",
+            Name = new List<LocalizedStringCreateRequest>
+            {
+                new LocalizedStringCreateRequest
+                {
+                    CultureInfoId = cultureInfoId,
+                    String = "testAttrName"
+                }
+            },
+            IsRequired = true,
+            IsDownloadable = true
+        };
+
+        var configCreateRequest = new EntityConfigurationCreateRequest()
+        {
+            MachineName = "test",
+            Name = new List<LocalizedStringCreateRequest>
+            {
+                new LocalizedStringCreateRequest
+                {
+                    CultureInfoId = cultureInfoId,
+                    String = "test"
+                }
+            },
+            Attributes = new List<EntityAttributeConfigurationCreateUpdateRequest>
+            {
+                fileAttribute
+            }
+        };
+
+        (EntityConfigurationViewModel? created, _) = await _eavService.CreateEntityConfiguration(configCreateRequest, CancellationToken.None);
+        created!.Attributes.Count.Should().Be(1);
+
+        var instanceRequest = new EntityInstanceCreateRequest
+        {
+            EntityConfigurationId = created!.Id,
+            TenantId = created.TenantId,
+            Attributes = new List<AttributeInstanceCreateUpdateRequest>
+            {
+                new FileAttributeInstanceCreateUpdateRequest
+                {
+                    ConfigurationAttributeMachineName = fileAttribute.MachineName,
+                    Value = new FileAttributeValueCreateUpdateRequest
+                    {
+                        Filename = "test.txt",
+                        Url = "/test.txt",
+                        Filesize = 9999
+                    }
+                }
+            }
+        };
+
+        (EntityInstanceViewModel _, ProblemDetails error) = await _eavService.CreateEntityInstance(instanceRequest, CancellationToken.None);
+
+        error.Should().NotBeNull();
+        error.As<ValidationErrorResponse>().Errors.First().Value.Should().Contain("Unsupported file extension");
+        error.As<ValidationErrorResponse>().Errors.First().Value.Should().Contain($"File size cannot be greated than {_maxFileSize}");
     }
 
     [TestMethod]

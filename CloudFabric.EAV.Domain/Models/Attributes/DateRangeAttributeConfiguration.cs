@@ -31,7 +31,7 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
 
         public override List<string> Validate(AttributeInstance? instance, AttributeValidationRuleOptions? validationRules)
         {
-            List<string> errors = base.Validate(instance);
+            List<string> errors = base.Validate(instance, validationRules);
 
             if (instance == null)
             {
