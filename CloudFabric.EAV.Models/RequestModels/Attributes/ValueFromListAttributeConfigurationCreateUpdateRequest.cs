@@ -7,7 +7,7 @@ namespace CloudFabric.EAV.Models.RequestModels.Attributes
 
         public override EavAttributeType ValueType => EavAttributeType.ValueFromList;
 
-        public ValueFromListAttributeType ValueFromListAttributeType { get; }
+        public ValueFromListAttributeType ValueFromListAttributeType { get; set; }
 
         public List<ValueFromListOptionCreateUpdateRequest> ValuesList { get; set; }
 
