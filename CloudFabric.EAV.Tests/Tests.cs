@@ -976,7 +976,7 @@ public class Tests
         result.Should().BeNull();
         validationErrors.Should().BeOfType<ValidationErrorResponse>();
         validationErrors.As<ValidationErrorResponse>().Errors["testValueAttr"].First().Should()
-            .Be("Cannot validate attribute. Expected attribute type: Dropdown");
+            .Be("Cannot validate attribute. Expected attribute type: Value from list");
     }
 
     [TestMethod]
