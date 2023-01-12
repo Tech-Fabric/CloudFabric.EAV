@@ -50,6 +50,8 @@ namespace CloudFabric.EAV.Models.JsonConverters
                     return typeof(DateRangeAttributeConfigurationUpdateRequest);
                 case EavAttributeType.Boolean:
                     return typeof(BooleanAttributeConfigurationCreateUpdateRequest);
+                case EavAttributeType.File:
+                    return typeof(FileAttributeConfigurationCreateUpdateRequest);
                 default:
                     throw new InvalidOperationException();
             }

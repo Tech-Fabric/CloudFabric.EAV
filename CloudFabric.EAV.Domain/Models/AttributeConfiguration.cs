@@ -5,6 +5,7 @@ using System.Text.Json.Serialization;
 using CloudFabric.EAV.Domain.Enums;
 using CloudFabric.EAV.Domain.Events.Configuration.Attribute;
 using CloudFabric.EAV.Domain.Models.Base;
+using CloudFabric.EAV.Domain.Options;
 using CloudFabric.EAV.Json.Utilities;
 using CloudFabric.EventSourcing.Domain;
 using CloudFabric.EventSourcing.EventStore;
@@ -30,7 +31,7 @@ namespace CloudFabric.EAV.Domain.Models
 
         public bool IsDeleted { get; protected set; }
 
-        public virtual List<string> Validate(AttributeInstance? instance)
+        public virtual List<string> Validate(AttributeInstance? instance, AttributeValidationRuleOptions? validationRules = null)
         {
             if (IsRequired && instance == null)
             {

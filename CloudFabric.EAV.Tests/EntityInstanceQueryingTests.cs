@@ -5,6 +5,7 @@ using System.Reflection;
 using AutoMapper;
 
 using CloudFabric.EAV.Domain.Models;
+using CloudFabric.EAV.Domain.Options;
 using CloudFabric.EAV.Domain.Projections.AttributeConfigurationProjection;
 using CloudFabric.EAV.Domain.Projections.EntityInstanceProjection;
 using CloudFabric.EAV.Models.RequestModels;
@@ -20,6 +21,7 @@ using CloudFabric.Projections.Queries;
 using FluentAssertions;
 
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace CloudFabric.EAV.Tests;
@@ -94,7 +96,8 @@ public abstract class EntityInstanceQueryingTests
             mapper,
             aggregateRepositoryFactory,
             projectionRepositoryFactory,
-            new EventUserInfo(Guid.NewGuid())
+            new EventUserInfo(Guid.NewGuid()),
+            Options.Create(new AttributeValidationRuleOptions())
         );
     }
 
