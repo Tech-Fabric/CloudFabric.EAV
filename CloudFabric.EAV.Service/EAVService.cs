@@ -8,7 +8,6 @@ using AutoMapper;
 using CloudFabric.EAV.Domain.Enums;
 using CloudFabric.EAV.Domain.Models;
 using CloudFabric.EAV.Domain.Models.Base;
-using CloudFabric.EAV.Domain.Options;
 using CloudFabric.EAV.Domain.Projections.AttributeConfigurationProjection;
 using CloudFabric.EAV.Domain.Projections.EntityConfigurationProjection;
 using CloudFabric.EAV.Models.RequestModels;
@@ -47,7 +46,6 @@ public class EAVService : IEAVService
     private readonly ProjectionRepositoryFactory _projectionRepositoryFactory;
 
     private readonly EventUserInfo _userInfo;
-    private readonly AttributeValidationRuleOptions _attributeValidationRules;
 
     private readonly EntityInstanceFromDictionaryDeserializer _entityInstanceFromDictionaryDeserializer;
 
@@ -56,8 +54,7 @@ public class EAVService : IEAVService
         IMapper mapper,
         AggregateRepositoryFactory aggregateRepositoryFactory,
         ProjectionRepositoryFactory projectionRepositoryFactory,
-        EventUserInfo userInfo,
-        IOptions<AttributeValidationRuleOptions> attributeValidationRules
+        EventUserInfo userInfo
     )
     {
         _logger = logger;
@@ -65,7 +62,6 @@ public class EAVService : IEAVService
         _aggregateRepositoryFactory = aggregateRepositoryFactory;
         _projectionRepositoryFactory = projectionRepositoryFactory;
         _userInfo = userInfo;
-        _attributeValidationRules = attributeValidationRules.Value;
 
         _attributeConfigurationRepository = _aggregateRepositoryFactory
             .GetAggregateRepository<AttributeConfiguration>();
@@ -583,7 +579,7 @@ public class EAVService : IEAVService
             var attributeValue = entityInstance.Attributes
                 .FirstOrDefault(attr => a.MachineName == attr.ConfigurationAttributeMachineName);
 
-            var attrValidationErrors = a.Validate(attributeValue, _attributeValidationRules);
+            var attrValidationErrors = a.Validate(attributeValue);
             if (attrValidationErrors is { Count: > 0 })
             {
                 validationErrors.Add(a.MachineName, attrValidationErrors.ToArray());
@@ -676,7 +672,7 @@ public class EAVService : IEAVService
             }
 
             AttributeInstance? newAttribute = _mapper.Map<AttributeInstance>(newAttributeRequest);
-            List<string> errors = attrConfig.Validate(newAttribute, _attributeValidationRules);
+            List<string> errors = attrConfig.Validate(newAttribute);
 
             if (errors.Count == 0)
             {

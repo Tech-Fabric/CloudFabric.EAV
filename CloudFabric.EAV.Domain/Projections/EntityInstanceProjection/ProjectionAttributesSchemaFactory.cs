@@ -405,18 +405,6 @@ namespace CloudFabric.EAV.Domain.Projections.EntityInstanceProjection
                             ?.PropertyType
                     ),
                     IsRetrievable = true
-                },
-                new ProjectionDocumentPropertySchema
-                {
-                    PropertyName = nameof(FileAttributeInstance.Value.Filesize),
-                    PropertyType = Type.GetTypeCode(
-                        typeof(FileAttributeInstance)
-                            .GetProperty(nameof(FileAttributeInstance.Value))
-                            ?.PropertyType
-                            .GetProperty(nameof(FileAttributeInstance.Value.Filesize))
-                            ?.PropertyType
-                    ),
-                    IsRetrievable = true
                 }
             };
         }

@@ -5,7 +5,6 @@ using System.Reflection;
 using AutoMapper;
 
 using CloudFabric.EAV.Domain.Models;
-using CloudFabric.EAV.Domain.Options;
 using CloudFabric.EAV.Domain.Projections.AttributeConfigurationProjection;
 using CloudFabric.EAV.Domain.Projections.EntityInstanceProjection;
 using CloudFabric.EAV.Models.RequestModels;
@@ -96,8 +95,7 @@ public abstract class EntityInstanceQueryingTests
             mapper,
             aggregateRepositoryFactory,
             projectionRepositoryFactory,
-            new EventUserInfo(Guid.NewGuid()),
-            Options.Create(new AttributeValidationRuleOptions())
+            new EventUserInfo(Guid.NewGuid())
         );
     }
 

@@ -1,7 +1,6 @@
 ﻿using CloudFabric.EAV.Domain.Enums;
 using CloudFabric.EAV.Domain.Events.Configuration.Attributes;
 using CloudFabric.EAV.Domain.Models.Base;
-using CloudFabric.EAV.Domain.Options;
 using CloudFabric.EventSourcing.EventStore;
 
 namespace CloudFabric.EAV.Domain.Models.Attributes
@@ -36,9 +35,9 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
             Apply(new TextAttributeConfigurationUpdated(id, defaultValue, maxLength, isSearchable));
         }
         
-        public override List<string> Validate(AttributeInstance? instance, AttributeValidationRuleOptions? validationRules)
+        public override List<string> Validate(AttributeInstance? instance)
         {
-            var errors = base.Validate(instance, validationRules);
+            var errors = base.Validate(instance);
 
             if (instance == null)
             {

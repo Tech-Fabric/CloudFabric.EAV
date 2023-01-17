@@ -1,7 +1,6 @@
 using CloudFabric.EAV.Domain.Enums;
 using CloudFabric.EAV.Domain.Events.Configuration.Attributes;
 using CloudFabric.EAV.Domain.Models.Base;
-using CloudFabric.EAV.Domain.Options;
 using CloudFabric.EventSourcing.EventStore;
 
 namespace CloudFabric.EAV.Domain.Models.Attributes
@@ -46,9 +45,9 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
             }
         }
 
-        public override List<string> Validate(AttributeInstance? instance, AttributeValidationRuleOptions? validationRules)
+        public override List<string> Validate(AttributeInstance? instance)
         {
-            var errors = base.Validate(instance, validationRules);
+            var errors = base.Validate(instance);
 
             if (instance == null)
             {
@@ -59,26 +58,6 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
             {
                 errors.Add("Cannot validate attribute. Expected attribute type: File");
                 return errors;
-            }
-
-            var attributeInstance = instance as FileAttributeInstance;
-
-            // validate file extension and size
-            var extension = attributeInstance!.Value.Filename.Substring(
-                attributeInstance.Value.Filename.LastIndexOf('.')
-            );
-
-            var availableExtensions = validationRules?.AllowedFileExtensions?.Split('|', ',', ';');
-
-            if (string.IsNullOrEmpty(extension) || (availableExtensions != null && !availableExtensions.Contains(extension)))
-            {
-                errors.Add("Unsupported file extension");
-            }
-
-            if (!attributeInstance.Value.Filesize.HasValue
-                || (validationRules?.MaxFileSizeInBytes != null && attributeInstance.Value.Filesize > validationRules.MaxFileSizeInBytes))
-            {
-                errors.Add($"File size cannot be greated than {validationRules!.MaxFileSizeInBytes}");
             }
 
             return errors;

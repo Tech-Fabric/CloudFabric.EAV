@@ -6,7 +6,6 @@ using AutoMapper;
 
 using CloudFabric.EAV.Domain.Enums;
 using CloudFabric.EAV.Domain.Models;
-using CloudFabric.EAV.Domain.Options;
 using CloudFabric.EAV.Domain.Models.Attributes;
 using CloudFabric.EAV.Domain.Projections.AttributeConfigurationProjection;
 using CloudFabric.EAV.Domain.Projections.EntityConfigurationProjection;
@@ -45,9 +44,6 @@ public class Tests
 
     private IEventStore _eventStore;
     private ILogger<EAVService> _logger;
-
-    private const long _maxFileSize = 1024;
-    private const string _allowedFileExtensions = ".pdf|.png";
 
     [TestInitialize]
     public async Task SetUp()
@@ -101,12 +97,7 @@ public class Tests
             mapper,
             _aggregateRepositoryFactory,
             _projectionRepositoryFactory,
-            new EventUserInfo(Guid.NewGuid()),
-            Options.Create(new AttributeValidationRuleOptions
-            {
-                MaxFileSizeInBytes = _maxFileSize,
-                AllowedFileExtensions = _allowedFileExtensions
-            })
+            new EventUserInfo(Guid.NewGuid())
         );
     }
 
@@ -837,8 +828,7 @@ public class Tests
                     Value = new FileAttributeValueCreateUpdateRequest
                     {
                         Filename = "test.pdf",
-                        Url = "/test.pdf",
-                        Filesize = 1000
+                        Url = "/test.pdf"
                     }
                 }
             }
@@ -856,71 +846,6 @@ public class Tests
             .Url
             .Should()
             .Be("/test.pdf");
-    }
-
-    [TestMethod]
-    public async Task CreateFileAttributeInstance_InvalidData()
-    {
-        var cultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID;
-        var fileAttribute = new FileAttributeConfigurationCreateUpdateRequest()
-        {
-            MachineName = "testAttr",
-            Name = new List<LocalizedStringCreateRequest>
-            {
-                new LocalizedStringCreateRequest
-                {
-                    CultureInfoId = cultureInfoId,
-                    String = "testAttrName"
-                }
-            },
-            IsRequired = true,
-            IsDownloadable = true
-        };
-
-        var configCreateRequest = new EntityConfigurationCreateRequest()
-        {
-            MachineName = "test",
-            Name = new List<LocalizedStringCreateRequest>
-            {
-                new LocalizedStringCreateRequest
-                {
-                    CultureInfoId = cultureInfoId,
-                    String = "test"
-                }
-            },
-            Attributes = new List<EntityAttributeConfigurationCreateUpdateRequest>
-            {
-                fileAttribute
-            }
-        };
-
-        (EntityConfigurationViewModel? created, _) = await _eavService.CreateEntityConfiguration(configCreateRequest, CancellationToken.None);
-        created!.Attributes.Count.Should().Be(1);
-
-        var instanceRequest = new EntityInstanceCreateRequest
-        {
-            EntityConfigurationId = created!.Id,
-            TenantId = created.TenantId,
-            Attributes = new List<AttributeInstanceCreateUpdateRequest>
-            {
-                new FileAttributeInstanceCreateUpdateRequest
-                {
-                    ConfigurationAttributeMachineName = fileAttribute.MachineName,
-                    Value = new FileAttributeValueCreateUpdateRequest
-                    {
-                        Filename = "test.txt",
-                        Url = "/test.txt",
-                        Filesize = 9999
-                    }
-                }
-            }
-        };
-
-        (EntityInstanceViewModel _, ProblemDetails error) = await _eavService.CreateEntityInstance(instanceRequest, CancellationToken.None);
-
-        error.Should().NotBeNull();
-        error.As<ValidationErrorResponse>().Errors.First().Value.Should().Contain("Unsupported file extension");
-        error.As<ValidationErrorResponse>().Errors.First().Value.Should().Contain($"File size cannot be greated than {_maxFileSize}");
     }
 
     [TestMethod]
