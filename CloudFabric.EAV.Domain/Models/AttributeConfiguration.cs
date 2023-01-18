@@ -30,7 +30,7 @@ namespace CloudFabric.EAV.Domain.Models
 
         public bool IsDeleted { get; protected set; }
 
-        // attribute cannot be updated (only created and deleted)
+        // attribute configuration cannot be updated (only created and deleted)
         public bool IsReadOnly { get; protected set; }
 
         public virtual List<string> Validate(AttributeInstance? instance)

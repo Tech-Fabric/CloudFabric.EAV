@@ -1845,54 +1845,6 @@ public class Tests
     }
 
     [TestMethod]
-    public async Task UpdateReadonlyAttributeInstance_AttributeIsNotUpdated()
-    {
-        var configurationCreateRequest = EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
-
-        var readonlyAttributeConfig = configurationCreateRequest.Attributes
-            .First(x => ((AttributeConfigurationCreateUpdateRequest)x).MachineName == "name") as AttributeConfigurationCreateUpdateRequest;
-        readonlyAttributeConfig.IsReadOnly = true;
-
-        var (createdConfiguration, _) = await _eavService.CreateEntityConfiguration(
-            configurationCreateRequest,
-            CancellationToken.None
-        );
-
-        var instanceCreateRequest =
-            EntityInstanceFactory.CreateValidBoardGameEntityInstanceCreateRequest(createdConfiguration.Id);
-
-        (EntityInstanceViewModel createdInstance, ProblemDetails _) = await _eavService.CreateEntityInstance(instanceCreateRequest);
-
-        // try to update readonly attribute
-        var readonlyAttributeInstance = (LocalizedTextAttributeInstanceCreateUpdateRequest)instanceCreateRequest.Attributes.First(x => x.ConfigurationAttributeMachineName == readonlyAttributeConfig.MachineName);
-        var initialValue = readonlyAttributeInstance.Value.First().String;
-        readonlyAttributeInstance.Value = new List<LocalizedStringCreateRequest>
-        {
-            new LocalizedStringCreateRequest
-            {
-                CultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID,
-                String = "Updated readonly attribute"
-            }
-        };
-
-        (EntityInstanceViewModel updatedInstance, ProblemDetails error) = await _eavService.UpdateEntityInstance(
-            createdInstance.PartitionKey,
-            new EntityInstanceUpdateRequest
-            {
-                Id = createdInstance.Id,
-                EntityConfigurationId = createdInstance.EntityConfigurationId,
-                Attributes = new List<AttributeInstanceCreateUpdateRequest>(instanceCreateRequest.Attributes)
-            },
-            CancellationToken.None
-        );
-
-        error.Should().BeNull();
-        var instance = await _eavService.GetEntityInstance(createdInstance.Id, createdConfiguration.PartitionKey);
-        var updatedAttribute = instance.Attributes.First(x => x.ConfigurationAttributeMachineName == readonlyAttributeConfig.MachineName);
-        ((LocalizedTextAttributeInstanceViewModel)updatedAttribute).Value.First().String.Should().Be(initialValue);
-    }
-
-    [TestMethod]
     public async Task DeleteReadonlyAttributeConfiguration_Success()
     {
         var cultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID;

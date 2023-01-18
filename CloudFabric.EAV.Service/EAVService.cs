@@ -248,8 +248,7 @@ public class EAVService : IEAVService
             _mapper.Map<List<LocalizedString>>(entityConfigurationCreateRequest.Name),
             entityConfigurationCreateRequest.MachineName,
             _mapper.Map<List<EntityConfigurationAttributeReference>>(entityConfigurationCreateRequest.Attributes),
-            entityConfigurationCreateRequest.TenantId,
-            entityConfigurationCreateRequest.Metadata
+            entityConfigurationCreateRequest.TenantId
         );
 
         await _entityConfigurationRepository.SaveAsync(
@@ -342,22 +341,8 @@ public class EAVService : IEAVService
 
         foreach (var attribute in attributesToRemove)
         {
-            // check if attribute is readonly
-            var attributeConfiguration = await _attributeConfigurationRepository.LoadAsync(
-                    attribute.AttributeConfigurationId,
-                    attribute.AttributeConfigurationId.ToString(),
-                    cancellationToken
-                );
-
-            if (!attributeConfiguration.IsReadOnly)
-            {
-                entityConfiguration.RemoveAttribute(attribute.AttributeConfigurationId);
-            }
+            entityConfiguration.RemoveAttribute(attribute.AttributeConfigurationId);
         }
-
-        entityConfiguration.UpdateMetadata(
-            entityConfiguration.Metadata.ToDictionary(k => k.Key, k => k.Value)
-        );
 
         await _entityConfigurationRepository.SaveAsync(_userInfo, entityConfiguration, cancellationToken);
 
@@ -697,7 +682,7 @@ public class EAVService : IEAVService
                 );
                 if (currentAttribute != null)
                 {
-                    if (!attrConfig.IsReadOnly && !newAttribute.Equals(currentAttribute))
+                    if (!newAttribute.Equals(currentAttribute))
                     {
                         entityInstance.UpdateAttributeInstance(newAttribute);
                     }
