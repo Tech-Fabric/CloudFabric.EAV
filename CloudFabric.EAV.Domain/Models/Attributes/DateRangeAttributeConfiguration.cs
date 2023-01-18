@@ -26,6 +26,16 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
 
         public DateRangeAttributeType DateRangeAttributeType { get; set; }
 
+        public override List<string> Validate()
+        {
+            var errors = base.Validate();
+            if (!Enum.IsDefined(typeof(DateRangeAttributeType), DateRangeAttributeType))
+            {
+                errors.Add("Unknown date attribute type");
+            }
+            return errors;
+        }
+
         public override EavAttributeType ValueType => EavAttributeType.DateRange;
 
         public override List<string> ValidateInstance(AttributeInstance? instance)

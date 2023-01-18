@@ -679,6 +679,21 @@ public class Tests
     }
 
     [TestMethod]
+    public async Task CreateNumberAttribute_ValidationError()
+    {
+        var request = new NumberAttributeConfigurationCreateUpdateRequest
+        {
+            MachineName = "avg_time_mins"
+        };
+
+        (AttributeConfigurationViewModel? result, ValidationErrorResponse? errors) = await _eavService.CreateAttribute(request);
+        result.Should().BeNull();
+        errors.Should().NotBeNull();
+        errors.As<ValidationErrorResponse>().Errors.Should().ContainKey(result.MachineName);
+        errors.As<ValidationErrorResponse>().Errors[result.MachineName].Should().Contain("Name cannot be empty");
+    }
+    
+    [TestMethod]
     public async Task CreateFileAttribute_Success()
     {
         var cultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID;
