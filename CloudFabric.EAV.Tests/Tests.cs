@@ -1072,7 +1072,7 @@ public class Tests
             }
         };
 
-        var valueFromListAttribute = await _eavService.CreateAttribute(valueFromListAttributeCreateRequest, CancellationToken.None);
+        var (valueFromListAttribute, _) = await _eavService.CreateAttribute(valueFromListAttributeCreateRequest, CancellationToken.None);
 
         // create request with changed properties and update attribute
         string affectedMachineName = Guid.NewGuid().ToString();
@@ -1211,7 +1211,7 @@ public class Tests
             MinimumValue = -100
         };
 
-        var createdAttribute = await _eavService.CreateAttribute(numberAttribute, CancellationToken.None);
+        var (createdAttribute, _) = await _eavService.CreateAttribute(numberAttribute, CancellationToken.None);
         createdAttribute.Should().NotBeNull();
 
         await _eavService.AddAttributeToEntityConfiguration(
@@ -1267,7 +1267,7 @@ public class Tests
             MinimumValue = -100
         };
 
-        var createdAttribute = await _eavService.CreateAttribute(numberAttribute, CancellationToken.None);
+        var (createdAttribute, _) = await _eavService.CreateAttribute(numberAttribute, CancellationToken.None);
         createdAttribute.Should().NotBeNull();
 
         (EntityConfigurationViewModel? entityConfig, ProblemDetails? error) = await _eavService.AddAttributeToEntityConfiguration(
@@ -1587,7 +1587,7 @@ public class Tests
             MinimumValue = 0
         };
 
-        var priceAttributeCreated = await _eavService.CreateAttribute(priceAttribute, CancellationToken.None);
+        var (priceAttributeCreated, _) = await _eavService.CreateAttribute(priceAttribute, CancellationToken.None);
 
         var entityConfigurationCreateRequest = new EntityConfigurationCreateRequest()
         {

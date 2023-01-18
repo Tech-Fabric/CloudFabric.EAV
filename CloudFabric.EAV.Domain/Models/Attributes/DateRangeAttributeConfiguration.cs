@@ -28,9 +28,9 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
 
         public override EavAttributeType ValueType => EavAttributeType.DateRange;
 
-        public override List<string> Validate(AttributeInstance? instance)
+        public override List<string> ValidateInstance(AttributeInstance? instance)
         {
-            List<string> errors = base.Validate(instance);
+            List<string> errors = base.ValidateInstance(instance);
 
             if (instance == null)
             {

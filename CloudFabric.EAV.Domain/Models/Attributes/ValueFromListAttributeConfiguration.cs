@@ -33,9 +33,9 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
         public string? AttributeMachineNameToAffect { get; set; }
         public override EavAttributeType ValueType => EavAttributeType.ValueFromList;
 
-        public override List<string> Validate(AttributeInstance? instance)
+        public override List<string> ValidateInstance(AttributeInstance? instance)
         {
-            var errors = base.Validate(instance);
+            var errors = base.ValidateInstance(instance);
 
             if (instance == null)
             {

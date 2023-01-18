@@ -13,9 +13,9 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
 
         public override EavAttributeType ValueType { get; } = EavAttributeType.Boolean;
         
-        public override List<string> Validate(AttributeInstance? instance)
+        public override List<string> ValidateInstance(AttributeInstance? instance)
         {
-            var errors = base.Validate(instance);
+            var errors = base.ValidateInstance(instance);
 
             if (instance == null)
             {

@@ -1,11 +1,8 @@
-using System;
 using System.Globalization;
 using System.Text.RegularExpressions;
-using System.Xml.Serialization;
 
 using AutoMapper;
 
-using CloudFabric.EAV.Domain.Enums;
 using CloudFabric.EAV.Domain.Models;
 using CloudFabric.EAV.Domain.Models.Base;
 using CloudFabric.EAV.Domain.Projections.AttributeConfigurationProjection;
@@ -23,7 +20,6 @@ using CloudFabric.Projections.Queries;
 
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
 namespace CloudFabric.EAV.Service;
 
@@ -131,7 +127,7 @@ public class EAVService : IEAVService
         return _mapper.Map<ProjectionQueryResult<EntityConfigurationViewModel>>(records);
     }
 
-    public async Task<AttributeConfigurationViewModel> CreateAttribute(
+    public async Task<(AttributeConfigurationViewModel?, ValidationErrorResponse?)> CreateAttribute(
         AttributeConfigurationCreateUpdateRequest attributeConfigurationCreateUpdateRequest,
         CancellationToken cancellationToken = default
     )
@@ -139,10 +135,15 @@ public class EAVService : IEAVService
         EnsureAttributeMachineNameIsAdded(attributeConfigurationCreateUpdateRequest);
 
         var attribute = _mapper.Map<AttributeConfiguration>(attributeConfigurationCreateUpdateRequest);
-
+        var validationErrors = attribute.Validate();
+        if (validationErrors.Any())
+        {
+            return (null, new ValidationErrorResponse(attribute.MachineName, validationErrors.ToArray()));
+        }
+        
         await _attributeConfigurationRepository.SaveAsync(_userInfo, attribute, cancellationToken);
 
-        return _mapper.Map<AttributeConfigurationViewModel>(attribute);
+        return (_mapper.Map<AttributeConfigurationViewModel>(attribute), null);
     }
 
     public async Task<AttributeConfigurationViewModel> GetAttribute(Guid id, string partitionKey, CancellationToken cancellationToken = default)
@@ -174,6 +175,11 @@ public class EAVService : IEAVService
         updateRequest.MachineName = attribute.MachineName;
         AttributeConfiguration updatedAttribute = _mapper.Map<AttributeConfiguration>(updateRequest);
 
+        var validationErrors = updatedAttribute.Validate();
+        if (validationErrors.Any())
+        {
+            return (null, new ValidationErrorResponse(updatedAttribute.MachineName, validationErrors.ToArray()));
+        }
         attribute.UpdateAttribute(updatedAttribute);
         await _attributeConfigurationRepository.SaveAsync(_userInfo, attribute, cancellationToken);
 
@@ -219,25 +225,43 @@ public class EAVService : IEAVService
             }
         }
 
+        var allAttrProblemDetails = new List<ValidationErrorResponse>();
         for (var i = 0; i < entityConfigurationCreateRequest.Attributes.Count; i++)
         {
             var attribute = entityConfigurationCreateRequest.Attributes[i];
 
             if (!(attribute is EntityAttributeConfigurationCreateUpdateReferenceRequest))
             {
-                var attrCreated = await CreateAttribute(
+                var (attrCreated, attrProblemDetails)  = await CreateAttribute(
                     (AttributeConfigurationCreateUpdateRequest)attribute,
                     cancellationToken
                 );
 
-                entityConfigurationCreateRequest.Attributes[i] =
-                    new EntityAttributeConfigurationCreateUpdateReferenceRequest()
-                    {
-                        AttributeConfigurationId = attrCreated.Id
-                    };
+                if (attrProblemDetails != null)
+                {
+                    allAttrProblemDetails.Add(attrProblemDetails);
+                }
+                else
+                {
+                    entityConfigurationCreateRequest.Attributes[i] =
+                        new EntityAttributeConfigurationCreateUpdateReferenceRequest()
+                        {
+                            AttributeConfigurationId = attrCreated.Id
+                        };    
+                }
             }
         }
 
+        if (allAttrProblemDetails.Any())
+        {
+            var allErrors = allAttrProblemDetails.SelectMany(pd => pd.Errors)
+                .ToLookup(pair => pair.Key, pair => pair.Value)
+                .ToDictionary(group => group.Key, group => group.First());
+            return (
+                null,
+                new ValidationErrorResponse(allErrors)
+            );
+        }
         var entityConfiguration = new EntityConfiguration(
             Guid.NewGuid(),
             _mapper.Map<List<LocalizedString>>(entityConfigurationCreateRequest.Name),
@@ -319,11 +343,14 @@ public class EAVService : IEAVService
             }
             else if (attributeUpdate is AttributeConfigurationCreateUpdateRequest attributeCreateRequest)
             {
-                var attributeCreated = await CreateAttribute(
+                var (attributeCreated, attrProblemDetails) = await CreateAttribute(
                     attributeCreateRequest,
                     cancellationToken
                 );
-
+                if (attrProblemDetails != null)
+                {
+                    
+                }
                 entityConfiguration.AddAttribute(attributeCreated.Id);
                 reservedAttributes.Add(attributeCreated.Id);
             }
@@ -419,8 +446,11 @@ public class EAVService : IEAVService
             )!;
         }
 
-        AttributeConfigurationViewModel createdAttribute = await CreateAttribute(attributeConfigurationCreateUpdateRequest, cancellationToken);
-
+        (AttributeConfigurationViewModel? createdAttribute, ValidationErrorResponse? attrProblemDetails) = await CreateAttribute(attributeConfigurationCreateUpdateRequest, cancellationToken);
+        if (attrProblemDetails != null)
+        {
+            return (null, attrProblemDetails);
+        }
         entityConfiguration.AddAttribute(createdAttribute.Id);
         await _entityConfigurationRepository.SaveAsync(_userInfo, entityConfiguration, cancellationToken);
 
@@ -579,7 +609,7 @@ public class EAVService : IEAVService
             var attributeValue = entityInstance.Attributes
                 .FirstOrDefault(attr => a.MachineName == attr.ConfigurationAttributeMachineName);
 
-            var attrValidationErrors = a.Validate(attributeValue);
+            var attrValidationErrors = a.ValidateInstance(attributeValue);
             if (attrValidationErrors is { Count: > 0 })
             {
                 validationErrors.Add(a.MachineName, attrValidationErrors.ToArray());
@@ -648,7 +678,7 @@ public class EAVService : IEAVService
                 .First(c => c.MachineName == attribute.ConfigurationAttributeMachineName);
 
             // validation against null will check if the attribute is required
-            List<string> errors = attrConfiguration.Validate(null);
+            List<string> errors = attrConfiguration.ValidateInstance(null);
 
             if (errors.Count == 0)
             {
@@ -672,7 +702,7 @@ public class EAVService : IEAVService
             }
 
             AttributeInstance? newAttribute = _mapper.Map<AttributeInstance>(newAttributeRequest);
-            List<string> errors = attrConfig.Validate(newAttribute);
+            List<string> errors = attrConfig.ValidateInstance(newAttribute);
 
             if (errors.Count == 0)
             {
