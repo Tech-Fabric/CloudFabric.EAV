@@ -33,7 +33,7 @@ namespace CloudFabric.EAV.Domain.Models
         public virtual List<string> Validate()
         {
             var errors = new List<string>();
-            if (Name == null && Name.Count == 0)
+            if (Name.Count == 0)
             {
                 errors.Add("Name cannot be empty");
             }

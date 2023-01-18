@@ -47,6 +47,19 @@ namespace CloudFabric.EAV.Domain.Models
             ));
         }
 
+        public List<string> Validate()
+        {
+            var errors = new List<string>();
+            if (Name.Count == 0)
+            {
+                errors.Add("Name cannot be empty");
+            }
+            if (string.IsNullOrEmpty(MachineName) || string.IsNullOrWhiteSpace(MachineName))
+            {
+                errors.Add("MachineName cannot be empty");
+            }
+            return errors;
+        }
         public void UpdateName(string newName)
         {
             Apply(new EntityConfigurationNameUpdated(Id, newName, CultureInfo.GetCultureInfo("EN-us").LCID));

@@ -271,6 +271,11 @@ public class EAVService : IEAVService
             entityConfigurationCreateRequest.Metadata
         );
 
+        var entityValidationErrors = entityConfiguration.Validate();
+        if (entityValidationErrors.Any())
+        {
+            return (null, new ValidationErrorResponse(entityConfiguration.MachineName, entityValidationErrors.ToArray()));
+        }
         await _entityConfigurationRepository.SaveAsync(
             _userInfo,
             entityConfiguration,
@@ -317,7 +322,7 @@ public class EAVService : IEAVService
             entityConfiguration.UpdateName(name.String, name.CultureInfoId);
         }
 
-        List<Guid> reservedAttributes = new();
+        List<Guid> reservedAttributes = new List<Guid>();
         foreach (var attributeUpdate in entityUpdateRequest.Attributes)
         {
             if (attributeUpdate is EntityAttributeConfigurationCreateUpdateReferenceRequest attributeReferenceUpdate)
@@ -369,6 +374,12 @@ public class EAVService : IEAVService
         entityConfiguration.UpdateMetadata(
             entityConfiguration.Metadata.ToDictionary(k => k.Key, k => k.Value)
         );
+
+        var entityValidationErrors = entityConfiguration.Validate();
+        if (entityValidationErrors.Any())
+        {
+            return (null, new ValidationErrorResponse(entityConfiguration.MachineName, entityValidationErrors.ToArray()));
+        }
 
         await _entityConfigurationRepository.SaveAsync(_userInfo, entityConfiguration, cancellationToken);
 

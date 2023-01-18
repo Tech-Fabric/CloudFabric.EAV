@@ -5,7 +5,6 @@ using System.Text.Json;
 using AutoMapper;
 
 using CloudFabric.EAV.Domain.Enums;
-using CloudFabric.EAV.Domain.Models;
 using CloudFabric.EAV.Domain.Models.Attributes;
 using CloudFabric.EAV.Domain.Projections.AttributeConfigurationProjection;
 using CloudFabric.EAV.Domain.Projections.EntityConfigurationProjection;
@@ -29,7 +28,6 @@ using FluentAssertions;
 
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace CloudFabric.EAV.Tests;
@@ -208,6 +206,21 @@ public class Tests
 
         createdConfiguration.MachineName.Should().Be(configurationCreateRequest.MachineName);
         createdConfiguration.Attributes.Count.Should().Be(configurationCreateRequest.Attributes.Count);
+    }
+    
+    [TestMethod]
+    public async Task CreateEntityConfiguration_ValidationError()
+    {
+        var configurationCreateRequest = EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
+        configurationCreateRequest.Name = new List<LocalizedStringCreateRequest>();
+        (EntityConfigurationViewModel? createdConfiguration, var errors) = await _eavService.CreateEntityConfiguration(
+            configurationCreateRequest,
+            CancellationToken.None
+        );
+        createdConfiguration.Should().BeNull();
+        errors.Should().NotBeNull();
+        errors.As<ValidationErrorResponse>().Errors.Should().ContainKey(configurationCreateRequest.MachineName);
+        errors.As<ValidationErrorResponse>().Errors[configurationCreateRequest.MachineName].Should().Contain("Name cannot be empty");
     }
 
     [TestMethod]
