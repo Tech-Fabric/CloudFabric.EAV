@@ -130,6 +130,12 @@ public class EntityInstanceFromDictionaryDeserializer
                     Value = (bool)attributeValue
                 };
                 break;
+            case EavAttributeType.File:
+                attributeInstance = new FileAttributeInstanceViewModel()
+                {
+                    Value = _mapper.Map<FileAttributeValueViewModel>(attributeValue)
+                };
+                break;
             default:
                 throw new NotSupportedException(
                     $"Unable to deserialize attribute value of type {attributeType}: not supported"
