@@ -23,6 +23,7 @@ using CloudFabric.Projections.Queries;
 
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace CloudFabric.EAV.Service;
 

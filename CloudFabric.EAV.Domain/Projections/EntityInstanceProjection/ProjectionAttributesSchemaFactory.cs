@@ -170,6 +170,23 @@ namespace CloudFabric.EAV.Domain.Projections.EntityInstanceProjection
             };
         }
 
+        public static ProjectionDocumentPropertySchema GetFileAttributeSchema(AttributeConfiguration attributeConfiguration)
+        {
+            if (attributeConfiguration is not FileAttributeConfiguration)
+            {
+                throw new ArgumentException("Invalid attribute type");
+            }
+
+            return new ProjectionDocumentPropertySchema
+            {
+                PropertyName = attributeConfiguration.MachineName,
+                PropertyType = GetPropertyType(attributeConfiguration.ValueType).GetValueOrDefault(),
+                IsRetrievable = true,
+                IsNestedObject = true,
+                NestedObjectProperties = GetFileAttributeNestedProperties()
+            };
+        }
+
         public static ProjectionDocumentPropertySchema GetArrayAttributeSchema(AttributeConfiguration attributeConfiguration)
         {
             var attribute = attributeConfiguration as ArrayAttributeConfiguration;
@@ -193,6 +210,7 @@ namespace CloudFabric.EAV.Domain.Projections.EntityInstanceProjection
                 EavAttributeType.ValueFromList => GetValueFromListAttributeNestedProperties(),
                 EavAttributeType.DateRange => GetDateAttributeNestedProperties(),
                 EavAttributeType.Image => GetImageAttributeNestedProperties(),
+                EavAttributeType.File => GetFileAttributeNestedProperties(),
                 _ => throw new Exception($"EavAttributeType {attribute.ItemsType} is not supported as an array element.")
             };
 
@@ -360,6 +378,37 @@ namespace CloudFabric.EAV.Domain.Projections.EntityInstanceProjection
             };
         }
 
+        private static List<ProjectionDocumentPropertySchema> GetFileAttributeNestedProperties()
+        {
+            return new List<ProjectionDocumentPropertySchema>
+            {
+                new ProjectionDocumentPropertySchema
+                {
+                    PropertyName = nameof(FileAttributeInstance.Value.Url),
+                    PropertyType = Type.GetTypeCode(
+                        typeof(FileAttributeInstance)
+                            .GetProperty(nameof(FileAttributeInstance.Value))
+                            ?.PropertyType
+                            .GetProperty(nameof(FileAttributeInstance.Value.Url))
+                            ?.PropertyType
+                    ),
+                    IsRetrievable = true
+                },
+                new ProjectionDocumentPropertySchema
+                {
+                    PropertyName = nameof(FileAttributeInstance.Value.Filename),
+                    PropertyType = Type.GetTypeCode(
+                        typeof(FileAttributeInstance)
+                            .GetProperty(nameof(FileAttributeInstance.Value))
+                            ?.PropertyType
+                            .GetProperty(nameof(FileAttributeInstance.Value.Filename))
+                            ?.PropertyType
+                    ),
+                    IsRetrievable = true
+                }
+            };
+        }
+
         #endregion
 
         private static TypeCode? GetPropertyType(EavAttributeType valueType)
@@ -383,9 +432,8 @@ namespace CloudFabric.EAV.Domain.Projections.EntityInstanceProjection
                 case EavAttributeType.ValueFromList:
                 case EavAttributeType.DateRange:
                 case EavAttributeType.Image:
-                    propertyType = TypeCode.Object;
-                    break;
                 case EavAttributeType.Array:
+                case EavAttributeType.File:
                     propertyType = TypeCode.Object;
                     break;
                 default:

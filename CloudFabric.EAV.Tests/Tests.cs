@@ -5,6 +5,7 @@ using System.Text.Json;
 using AutoMapper;
 
 using CloudFabric.EAV.Domain.Enums;
+using CloudFabric.EAV.Domain.Models;
 using CloudFabric.EAV.Domain.Models.Attributes;
 using CloudFabric.EAV.Domain.Projections.AttributeConfigurationProjection;
 using CloudFabric.EAV.Domain.Projections.EntityConfigurationProjection;
@@ -28,6 +29,7 @@ using FluentAssertions;
 
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace CloudFabric.EAV.Tests;
@@ -661,6 +663,189 @@ public class Tests
 
         allAttributes.Records.First().As<QueryResultDocument<AttributeConfigurationListItemViewModel>>()
             .Document?.Name.Should().BeEquivalentTo(numberAttribute.Name);
+    }
+
+    [TestMethod]
+    public async Task CreateFileAttribute_Success()
+    {
+        var cultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID;
+        var fileAttribute = new FileAttributeConfigurationCreateUpdateRequest()
+        {
+            MachineName = "testAttr",
+            Description =
+                new List<LocalizedStringCreateRequest>
+                {
+                    new LocalizedStringCreateRequest
+                    {
+                        CultureInfoId = cultureInfoId,
+                        String = "testAttrDesc"
+                    }
+                },
+            Name = new List<LocalizedStringCreateRequest>
+            {
+                new LocalizedStringCreateRequest
+                {
+                    CultureInfoId = cultureInfoId,
+                    String = "testAttrName"
+                }
+            },
+            IsRequired = true,
+            IsDownloadable = true
+        };
+
+        var configCreateRequest = new EntityConfigurationCreateRequest()
+        {
+            MachineName = "test",
+            Name = new List<LocalizedStringCreateRequest>
+            {
+                new LocalizedStringCreateRequest
+                {
+                    CultureInfoId = cultureInfoId,
+                    String = "test"
+                }
+            },
+            Attributes = new List<EntityAttributeConfigurationCreateUpdateRequest>
+            {
+                fileAttribute
+            }
+        };
+
+        (EntityConfigurationViewModel? created, _) = await _eavService.CreateEntityConfiguration(configCreateRequest, CancellationToken.None);
+        created.Attributes.Count.Should().Be(1);
+
+        var createdAttribute = await _eavService.GetAttribute(
+            created.Attributes[0].AttributeConfigurationId,
+            created.Attributes[0].AttributeConfigurationId.ToString(),
+            CancellationToken.None
+        );
+
+        createdAttribute.Name.Should().BeEquivalentTo(fileAttribute.Name);
+        createdAttribute.As<FileAttributeConfigurationViewModel>().IsDownloadable.Should().Be(fileAttribute.IsDownloadable);
+    }
+
+    [TestMethod]
+    public async Task UpdateFileAttribute_Success()
+    {
+        var cultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID;
+        var fileAttribute = new FileAttributeConfigurationCreateUpdateRequest()
+        {
+            MachineName = "testAttr",
+            Name = new List<LocalizedStringCreateRequest>
+            {
+                new LocalizedStringCreateRequest
+                {
+                    CultureInfoId = cultureInfoId,
+                    String = "testAttrName"
+                }
+            },
+            IsRequired = true,
+            IsDownloadable = true
+        };
+
+        var configCreateRequest = new EntityConfigurationCreateRequest()
+        {
+            MachineName = "test",
+            Name = new List<LocalizedStringCreateRequest>
+            {
+                new LocalizedStringCreateRequest
+                {
+                    CultureInfoId = cultureInfoId,
+                    String = "test"
+                }
+            },
+            Attributes = new List<EntityAttributeConfigurationCreateUpdateRequest>
+            {
+                fileAttribute
+            }
+        };
+
+        (EntityConfigurationViewModel? created, _) = await _eavService.CreateEntityConfiguration(configCreateRequest, CancellationToken.None);
+        created!.Attributes.Count.Should().Be(1);
+
+        fileAttribute.IsDownloadable = false;
+        fileAttribute.IsRequired = false;
+
+        (AttributeConfigurationViewModel? updated, _) = await _eavService.UpdateAttribute(
+            created.Attributes[0].AttributeConfigurationId,
+            fileAttribute,
+            CancellationToken.None
+        );
+
+        var createdAttribute = await _eavService.GetAttribute(updated!.Id, updated.Id.ToString(), CancellationToken.None);
+
+        createdAttribute.IsRequired.Should().Be(fileAttribute.IsRequired);
+        createdAttribute.As<FileAttributeConfigurationViewModel>().IsDownloadable.Should().Be(fileAttribute.IsDownloadable);
+    }
+
+    [TestMethod]
+    public async Task CreateFileAttributeInstance_Success()
+    {
+        var cultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID;
+        var fileAttribute = new FileAttributeConfigurationCreateUpdateRequest()
+        {
+            MachineName = "testAttr",
+            Name = new List<LocalizedStringCreateRequest>
+            {
+                new LocalizedStringCreateRequest
+                {
+                    CultureInfoId = cultureInfoId,
+                    String = "testAttrName"
+                }
+            },
+            IsRequired = true,
+            IsDownloadable = true
+        };
+
+        var configCreateRequest = new EntityConfigurationCreateRequest()
+        {
+            MachineName = "test",
+            Name = new List<LocalizedStringCreateRequest>
+            {
+                new LocalizedStringCreateRequest
+                {
+                    CultureInfoId = cultureInfoId,
+                    String = "test"
+                }
+            },
+            Attributes = new List<EntityAttributeConfigurationCreateUpdateRequest>
+            {
+                fileAttribute
+            }
+        };
+
+        (EntityConfigurationViewModel? createdConfig, _) = await _eavService.CreateEntityConfiguration(configCreateRequest, CancellationToken.None);
+        createdConfig!.Attributes.Count.Should().Be(1);
+
+        var instanceRequest = new EntityInstanceCreateRequest
+        {
+            EntityConfigurationId = createdConfig!.Id,
+            TenantId = createdConfig.TenantId,
+            Attributes = new List<AttributeInstanceCreateUpdateRequest>
+            {
+                new FileAttributeInstanceCreateUpdateRequest
+                {
+                    ConfigurationAttributeMachineName = fileAttribute.MachineName,
+                    Value = new FileAttributeValueCreateUpdateRequest
+                    {
+                        Filename = "test.pdf",
+                        Url = "/test.pdf"
+                    }
+                }
+            }
+        };
+
+        (EntityInstanceViewModel createdInstance, ProblemDetails _) = await _eavService.CreateEntityInstance(instanceRequest, CancellationToken.None);
+
+        createdInstance.Should().NotBeNull();
+
+        createdInstance = await _eavService.GetEntityInstance(createdInstance.Id, createdConfig.Id.ToString());
+        createdInstance.Attributes.Count.Should().Be(1);
+        createdInstance.Attributes[0]
+            .As<FileAttributeInstanceViewModel>()
+            .Value
+            .Url
+            .Should()
+            .Be("/test.pdf");
     }
 
     [TestMethod]
