@@ -165,6 +165,11 @@ public class EAVService : IEAVService
             return (null, new ValidationErrorResponse(nameof(id), "Attribute not found"));
         }
 
+        if (attribute.IsReadOnly)
+        {
+            return (null, new ValidationErrorResponse(nameof(id), "Read only attributes cannot be updated"));
+        }
+
         if (attribute.ValueType != updateRequest.ValueType)
         {
             return (null, new ValidationErrorResponse(nameof(updateRequest.ValueType), "Attribute type cannot be changed"));
@@ -305,7 +310,7 @@ public class EAVService : IEAVService
                     attributeReferenceUpdate.AttributeConfigurationId,
                     attributeReferenceUpdate.AttributeConfigurationId.ToString(),
                     cancellationToken
-                    );
+                );
 
                 if (attributeConfiguration != null && !attributeConfiguration.IsDeleted)
                 {
@@ -313,6 +318,7 @@ public class EAVService : IEAVService
                     {
                         entityConfiguration.AddAttribute(attributeConfiguration.Id);
                     }
+
                     reservedAttributes.Add(attributeConfiguration.Id);
                 }
             }
@@ -335,7 +341,17 @@ public class EAVService : IEAVService
 
         foreach (var attribute in attributesToRemove)
         {
-            entityConfiguration.RemoveAttribute(attribute.AttributeConfigurationId);
+            // check if attribute is readonly
+            var attributeConfiguration = await _attributeConfigurationRepository.LoadAsync(
+                    attribute.AttributeConfigurationId,
+                    attribute.AttributeConfigurationId.ToString(),
+                    cancellationToken
+                );
+
+            if (!attributeConfiguration.IsReadOnly)
+            {
+                entityConfiguration.RemoveAttribute(attribute.AttributeConfigurationId);
+            }
         }
 
         entityConfiguration.UpdateMetadata(
@@ -425,7 +441,7 @@ public class EAVService : IEAVService
 
         return (createdAttribute, null)!;
     }
-    
+
     public async Task DeleteAttributesFromEntityConfiguration(List<Guid> attributesIds, Guid entityConfigurationId, CancellationToken cancellationToken = default)
     {
         var entityConfiguration = await _entityConfigurationRepository.LoadAsyncOrThrowNotFound(
@@ -452,9 +468,9 @@ public class EAVService : IEAVService
         foreach (var attributeId in attributesIds)
         {
             var attributeConfiguration = await _attributeConfigurationRepository.LoadAsync(
-            attributeId,
-            attributeId.ToString(),
-            cancellationToken
+                attributeId,
+                attributeId.ToString(),
+                cancellationToken
             );
 
             if (attributeConfiguration != null && !attributeConfiguration.IsDeleted)
@@ -680,7 +696,7 @@ public class EAVService : IEAVService
                 );
                 if (currentAttribute != null)
                 {
-                    if (!newAttribute.Equals(currentAttribute))
+                    if (!attrConfig.IsReadOnly && !newAttribute.Equals(currentAttribute))
                     {
                         entityInstance.UpdateAttributeInstance(newAttribute);
                     }

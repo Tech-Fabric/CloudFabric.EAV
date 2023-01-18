@@ -19,7 +19,9 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
             DateRangeAttributeType dateRangeAttributeType,
             List<LocalizedString> description = null,
             bool isRequired = false,
-            Guid? TenantId = null) : base(id, machineName, name, valueType, description, isRequired, TenantId)
+            Guid? tenantId = null,
+            bool isReadOnly = false
+        ) : base(id, machineName, name, valueType, description, isRequired, tenantId, isReadOnly)
         {
             Apply(new DateRangeAttributeConfigurationUpdated(id, dateRangeAttributeType));
         }

@@ -35,8 +35,9 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
             List<ImageThumbnailDefinition> thumbnailsConfiguration = null,
             List<LocalizedString> description = null, 
             bool isRequired = false,
-            Guid? tenantId = null
-        ) : base(id, machineName, name, EavAttributeType.Image, description, isRequired, tenantId)
+            Guid? tenantId = null,
+            bool isReadOnly = false
+        ) : base(id, machineName, name, EavAttributeType.Image, description, isRequired, tenantId, isReadOnly)
         {
             Apply(new ImageAttributeConfigurationUpdated(id, defaultValue, thumbnailsConfiguration));
         }

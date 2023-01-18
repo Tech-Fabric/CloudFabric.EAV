@@ -32,6 +32,7 @@ public class AttributeConfigurationProjectionBuilder : ProjectionBuilder<Attribu
             {
                 Id = @event.AggregateId,
                 IsRequired = @event.IsRequired,
+                IsReadOnly = @event.IsReadOnly,
                 Name = @event.Name.Select(x =>
                     new SearchableLocalizedString
                     {

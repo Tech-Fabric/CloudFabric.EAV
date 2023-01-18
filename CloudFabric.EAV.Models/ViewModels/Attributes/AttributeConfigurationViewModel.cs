@@ -17,4 +17,6 @@ public abstract class AttributeConfigurationViewModel
     public EavAttributeType ValueType { get; set; }
 
     public Guid? TenantId { get; set; }
+
+    public bool IsReadOnly { get; set; }
 }

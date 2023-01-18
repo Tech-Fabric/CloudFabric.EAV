@@ -20,8 +20,9 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
             Guid defaultValue,
             List<LocalizedString> description = null, 
             bool isRequired = false,
-            Guid? tenantId = null
-        ) : base(id, machineName, name, EavAttributeType.EntityReference, description, isRequired, tenantId)
+            Guid? tenantId = null,
+            bool isReadOnly = false
+        ) : base(id, machineName, name, EavAttributeType.EntityReference, description, isRequired, tenantId, isReadOnly)
         {
             Apply(new EntityReferenceAttributeConfigurationUpdated(id, referenceEntityConfiguration, defaultValue));
         }

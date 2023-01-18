@@ -29,12 +29,13 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
             bool isSearchable,
             List<LocalizedString> description = null, 
             bool isRequired = false,
-            Guid? tenantId = null
-        ) : base(id, machineName, name, EavAttributeType.Text, description, isRequired, tenantId) 
+            Guid? tenantId = null,
+            bool isReadOnly = false
+        ) : base(id, machineName, name, EavAttributeType.Text, description, isRequired, tenantId, isReadOnly)
         {
             Apply(new TextAttributeConfigurationUpdated(id, defaultValue, maxLength, isSearchable));
         }
-        
+
         public override List<string> Validate(AttributeInstance? instance)
         {
             var errors = base.Validate(instance);

@@ -25,8 +25,9 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
             Guid itemsAttributeConfigurationId,
             List<LocalizedString> description = null,
             bool isRequired = false,
-            Guid? tenantId = null
-        ) : base(id, machineName, name, EavAttributeType.Array, description, isRequired, tenantId)
+            Guid? tenantId = null,
+            bool isReadOnly = false
+        ) : base(id, machineName, name, EavAttributeType.Array, description, isRequired, tenantId, isReadOnly)
         {
             Apply(new ArrayAttributeConfigurationUpdated(id, itemsType, itemsAttributeConfigurationId));
         }

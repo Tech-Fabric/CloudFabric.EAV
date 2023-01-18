@@ -25,10 +25,13 @@ namespace CloudFabric.EAV.Domain.Models
         public bool IsRequired { get; protected set; }
 
         public abstract EavAttributeType ValueType { get; }
-        
+
         public Guid? TenantId { get; protected set; }
 
         public bool IsDeleted { get; protected set; }
+
+        // attribute cannot be updated (only created and deleted)
+        public bool IsReadOnly { get; protected set; }
 
         public virtual List<string> Validate(AttributeInstance? instance)
         {
@@ -51,10 +54,16 @@ namespace CloudFabric.EAV.Domain.Models
             EavAttributeType valueType,
             List<LocalizedString> description = null,
             bool isRequired = false,
-            Guid? TenantId = null
+            Guid? tenantId = null,
+            bool isReadOnly = false
         )
         {
-            Apply(new AttributeConfigurationCreated(id, machineName, name, valueType, description, isRequired, TenantId));
+            Apply(new AttributeConfigurationCreated(id, machineName, name, valueType, description, isRequired, tenantId, isReadOnly));
+        }
+
+        public virtual void InitializeInstance(AttributeInstance instance)
+        {
+            return;
         }
 
         public void UpdateName(string newName)
@@ -128,7 +137,7 @@ namespace CloudFabric.EAV.Domain.Models
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(IsRequired, Name, Description, MachineName, (int)ValueType);
+            return HashCode.Combine(IsRequired, Name, Description, MachineName, (int)ValueType, IsReadOnly);
         }
 
         private bool Equals(AttributeConfiguration obj)
@@ -138,7 +147,8 @@ namespace CloudFabric.EAV.Domain.Models
                        && Description.SequenceEqual(obj.Description)
                        && IsRequired.Equals(obj.IsRequired)
                        && MachineName.Equals(obj.MachineName)
-                       && ValueType.Equals(obj.ValueType));
+                       && ValueType.Equals(obj.ValueType)
+                       && IsReadOnly.Equals(obj.IsReadOnly));
         }
 
         #region EventHandlers
@@ -153,6 +163,7 @@ namespace CloudFabric.EAV.Domain.Models
                 : new List<LocalizedString>(@event.Description).AsReadOnly();
             IsRequired = @event.IsRequired;
             TenantId = @event.TenantId;
+            IsReadOnly = @event.IsReadOnly;
         }
 
         public void On(AttributeConfigurationNameUpdated @event)
@@ -218,6 +229,7 @@ namespace CloudFabric.EAV.Domain.Models
         {
             IsDeleted = true;
         }
+
         #endregion
     }
 }

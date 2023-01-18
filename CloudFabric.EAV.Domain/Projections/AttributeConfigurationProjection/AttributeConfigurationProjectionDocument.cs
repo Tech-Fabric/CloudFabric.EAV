@@ -31,4 +31,7 @@ public class AttributeConfigurationProjectionDocument : ProjectionDocument
 
     [ProjectionDocumentProperty(IsFilterable = true)]
     public int NumberOfEntityInstancesWithAttribute { get; set; }
+
+    [ProjectionDocumentProperty(IsFilterable = true)]
+    public bool IsReadOnly { get; set; }
 }

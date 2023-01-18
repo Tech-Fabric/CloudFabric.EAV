@@ -1506,6 +1506,268 @@ public class Tests
         attribute.MachineName.Should().Be("test");
     }
 
+    [TestMethod]
+    public async Task CreateReadonlyAttributeConfiguration_Success()
+    {
+        var cultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID;
+
+        var configCreateRequest = new EntityConfigurationCreateRequest()
+        {
+            MachineName = "test",
+            Name = new List<LocalizedStringCreateRequest>
+            {
+                new LocalizedStringCreateRequest
+                {
+                    CultureInfoId = cultureInfoId,
+                    String = "test"
+                }
+            },
+            Attributes = new List<EntityAttributeConfigurationCreateUpdateRequest>()
+            {
+                new NumberAttributeConfigurationCreateUpdateRequest()
+                {
+                    MachineName = "testAttr",
+                    Description =
+                        new List<LocalizedStringCreateRequest>
+                        {
+                            new LocalizedStringCreateRequest
+                            {
+                                CultureInfoId = cultureInfoId,
+                                String = "testAttrDesc"
+                            }
+                        },
+                    Name = new List<LocalizedStringCreateRequest>
+                    {
+                        new LocalizedStringCreateRequest
+                        {
+                            CultureInfoId = cultureInfoId,
+                            String = "testAttrName"
+                        }
+                    },
+                    DefaultValue = 15,
+                    IsRequired = true,
+                    IsReadOnly = true
+                }
+            }
+        };
+
+        (EntityConfigurationViewModel? createdEntityConfiguration, _) = await _eavService.CreateEntityConfiguration(configCreateRequest, CancellationToken.None);
+
+        AttributeConfigurationViewModel attribute = await _eavService.GetAttribute(
+            createdEntityConfiguration.Attributes[0].AttributeConfigurationId,
+            createdEntityConfiguration.Attributes[0].AttributeConfigurationId.ToString(),
+            CancellationToken.None
+        );
+
+        attribute.IsReadOnly.Should().BeTrue();
+
+        // check projections
+        var attributes = await _eavService.ListAttributes(
+            new ProjectionQuery
+            {
+                Filters = new List<Filter>
+                {
+                    new Filter(nameof(AttributeConfigurationProjectionDocument.Id), FilterOperator.Equal, attribute.Id)
+                },
+                Limit = 1
+            }
+        );
+
+        attributes.Records.First().Document.IsReadOnly.Should().BeTrue();
+    }
+
+    [TestMethod]
+    public async Task UpdateReadonlyAttributeConfiguration_AttributeCannotBeUpdated()
+    {
+        var cultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID;
+
+        var configCreateRequest = new EntityConfigurationCreateRequest()
+        {
+            MachineName = "test",
+            Name = new List<LocalizedStringCreateRequest>
+            {
+                new LocalizedStringCreateRequest
+                {
+                    CultureInfoId = cultureInfoId,
+                    String = "test"
+                }
+            },
+            Attributes = new List<EntityAttributeConfigurationCreateUpdateRequest>()
+            {
+                new NumberAttributeConfigurationCreateUpdateRequest()
+                {
+                    MachineName = "testAttr",
+                    Description =
+                        new List<LocalizedStringCreateRequest>
+                        {
+                            new LocalizedStringCreateRequest
+                            {
+                                CultureInfoId = cultureInfoId,
+                                String = "testAttrDesc"
+                            }
+                        },
+                    Name = new List<LocalizedStringCreateRequest>
+                    {
+                        new LocalizedStringCreateRequest
+                        {
+                            CultureInfoId = cultureInfoId,
+                            String = "testAttrName"
+                        }
+                    },
+                    DefaultValue = 15,
+                    MinimumValue = 0,
+                    MaximumValue = 100,
+                    IsRequired = true,
+                    IsReadOnly = true
+                }
+            }
+        };
+
+        (EntityConfigurationViewModel? createdEntityConfiguration, _) = await _eavService.CreateEntityConfiguration(configCreateRequest, CancellationToken.None);
+
+        (AttributeConfigurationViewModel? updatedAttribute, ProblemDetails? error) = await _eavService.UpdateAttribute(
+            createdEntityConfiguration.Attributes[0].AttributeConfigurationId,
+            new NumberAttributeConfigurationCreateUpdateRequest
+            {
+                Description =
+                    new List<LocalizedStringCreateRequest>
+                    {
+                        new LocalizedStringCreateRequest
+                        {
+                            CultureInfoId = cultureInfoId,
+                            String = "updated"
+                        }
+                    },
+                Name = new List<LocalizedStringCreateRequest>
+                {
+                    new LocalizedStringCreateRequest
+                    {
+                        CultureInfoId = cultureInfoId,
+                        String = "updated"
+                    }
+                },
+                DefaultValue = 999,
+                MinimumValue = -1,
+                MaximumValue = 10000,
+                IsRequired = true,
+                IsReadOnly = true
+            },
+            CancellationToken.None
+        );
+
+        updatedAttribute.Should().BeNull();
+        error.As<ValidationErrorResponse>().Errors.First().Value.First().Should().Be("Read only attributes cannot be updated");
+    }
+
+    [TestMethod]
+    public async Task UpdateReadonlyAttributeInstance_AttributeIsNotUpdated()
+    {
+        var configurationCreateRequest = EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
+
+        var readonlyAttributeConfig = configurationCreateRequest.Attributes
+            .First(x => ((AttributeConfigurationCreateUpdateRequest)x).MachineName == "name") as AttributeConfigurationCreateUpdateRequest;
+        readonlyAttributeConfig.IsReadOnly = true;
+
+        var (createdConfiguration, _) = await _eavService.CreateEntityConfiguration(
+            configurationCreateRequest,
+            CancellationToken.None
+        );
+
+        var instanceCreateRequest =
+            EntityInstanceFactory.CreateValidBoardGameEntityInstanceCreateRequest(createdConfiguration.Id);
+
+        (EntityInstanceViewModel createdInstance, ProblemDetails _) = await _eavService.CreateEntityInstance(instanceCreateRequest);
+
+        // try to update readonly attribute
+        var readonlyAttributeInstance = (LocalizedTextAttributeInstanceCreateUpdateRequest)instanceCreateRequest.Attributes.First(x => x.ConfigurationAttributeMachineName == readonlyAttributeConfig.MachineName);
+        var initialValue = readonlyAttributeInstance.Value.First().String;
+        readonlyAttributeInstance.Value = new List<LocalizedStringCreateRequest>
+        {
+            new LocalizedStringCreateRequest
+            {
+                CultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID,
+                String = "Updated readonly attribute"
+            }
+        };
+
+        (EntityInstanceViewModel updatedInstance, ProblemDetails error) = await _eavService.UpdateEntityInstance(
+            createdInstance.PartitionKey,
+            new EntityInstanceUpdateRequest
+            {
+                Id = createdInstance.Id,
+                EntityConfigurationId = createdInstance.EntityConfigurationId,
+                Attributes = new List<AttributeInstanceCreateUpdateRequest>(instanceCreateRequest.Attributes)
+            },
+            CancellationToken.None
+        );
+
+        error.Should().BeNull();
+        var instance = await _eavService.GetEntityInstance(createdInstance.Id, createdConfiguration.PartitionKey);
+        var updatedAttribute = instance.Attributes.First(x => x.ConfigurationAttributeMachineName == readonlyAttributeConfig.MachineName);
+        ((LocalizedTextAttributeInstanceViewModel)updatedAttribute).Value.First().String.Should().Be(initialValue);
+    }
+
+    [TestMethod]
+    public async Task DeleteReadonlyAttributeConfiguration_Success()
+    {
+        var cultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID;
+
+        var configCreateRequest = new EntityConfigurationCreateRequest()
+        {
+            MachineName = "test",
+            Name = new List<LocalizedStringCreateRequest>
+            {
+                new LocalizedStringCreateRequest
+                {
+                    CultureInfoId = cultureInfoId,
+                    String = "test"
+                }
+            },
+            Attributes = new List<EntityAttributeConfigurationCreateUpdateRequest>()
+            {
+                new NumberAttributeConfigurationCreateUpdateRequest()
+                {
+                    MachineName = "testAttr",
+                    Description =
+                        new List<LocalizedStringCreateRequest>
+                        {
+                            new LocalizedStringCreateRequest
+                            {
+                                CultureInfoId = cultureInfoId,
+                                String = "testAttrDesc"
+                            }
+                        },
+                    Name = new List<LocalizedStringCreateRequest>
+                    {
+                        new LocalizedStringCreateRequest
+                        {
+                            CultureInfoId = cultureInfoId,
+                            String = "testAttrName"
+                        }
+                    },
+                    DefaultValue = 15,
+                    IsRequired = true,
+                    IsReadOnly = true
+                }
+            }
+        };
+
+        (EntityConfigurationViewModel? createdEntityConfiguration, _) = await _eavService.CreateEntityConfiguration(configCreateRequest, CancellationToken.None);
+
+        await _eavService.DeleteAttributes(
+            new List<Guid> { createdEntityConfiguration.Attributes[0].AttributeConfigurationId },
+            CancellationToken.None
+        );
+
+        Func<Task> action = async () => await _eavService.GetAttribute(
+            createdEntityConfiguration.Attributes[0].AttributeConfigurationId,
+            createdEntityConfiguration.Attributes[0].AttributeConfigurationId.ToString(),
+            CancellationToken.None
+        );
+
+        await action.Should().ThrowAsync<EventSourcing.EventStore.NotFoundException>();
+    }
+
     private IProjectionRepository GetProjectionRepository(ProjectionDocumentSchema schema)
     {
         return new InMemoryProjectionRepository(schema);
