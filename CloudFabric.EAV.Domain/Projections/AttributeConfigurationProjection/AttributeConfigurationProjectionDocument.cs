@@ -27,7 +27,7 @@ public class AttributeConfigurationProjectionDocument : ProjectionDocument
     public DateTime UpdatedAt { get; set; }
 
     [ProjectionDocumentProperty(IsFilterable = true)]
-    public EavAttributeType AttributeType { get; set; }
+    public EavAttributeType ValueType { get; set; }
 
     [ProjectionDocumentProperty(IsFilterable = true)]
     public int NumberOfEntityInstancesWithAttribute { get; set; }
