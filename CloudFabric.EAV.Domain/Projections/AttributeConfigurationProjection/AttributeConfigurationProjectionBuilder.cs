@@ -44,7 +44,8 @@ public class AttributeConfigurationProjectionBuilder : ProjectionBuilder<Attribu
                 TenantId = @event.TenantId,
                 Description = @event.Description,
                 UpdatedAt = @event.Timestamp,
-                ValueType = @event.ValueType
+                ValueType = @event.ValueType,
+                Metadata = @event.Metadata
             },
             @event.PartitionKey,
             @event.Timestamp
@@ -135,6 +136,7 @@ public class AttributeConfigurationProjectionBuilder : ProjectionBuilder<Attribu
                 document.Description = @event.Description;
                 document.IsRequired = @event.IsRequired;
                 document.TenantId = @event.TenantId;
+                document.Metadata = @event.Metadata;
             }
         );
     }

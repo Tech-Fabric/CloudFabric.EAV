@@ -9,13 +9,14 @@ public record AttributeConfigurationUpdated : Event
     {
     }
 
-    public AttributeConfigurationUpdated(Guid id, List<LocalizedString> name, List<LocalizedString> description, bool isRequired, Guid? tenantId)
+    public AttributeConfigurationUpdated(Guid id, List<LocalizedString> name, List<LocalizedString> description, bool isRequired, Guid? tenantId, string? metadata)
     {
         AggregateId = id;
         Name = name;
         Description = description;
         IsRequired = isRequired;
         TenantId = tenantId;
+        Metadata = metadata;
     }
 
     public List<LocalizedString> Name { get; set; }
@@ -25,4 +26,6 @@ public record AttributeConfigurationUpdated : Event
     public bool IsRequired { get; set; }
 
     public Guid? TenantId { get; set; }
+
+    public string? Metadata { get; set; }
 }

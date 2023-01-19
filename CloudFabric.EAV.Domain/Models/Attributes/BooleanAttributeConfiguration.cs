@@ -43,8 +43,9 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
             string falseDisplayValue,
             List<LocalizedString> description = null, 
             bool isRequired = false,
-            Guid? tenantId = null
-        ) : base(id, machineName, name, EavAttributeType.Boolean, description, isRequired, tenantId)
+            Guid? tenantId = null,
+            string? metadata = null
+        ) : base(id, machineName, name, EavAttributeType.Boolean, description, isRequired, tenantId, metadata)
         {
             Apply(new BooleanAttributeConfigurationUpdated(id, trueDisplayValue, falseDisplayValue));
         }

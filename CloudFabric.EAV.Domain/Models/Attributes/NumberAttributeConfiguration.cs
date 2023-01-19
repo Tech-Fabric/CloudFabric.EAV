@@ -64,8 +64,9 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
             bool isRequired = false,
             decimal? minimumValue = null,
             decimal? maximumValue = null,
-            Guid? tenantId = null
-        ) : base(id, machineName, name, EavAttributeType.Number, description, isRequired, tenantId)
+            Guid? tenantId = null,
+            string? metadata = null
+        ) : base(id, machineName, name, EavAttributeType.Number, description, isRequired, tenantId, metadata)
         {
             Apply(new NumberAttributeConfigurationUpdated(id, defaultValue, minimumValue, maximumValue, numberType));
         }
