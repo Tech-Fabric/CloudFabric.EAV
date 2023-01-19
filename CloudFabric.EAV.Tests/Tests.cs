@@ -349,6 +349,72 @@ public class Tests
     }
 
     [TestMethod]
+    public async Task UpdateAttribute_ValidationError()
+    {
+        var cultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID;
+        var numberAttribute = new NumberAttributeConfigurationCreateUpdateRequest()
+        {
+            MachineName = "number_attribute",
+            Description =
+                new List<LocalizedStringCreateRequest>
+                {
+                    new LocalizedStringCreateRequest
+                    {
+                        CultureInfoId = cultureInfoId,
+                        String = "Number attribute description"
+                    }
+                },
+            Name = new List<LocalizedStringCreateRequest>
+            {
+                new LocalizedStringCreateRequest
+                {
+                    CultureInfoId = cultureInfoId,
+                    String = "New Number Attribute"
+                }
+            },
+            DefaultValue = 15,
+            IsRequired = true,
+            MaximumValue = 100,
+            MinimumValue = -100
+        };
+
+        var configCreateRequest = new EntityConfigurationCreateRequest()
+        {
+            MachineName = "test",
+            Name = new List<LocalizedStringCreateRequest>
+            {
+                new LocalizedStringCreateRequest
+                {
+                    CultureInfoId = cultureInfoId,
+                    String = "test"
+                }
+            },
+            Attributes = new List<EntityAttributeConfigurationCreateUpdateRequest>
+            {
+                numberAttribute
+            }
+        };
+
+        (EntityConfigurationViewModel? created, _) = await _eavService.CreateEntityConfiguration(configCreateRequest, CancellationToken.None);
+        created.Attributes.Count.Should().Be(1);
+
+        // update added attribute
+        numberAttribute.Name = new List<LocalizedStringCreateRequest>();
+
+        (AttributeConfigurationViewModel? updatedResult, ProblemDetails? errors) = await _eavService.UpdateAttribute(
+            created.Attributes[0].AttributeConfigurationId,
+            numberAttribute,
+            CancellationToken.None
+        );
+
+        updatedResult.Should().BeNull();
+        errors.Should().NotBeNull();
+        errors.As<ValidationErrorResponse>().Errors.Should().ContainKey(numberAttribute.MachineName);
+        errors.As<ValidationErrorResponse>().Errors[numberAttribute.MachineName].Should().Contain("Name cannot be empty");
+
+    }
+    
+    [TestMethod]
     public async Task DeleteAttribute_Success()
     {
         var configurationCreateRequest = EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
@@ -539,6 +605,39 @@ public class Tests
         //var newAttribute = updatedConfig.Attributes[newAttrIndex];
         //newAttribute.Should().NotBeNull();
         //newAttribute.Should().BeEquivalentTo(newAttributeRequest, opt => opt.ComparingRecordsByValue());
+    }
+    
+    [TestMethod]
+    public async Task UpdateEntityConfiguration_AddedNewAttribute_ValidationError()
+    {
+        var cultureId = CultureInfo.GetCultureInfo("EN-us").LCID;
+
+        var configRequest = EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
+        (EntityConfigurationViewModel? createdConfig, _) = await _eavService.CreateEntityConfiguration(configRequest, CancellationToken.None);
+        const string newAttributeMachineName = "avg_time_mins";
+
+        var newAttributeRequest = new NumberAttributeConfigurationCreateUpdateRequest()
+        {
+            DefaultValue = 4,
+            IsRequired = true,
+            MachineName = newAttributeMachineName,
+            MinimumValue = 1,
+            Description = new List<LocalizedStringCreateRequest>()
+        };
+
+        configRequest.Attributes.Add(newAttributeRequest);
+
+        var updateRequest = new EntityConfigurationUpdateRequest()
+        {
+            Attributes = configRequest.Attributes,
+            Id = createdConfig.Id,
+            Name = configRequest.Name
+        };
+        var (updatedConfig, errors) = await _eavService.UpdateEntityConfiguration(updateRequest, CancellationToken.None);
+        errors.Should().NotBeNull();
+        errors.As<ValidationErrorResponse>().Errors.Should().ContainKey(newAttributeMachineName);
+        errors.As<ValidationErrorResponse>().Errors[newAttributeMachineName].Should().Contain("Name cannot be empty");
+
     }
 
     [TestMethod]

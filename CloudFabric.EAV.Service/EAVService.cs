@@ -323,6 +323,8 @@ public class EAVService : IEAVService
         }
 
         List<Guid> reservedAttributes = new List<Guid>();
+        var allAttrProblemDetails = new List<ValidationErrorResponse>();
+
         foreach (var attributeUpdate in entityUpdateRequest.Attributes)
         {
             if (attributeUpdate is EntityAttributeConfigurationCreateUpdateReferenceRequest attributeReferenceUpdate)
@@ -354,13 +356,26 @@ public class EAVService : IEAVService
                 );
                 if (attrProblemDetails != null)
                 {
-                    
+                    allAttrProblemDetails.Add(attrProblemDetails);
                 }
-                entityConfiguration.AddAttribute(attributeCreated.Id);
-                reservedAttributes.Add(attributeCreated.Id);
+                else
+                {
+                    entityConfiguration.AddAttribute(attributeCreated.Id);
+                    reservedAttributes.Add(attributeCreated.Id);
+                }
+
             }
         }
-
+        if (allAttrProblemDetails.Any())
+        {
+            var allErrors = allAttrProblemDetails.SelectMany(pd => pd.Errors)
+                .ToLookup(pair => pair.Key, pair => pair.Value)
+                .ToDictionary(group => group.Key, group => group.First());
+            return (
+                null,
+                new ValidationErrorResponse(allErrors)
+            );
+        }
         var attributesToRemove = entityConfiguration.Attributes.ExceptBy(
             reservedAttributes,
             x => x.AttributeConfigurationId
