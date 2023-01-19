@@ -788,8 +788,8 @@ public class Tests
         (AttributeConfigurationViewModel? result, ValidationErrorResponse? errors) = await _eavService.CreateAttribute(request);
         result.Should().BeNull();
         errors.Should().NotBeNull();
-        errors.As<ValidationErrorResponse>().Errors.Should().ContainKey(result.MachineName);
-        errors.As<ValidationErrorResponse>().Errors[result.MachineName].Should().Contain("Name cannot be empty");
+        errors.As<ValidationErrorResponse>().Errors.Should().ContainKey(request.MachineName);
+        errors.As<ValidationErrorResponse>().Errors[request.MachineName].Should().Contain("Name cannot be empty");
     }
     
     [TestMethod]
