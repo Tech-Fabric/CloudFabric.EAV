@@ -29,8 +29,8 @@ namespace CloudFabric.EAV.Models.JsonConverters
                 var newJson = obj.ToString();
                 return (T)JsonSerializer.Deserialize(newJson, typeToConvert, newOptions)! ?? throw new InvalidOperationException();
             }
-            var attributeTypeName = int.Parse(obj["valueType"]?.ToString() ?? throw new InvalidOperationException());
-            Type type = GetRequestTypeFromAttributeType((EavAttributeType)attributeTypeName);
+            var attributeTypeName = Enum.Parse<EavAttributeType>(obj["valueType"]?.ToString() ?? throw new InvalidOperationException());
+            Type type = GetRequestTypeFromAttributeType(attributeTypeName);
 
             var attributeRequestModel = JsonSerializer.Deserialize(obj.ToString(), type, options);
             return (T)attributeRequestModel! ?? throw new InvalidOperationException();

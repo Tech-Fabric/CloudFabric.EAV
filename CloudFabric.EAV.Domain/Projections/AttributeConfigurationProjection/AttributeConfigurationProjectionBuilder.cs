@@ -44,7 +44,7 @@ public class AttributeConfigurationProjectionBuilder : ProjectionBuilder<Attribu
                 TenantId = @event.TenantId,
                 Description = @event.Description,
                 UpdatedAt = @event.Timestamp,
-                AttributeType = @event.ValueType
+                ValueType = @event.ValueType
             },
             @event.PartitionKey,
             @event.Timestamp
