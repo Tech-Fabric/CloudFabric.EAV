@@ -267,8 +267,7 @@ public class EAVService : IEAVService
             _mapper.Map<List<LocalizedString>>(entityConfigurationCreateRequest.Name),
             entityConfigurationCreateRequest.MachineName,
             _mapper.Map<List<EntityConfigurationAttributeReference>>(entityConfigurationCreateRequest.Attributes),
-            entityConfigurationCreateRequest.TenantId,
-            entityConfigurationCreateRequest.Metadata
+            entityConfigurationCreateRequest.TenantId
         );
 
         var entityValidationErrors = entityConfiguration.Validate();
@@ -385,10 +384,6 @@ public class EAVService : IEAVService
         {
             entityConfiguration.RemoveAttribute(attribute.AttributeConfigurationId);
         }
-
-        entityConfiguration.UpdateMetadata(
-            entityConfiguration.Metadata.ToDictionary(k => k.Key, k => k.Value)
-        );
 
         var entityValidationErrors = entityConfiguration.Validate();
         if (entityValidationErrors.Any())

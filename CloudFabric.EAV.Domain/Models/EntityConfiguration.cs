@@ -22,8 +22,6 @@ namespace CloudFabric.EAV.Domain.Models
         
         public Guid? TenantId { get; protected set; }
 
-        public ReadOnlyDictionary<string, object> Metadata { get; protected set; }
-
         public EntityConfiguration(List<IEvent> events) : base(events)
         {
 
@@ -34,16 +32,14 @@ namespace CloudFabric.EAV.Domain.Models
             List<LocalizedString> name, 
             string machineName, 
             List<EntityConfigurationAttributeReference> attributes,
-            Guid? tenantId,
-            Dictionary<string, object> metadata
+            Guid? tenantId
         ) {
             Apply(new EntityConfigurationCreated(
                 id, 
                 name, 
                 machineName, 
                 attributes,
-                tenantId,
-                metadata
+                tenantId
             ));
         }
 
@@ -83,11 +79,6 @@ namespace CloudFabric.EAV.Domain.Models
             Apply(new EntityConfigurationAttributeRemoved(Id, attributeConfigurationId));
         }
 
-        public void UpdateMetadata(Dictionary<string, object> newMetadata)
-        {
-            Apply(new EntityConfigurationMetadataUpdated(Id, newMetadata));
-        }
-
         #region EventHandlers
         public void On(EntityConfigurationCreated @event)
         {
@@ -96,7 +87,6 @@ namespace CloudFabric.EAV.Domain.Models
             MachineName = @event.MachineName;
             Attributes = new List<EntityConfigurationAttributeReference>(@event.Attributes).AsReadOnly();
             TenantId = @event.TenantId;
-            Metadata = new ReadOnlyDictionary<string, object>(@event.Metadata ?? new());
         }
         
         public void On(EntityConfigurationNameUpdated @event)
@@ -138,11 +128,6 @@ namespace CloudFabric.EAV.Domain.Models
                 .Where(a => a.AttributeConfigurationId != @event.AttributeConfigurationId)
                 .ToList()
                 .AsReadOnly();
-        }
-
-        public void On(EntityConfigurationMetadataUpdated @event)
-        {
-            Metadata = new ReadOnlyDictionary<string, object>(@event.Metadata ?? new());
         }
         
         #endregion
