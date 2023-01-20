@@ -29,8 +29,9 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
             bool isSearchable,
             List<LocalizedString> description = null, 
             bool isRequired = false,
-            Guid? tenantId = null
-        ) : base(id, machineName, name, EavAttributeType.Text, description, isRequired, tenantId) 
+            Guid? tenantId = null,
+            string? metadata = null
+        ) : base(id, machineName, name, EavAttributeType.Text, description, isRequired, tenantId, metadata)
         {
             Apply(new TextAttributeConfigurationUpdated(id, defaultValue, maxLength, isSearchable));
         }

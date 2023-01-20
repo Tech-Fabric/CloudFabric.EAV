@@ -22,4 +22,6 @@ public class AttributeConfigurationListItemViewModel
     public EavAttributeType ValueType { get; set; }
 
     public int NumberOfEntityInstancesWithAttribute { get; set; }
+
+    public string? Metadata { get; set; }
 }
