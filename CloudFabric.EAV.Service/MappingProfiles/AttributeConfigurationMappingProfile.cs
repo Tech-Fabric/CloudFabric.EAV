@@ -145,6 +145,18 @@ public class AttributeConfigurationProfile : Profile
                 o.Metadata
             ));
 
+        CreateMap<SerialAttributeConfigurationCreateUpdateRequest, SerialAttributeConfiguration>()
+            .ConvertUsing((o, dst, ctx) => new SerialAttributeConfiguration(
+                Guid.NewGuid(),
+                o.MachineName,
+                ctx.Mapper.Map<List<LocalizedString>>(o.Name),
+                o.StartingNumber,
+                o.Increment,
+                ctx.Mapper.Map<List<LocalizedString>>(o.Description),
+                o.IsRequired,
+                o.TenantId
+            ));
+
         CreateMap<ValueFromListOptionCreateUpdateRequest, ValueFromListOptionConfiguration>();
 
         CreateMap<EntityConfigurationAttributeReference, EntityConfigurationAttributeReferenceViewModel>();
@@ -163,6 +175,7 @@ public class AttributeConfigurationProfile : Profile
         CreateMap<DateRangeAttributeConfiguration, DateRangeAttributeConfigurationViewModel>();
         CreateMap<BooleanAttributeConfiguration, BooleanAttributeConfigurationViewModel>();
         CreateMap<FileAttributeConfiguration, FileAttributeConfigurationViewModel>();
+        CreateMap<SerialAttributeConfiguration, SerialAttributeConfigurationViewModel>();
 
         CreateMap<ValueFromListAttributeConfiguration, ValueFromListAttributeConfigurationViewModel>();
 

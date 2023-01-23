@@ -3,7 +3,9 @@ using System.Text.RegularExpressions;
 
 using AutoMapper;
 
+using CloudFabric.EAV.Domain.Enums;
 using CloudFabric.EAV.Domain.Models;
+using CloudFabric.EAV.Domain.Models.Attributes;
 using CloudFabric.EAV.Domain.Models.Base;
 using CloudFabric.EAV.Domain.Projections.AttributeConfigurationProjection;
 using CloudFabric.EAV.Domain.Projections.EntityConfigurationProjection;
@@ -20,6 +22,8 @@ using CloudFabric.Projections.Queries;
 
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+
+using Newtonsoft.Json;
 
 namespace CloudFabric.EAV.Service;
 
@@ -635,6 +639,8 @@ public class EAVService : IEAVService
             {
                 validationErrors.Add(a.MachineName, attrValidationErrors.ToArray());
             }
+
+            await InitializeAttributeInstanceWithEntityConfigurationOverrides(entityConfiguration, a, attributeValue);
         }
 
         if (validationErrors.Count > 0)
@@ -642,7 +648,22 @@ public class EAVService : IEAVService
             return (null, new ValidationErrorResponse(validationErrors))!;
         }
 
-        var saved = await _entityInstanceRepository.SaveAsync(_userInfo, entityInstance);
+        var overridesSaved = await _entityConfigurationRepository.SaveAsync(_userInfo, entityConfiguration);
+
+        if (!overridesSaved)
+        {
+            throw new Exception("Entity was not saved");
+        }
+
+        var saved = await _entityConfigurationRepository.SaveAsync(_userInfo, entityConfiguration);
+
+        if (!saved)
+        {
+            throw new Exception("Entity was not saved");
+        }
+
+        saved = await _entityInstanceRepository.SaveAsync(_userInfo, entityInstance);
+
         if (!saved)
         {
             //TODO: What do we want to do with internal exceptions and unsuccessful flow?
@@ -887,6 +908,49 @@ public class EAVService : IEAVService
         }
 
         return true;
+    }
+
+    private async Task InitializeAttributeInstanceWithEntityConfigurationOverrides(
+        EntityConfiguration entityConfiguration,
+        AttributeConfiguration attributeConfiguration,
+        AttributeInstance attributeInstance
+    )
+    {
+        switch (attributeConfiguration.ValueType)
+        {
+            case EavAttributeType.Serial:
+                {
+                    if (attributeInstance == null)
+                    {
+                        return;
+                    }
+
+                    var entityAttribute = entityConfiguration.Attributes
+                        .FirstOrDefault(x => x.AttributeConfigurationId == attributeConfiguration.Id);
+
+                    var serialAttributeConfiguration = attributeConfiguration as SerialAttributeConfiguration;
+
+                    var existingOverrideObject = entityAttribute.Overrides.FirstOrDefault();
+
+                    long? deserializedOverride = null;
+
+                    if (existingOverrideObject != null)
+                    {
+                        deserializedOverride = JsonConvert.DeserializeObject<long>(existingOverrideObject.ToString());
+                    }
+
+                    var newOverride = existingOverrideObject == null
+                        ? serialAttributeConfiguration.StartingNumber
+                        : deserializedOverride += serialAttributeConfiguration.Increment;
+
+                    var serialInstance = attributeInstance as SerialAttributeInstance;
+
+                    serialInstance.Value = newOverride.Value;
+
+                    entityConfiguration.UpdateAttrributeOverrides(attributeConfiguration.Id, new List<object>() { newOverride });
+                };
+                break;
+        }
     }
 
     private async Task<ProjectionQueryResult<AttributeConfigurationListItemViewModel>> GetAttributesByIds(List<Guid> attributesIds, CancellationToken cancellationToken)

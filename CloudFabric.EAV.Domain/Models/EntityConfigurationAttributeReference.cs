@@ -8,4 +8,6 @@ namespace CloudFabric.EAV.Domain.Models;
 public class EntityConfigurationAttributeReference
 {
     public Guid AttributeConfigurationId { get; set; }
+
+    public List<object> Overrides { get; set; } = new List<object>();
 }

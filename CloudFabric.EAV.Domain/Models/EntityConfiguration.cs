@@ -17,7 +17,7 @@ namespace CloudFabric.EAV.Domain.Models
         public string MachineName { get; protected set; }
 
         public ReadOnlyCollection<EntityConfigurationAttributeReference> Attributes { get; protected set; }
-        
+
         public override string PartitionKey => Id.ToString();
         
         public Guid? TenantId { get; protected set; }
@@ -29,7 +29,7 @@ namespace CloudFabric.EAV.Domain.Models
 
         public EntityConfiguration(
             Guid id, 
-            List<LocalizedString> name, 
+            List<LocalizedString> name,
             string machineName, 
             List<EntityConfigurationAttributeReference> attributes,
             Guid? tenantId
@@ -77,6 +77,11 @@ namespace CloudFabric.EAV.Domain.Models
         public void RemoveAttribute(Guid attributeConfigurationId)
         {
             Apply(new EntityConfigurationAttributeRemoved(Id, attributeConfigurationId));
+        }
+
+        public void UpdateAttrributeOverrides(Guid attributeId, List<object> overrides)
+        {
+            Apply(new EntityConfigurationAttributeOverridesUpdated(Id, attributeId, overrides));
         }
 
         #region EventHandlers
@@ -129,7 +134,12 @@ namespace CloudFabric.EAV.Domain.Models
                 .ToList()
                 .AsReadOnly();
         }
-        
+        public void On(EntityConfigurationAttributeOverridesUpdated @event)
+        {
+            var attributeReference = Attributes.FirstOrDefault(a => a.AttributeConfigurationId == @event.AttributeConfigurationId);
+
+            attributeReference.Overrides = @event.Overrides;
+        }
         #endregion
     }
 }
