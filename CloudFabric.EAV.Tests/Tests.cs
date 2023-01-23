@@ -1841,10 +1841,10 @@ public class Tests
                     String = "Price"
                 }
             },
-            DefaultValue = 0,
+            DefaultValue = 1,
             IsRequired = true,
-            MaximumValue = -1,
-            MinimumValue = 0,
+            MaximumValue = 100,
+            MinimumValue = 1,
             Metadata = JsonSerializer.Serialize(new LocalizedStringCreateRequest { String = "test-metadata" })
         };
 
@@ -1903,10 +1903,10 @@ public class Tests
                     String = "Price"
                 }
             },
-            DefaultValue = 0,
+            DefaultValue = 1,
             IsRequired = true,
-            MaximumValue = -1,
-            MinimumValue = 0,
+            MaximumValue = 100,
+            MinimumValue = 1,
             Metadata = JsonSerializer.Serialize(new LocalizedStringCreateRequest { String = "test-metadata" })
         };
 
