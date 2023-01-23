@@ -22,8 +22,9 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
             bool isDownloadable,
             List<LocalizedString> description = null,
             bool isRequired = false,
-            Guid? tenantId = null
-        ) : base(id, machineName, name, EavAttributeType.File, description, isRequired, tenantId)
+            Guid? tenantId = null,
+            string? metadata = null
+        ) : base(id, machineName, name, EavAttributeType.File, description, isRequired, tenantId, metadata)
         {
             Apply(new FileAttributeConfigurationUpdated(id, isDownloadable));
         }

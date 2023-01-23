@@ -18,6 +18,4 @@ public class EntityConfigurationViewModel
     public List<EntityConfigurationAttributeReferenceViewModel> Attributes { get; set; }
     
     public Guid? TenantId { get; set; }
-
-    public ReadOnlyDictionary<string, object> Metadata { get; set; }
 }

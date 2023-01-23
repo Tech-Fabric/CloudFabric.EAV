@@ -19,7 +19,9 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
             string? attributeMachineNameToAffect,
             List<LocalizedString> description = null,
             bool isRequired = false,
-            Guid? TenantId = null) : base(id, machineName, name, EavAttributeType.ValueFromList, description, isRequired, TenantId)
+            Guid? tenantId = null,
+            string? metadata = null
+        ) : base(id, machineName, name, EavAttributeType.ValueFromList, description, isRequired, tenantId, metadata)
         {
             ValueFromListAttributeType = valueFromListAttributeType;
             ValuesList = valuesList;

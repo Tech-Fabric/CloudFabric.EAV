@@ -1818,6 +1818,138 @@ public class Tests
         attribute.MachineName.Should().Be("test");
     }
 
+    [TestMethod]
+    public async Task AddAttributeMetadata_Success()
+    {
+        var cultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID;
+        var priceAttribute = new NumberAttributeConfigurationCreateUpdateRequest()
+        {
+            MachineName = "price",
+            Description = new List<LocalizedStringCreateRequest>()
+            {
+                new LocalizedStringCreateRequest
+                {
+                    CultureInfoId = cultureInfoId,
+                    String = "Product Price"
+                }
+            },
+            Name = new List<LocalizedStringCreateRequest>()
+            {
+                new LocalizedStringCreateRequest
+                {
+                    CultureInfoId = cultureInfoId,
+                    String = "Price"
+                }
+            },
+            DefaultValue = 0,
+            IsRequired = true,
+            MaximumValue = -1,
+            MinimumValue = 0,
+            Metadata = JsonSerializer.Serialize(new LocalizedStringCreateRequest { String = "test-metadata" })
+        };
+
+        var entityConfigurationCreateRequest = new EntityConfigurationCreateRequest()
+        {
+            MachineName = "product",
+            Name = new List<LocalizedStringCreateRequest>
+            {
+                new LocalizedStringCreateRequest
+                {
+                    CultureInfoId = cultureInfoId,
+                    String = "Product"
+                }
+            },
+            Attributes = new List<EntityAttributeConfigurationCreateUpdateRequest> { priceAttribute }
+        };
+
+        (EntityConfigurationViewModel? createdConfig, ProblemDetails? error) = await _eavService.CreateEntityConfiguration(entityConfigurationCreateRequest, CancellationToken.None);
+        createdConfig.Should().NotBeNull();
+
+        AttributeConfigurationViewModel attribute = await _eavService.GetAttribute(
+            createdConfig!.Attributes[0].AttributeConfigurationId,
+            createdConfig.Attributes[0].AttributeConfigurationId.ToString(),
+            CancellationToken.None
+        );
+
+        attribute.Metadata.Should().NotBeNull();
+        var deserializedMetadata = JsonSerializer.Deserialize<LocalizedStringCreateRequest>(attribute.Metadata!);
+        deserializedMetadata!.String.Should().Be("test-metadata");
+
+        // check projections
+        var attributes = await _eavService.ListAttributes(new ProjectionQuery());
+        attributes.Records.First().Document!.Metadata.Should().Be(attribute.Metadata);
+    }
+
+    [TestMethod]
+    public async Task UpdateAttributeMetadata_Success()
+    {
+        var cultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID;
+        var priceAttribute = new NumberAttributeConfigurationCreateUpdateRequest()
+        {
+            MachineName = "price",
+            Description = new List<LocalizedStringCreateRequest>()
+            {
+                new LocalizedStringCreateRequest
+                {
+                    CultureInfoId = cultureInfoId,
+                    String = "Product Price"
+                }
+            },
+            Name = new List<LocalizedStringCreateRequest>()
+            {
+                new LocalizedStringCreateRequest
+                {
+                    CultureInfoId = cultureInfoId,
+                    String = "Price"
+                }
+            },
+            DefaultValue = 0,
+            IsRequired = true,
+            MaximumValue = -1,
+            MinimumValue = 0,
+            Metadata = JsonSerializer.Serialize(new LocalizedStringCreateRequest { String = "test-metadata" })
+        };
+
+        var entityConfigurationCreateRequest = new EntityConfigurationCreateRequest()
+        {
+            MachineName = "product",
+            Name = new List<LocalizedStringCreateRequest>
+            {
+                new LocalizedStringCreateRequest
+                {
+                    CultureInfoId = cultureInfoId,
+                    String = "Product"
+                }
+            },
+            Attributes = new List<EntityAttributeConfigurationCreateUpdateRequest> { priceAttribute }
+        };
+
+        (EntityConfigurationViewModel? createdConfig, ProblemDetails? error) = await _eavService.CreateEntityConfiguration(entityConfigurationCreateRequest, CancellationToken.None);
+        createdConfig.Should().NotBeNull();
+
+        // update attribute metadata
+        priceAttribute.Metadata = "updated metadata";
+        (AttributeConfigurationViewModel? updatedAttribute, error) = await _eavService.UpdateAttribute(
+            createdConfig.Attributes[0].AttributeConfigurationId,
+            priceAttribute,
+            CancellationToken.None
+        );
+
+        updatedAttribute.Should().NotBeNull();
+
+        var attribute = await _eavService.GetAttribute(
+            updatedAttribute.Id,
+            updatedAttribute.Id.ToString(),
+            CancellationToken.None
+        );
+
+        attribute.Metadata.Should().Be(priceAttribute.Metadata);
+
+        // check projections
+        var attributesList = await _eavService.ListAttributes(new ProjectionQuery());
+        attributesList.Records.First().Document!.Metadata.Should().Be(priceAttribute.Metadata);
+    }
+
     private IProjectionRepository GetProjectionRepository(ProjectionDocumentSchema schema)
     {
         return new InMemoryProjectionRepository(schema);

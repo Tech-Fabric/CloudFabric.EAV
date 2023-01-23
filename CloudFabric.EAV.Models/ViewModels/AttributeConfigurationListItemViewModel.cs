@@ -19,7 +19,9 @@ public class AttributeConfigurationListItemViewModel
 
     public DateTime UpdatedAt { get; set; }
 
-    public EavAttributeType AttributeType { get; set; }
+    public EavAttributeType ValueType { get; set; }
 
     public int NumberOfEntityInstancesWithAttribute { get; set; }
+
+    public string? Metadata { get; set; }
 }
