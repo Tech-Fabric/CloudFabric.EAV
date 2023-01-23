@@ -668,7 +668,7 @@ public class Tests
     }
 
     [TestMethod]
-    public async Task TestEntityConfigurationProjectionCreated()
+    public async Task EntityConfigurationProjectionCreated()
     {
         var configurationItemsStart = await _eavService.ListEntityConfigurations(
             ProjectionQuery.Where<EntityConfigurationProjectionDocument>(x => x.MachineName == "BoardGame"),
@@ -719,7 +719,7 @@ public class Tests
     }
 
     [TestMethod]
-    public async Task TestCreateNumberAttribute_Success()
+    public async Task CreateNumberAttribute_Success()
     {
         var cultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID;
         var numberAttribute = new NumberAttributeConfigurationCreateUpdateRequest()
@@ -976,7 +976,7 @@ public class Tests
     }
 
     [TestMethod]
-    public async Task TestGetNumberAttribute_Success()
+    public async Task GetNumberAttribute_Success()
     {
         var cultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID;
         var numberAttribute = new NumberAttributeConfigurationCreateUpdateRequest()
@@ -1032,7 +1032,7 @@ public class Tests
     }
 
     [TestMethod]
-    public async Task TestCreateValueFromListAttribute_Success()
+    public async Task CreateValueFromListAttribute_Success()
     {
         var valueFromListAttributeRepository = _aggregateRepositoryFactory.GetAggregateRepository<ValueFromListAttributeConfiguration>();
 
@@ -1103,7 +1103,7 @@ public class Tests
     }
 
     [TestMethod]
-    public async Task TestCreateValueFromListAttribute_OptionNamesNotUnique()
+    public async Task CreateValueFromListAttribute_OptionNamesNotUnique()
     {
         var cultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID;
         var valueFromListAttribute = new ValueFromListAttributeConfigurationCreateUpdateRequest()
@@ -1165,7 +1165,7 @@ public class Tests
     }
 
     [TestMethod]
-    public async Task TestUpdateValueFromListAttribute_Success()
+    public async Task UpdateValueFromListAttribute_Success()
     {
         var valueFromListRepository = _aggregateRepositoryFactory.GetAggregateRepository<ValueFromListAttributeConfiguration>();
 
@@ -1220,7 +1220,7 @@ public class Tests
     }
 
     [TestMethod]
-    public async Task TestCreateEntityInstanceWithValueFromListAttribute_ValidationError()
+    public async Task CreateEntityInstanceWithValueFromListAttribute_ValidationError()
     {
         // create entity configuration with value from list attribute
         var cultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID;
@@ -1686,7 +1686,7 @@ public class Tests
     }
 
     [TestMethod]
-    public async Task TestCreateNumberAttributeAsReference_Success()
+    public async Task CreateNumberAttributeAsReference_Success()
     {
         var cultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID;
         var priceAttribute = new NumberAttributeConfigurationCreateUpdateRequest()
@@ -1763,7 +1763,7 @@ public class Tests
     }
 
     [TestMethod]
-    public async Task TestCreateInstanceAndQuery()
+    public async Task CreateInstanceAndQuery()
     {
         var configurationCreateRequest = EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
 
@@ -1796,7 +1796,7 @@ public class Tests
     }
 
     [TestMethod]
-    public async Task TestSimpleJsonConverter()
+    public async Task SimpleJsonConverter()
     {
         var jsonString =
             "{\"valueType\" : 2, \"machineName\" : \"test\", \"name\" : [{\"string\" : \"Test\", \"cultureInfoId\" : 1033}], \"description\" : [{\"string\" : \"Test\", \"cultureInfoId\" : 1033}], \"defaultValue\" : 0, \"isRequired\" : true, \"maximumValue\" : 10, \"minimumValue\" : 0 }";
@@ -1808,7 +1808,7 @@ public class Tests
     }
 
     [TestMethod]
-    public async Task TestSimpleToPolymorphJsonConverter()
+    public async Task SimpleToPolymorphJsonConverter()
     {
         var jsonString =
             "{\"typeName\": \"CloudFabric.EAV.Models.RequestModels.Attributes.NumberAttributeConfigurationCreateUpdateRequest\", \"typeValue\": { \"valueType\" : 2, \"machineName\" : \"test\", \"name\" : [{\"string\" : \"Test\", \"cultureInfoId\" : 1033}], \"description\" : [{\"string\" : \"Test\", \"cultureInfoId\" : 1033}], \"defaultValue\" : 0, \"isRequired\" : true, \"maximumValue\" : -1, \"minimumValue\" : 0 }}";

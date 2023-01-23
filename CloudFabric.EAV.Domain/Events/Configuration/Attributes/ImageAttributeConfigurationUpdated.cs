@@ -9,14 +9,11 @@ public record ImageAttributeConfigurationUpdated : Event
     {
     }
 
-    public ImageAttributeConfigurationUpdated(Guid id, ImageAttributeValue defaultValue, List<ImageThumbnailDefinition> thumbnailsConfiguration)
+    public ImageAttributeConfigurationUpdated(Guid id, List<ImageThumbnailDefinition> thumbnailsConfiguration)
     {
         AggregateId = id;
         ThumbnailsConfiguration = thumbnailsConfiguration;
-        DefaultValue = defaultValue;
     }
-
-    public ImageAttributeValue DefaultValue { get; set; }
 
     public List<ImageThumbnailDefinition> ThumbnailsConfiguration { get; set; }
 }
