@@ -84,6 +84,7 @@ public static class EntityConfigurationFactory
                             String = "Количество игроков, от"
                         }
                     },
+                    DefaultValue = 1,
                     MinimumValue = 1,
                     IsRequired = true,
                     TenantId = tenantId
@@ -104,6 +105,7 @@ public static class EntityConfigurationFactory
                             String = "Количество игроков, до"
                         }
                     },
+                    DefaultValue = 10,
                     MaximumValue = 10,
                     IsRequired = true,
                     TenantId = tenantId
@@ -137,6 +139,7 @@ public static class EntityConfigurationFactory
                             String = "Price"
                         }
                     },
+                    DefaultValue = 1,
                     MinimumValue = 1,
                     IsRequired = true,
                     TenantId = tenantId

@@ -32,6 +32,16 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
             Apply(new ArrayAttributeConfigurationUpdated(id, itemsType, itemsAttributeConfigurationId));
         }
 
+        public override List<string> Validate()
+        {
+            var errors = base.Validate();
+            if (!Enum.IsDefined(typeof(EavAttributeType), ItemsType))
+            {
+                errors.Add("Unknown value type");
+            }
+            return errors;
+        }
+
         public override void UpdateAttribute(AttributeConfiguration updatedAttribute)
         {
             var updated = updatedAttribute as ArrayAttributeConfiguration;

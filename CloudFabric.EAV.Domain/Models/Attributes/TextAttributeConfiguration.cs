@@ -35,10 +35,20 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
         {
             Apply(new TextAttributeConfigurationUpdated(id, defaultValue, maxLength, isSearchable));
         }
-        
-        public override List<string> Validate(AttributeInstance? instance)
+
+        public override List<string> Validate()
         {
-            var errors = base.Validate(instance);
+            var errors = base.Validate();
+            if (MaxLength != null && DefaultValue.Length > MaxLength)
+            {
+                errors.Add("Default value length cannot be greater than MaxLength");
+            }
+            return errors;
+        }
+
+        public override List<string> ValidateInstance(AttributeInstance? instance)
+        {
+            var errors = base.ValidateInstance(instance);
 
             if (instance == null)
             {

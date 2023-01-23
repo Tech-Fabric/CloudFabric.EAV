@@ -12,10 +12,20 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
         public string FalseDisplayValue { get; set; }
 
         public override EavAttributeType ValueType { get; } = EavAttributeType.Boolean;
-        
-        public override List<string> Validate(AttributeInstance? instance)
+
+        public override List<string> Validate()
         {
-            var errors = base.Validate(instance);
+            var errors = base.Validate();
+            if (string.IsNullOrEmpty(TrueDisplayValue) || string.IsNullOrEmpty(FalseDisplayValue))
+            {
+                errors.Add("Values descriptions should be specified");
+            }
+            return errors;
+        }
+
+        public override List<string> ValidateInstance(AttributeInstance? instance)
+        {
+            var errors = base.ValidateInstance(instance);
 
             if (instance == null)
             {

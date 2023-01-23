@@ -32,7 +32,25 @@ namespace CloudFabric.EAV.Domain.Models
 
         public string? Metadata { get; protected set; }
 
-        public virtual List<string> Validate(AttributeInstance? instance)
+        public virtual List<string> Validate()
+        {
+            var errors = new List<string>();
+            if (Name.Count == 0)
+            {
+                errors.Add("Name cannot be empty");
+            }
+            if (string.IsNullOrEmpty(MachineName) || string.IsNullOrWhiteSpace(MachineName))
+            {
+                errors.Add("MachineName cannot be empty");
+            }
+            if (!Enum.IsDefined(typeof(EavAttributeType), ValueType))
+            {
+                errors.Add("Unknown value type");
+            }
+            return errors;
+        }
+        
+        public virtual List<string> ValidateInstance(AttributeInstance? instance)
         {
             if (IsRequired && instance == null)
             {

@@ -14,10 +14,30 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
         public NumberAttributeType NumberType { get; set; } = NumberAttributeType.Integer;
 
         public override EavAttributeType ValueType { get; } = EavAttributeType.Number;
-        
-        public override List<string> Validate(AttributeInstance? instance)
+
+        public override List<string> Validate()
         {
-            var errors = base.Validate(instance);
+            var errors = base.Validate();
+            if (MinimumValue != null && MaximumValue != null && MinimumValue > MaximumValue)
+            {
+                errors.Add("Minimum value cannot be greater than Maximum value");
+            }
+
+            if (MaximumValue != null && DefaultValue > MaximumValue)
+            {
+                errors.Add("Default value cannot be greater than Maximum value");
+            }
+
+            if (MinimumValue != null && DefaultValue < MinimumValue)
+            {
+                errors.Add("Default value cannot be less than Minimum value");
+            }
+            return errors;
+        }
+
+        public override List<string> ValidateInstance(AttributeInstance? instance)
+        {
+            var errors = base.ValidateInstance(instance);
 
             if (instance == null)
             {

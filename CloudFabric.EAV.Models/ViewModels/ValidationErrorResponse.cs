@@ -29,6 +29,8 @@ public class ValidationErrorResponse : ValidationProblemDetails
 
     private static IDictionary<string, string[]> GetDictionary(string fieldName, string[] errorMessages)
     {
+        fieldName = string.IsNullOrEmpty(fieldName) ? "unknownError" : fieldName;
+        
         return new Dictionary<string, string[]>
         {
             { fieldName, errorMessages }

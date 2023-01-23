@@ -5,7 +5,6 @@ using System.Text.Json;
 using AutoMapper;
 
 using CloudFabric.EAV.Domain.Enums;
-using CloudFabric.EAV.Domain.Models;
 using CloudFabric.EAV.Domain.Models.Attributes;
 using CloudFabric.EAV.Domain.Projections.AttributeConfigurationProjection;
 using CloudFabric.EAV.Domain.Projections.EntityConfigurationProjection;
@@ -29,7 +28,6 @@ using FluentAssertions;
 
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace CloudFabric.EAV.Tests;
@@ -193,7 +191,7 @@ public class Tests
     public async Task CreateEntityConfiguration_Success()
     {
         var configurationCreateRequest = EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
-        (EntityConfigurationViewModel? createdConfiguration, _) = await _eavService.CreateEntityConfiguration(
+        (EntityConfigurationViewModel? createdConfiguration, var errors) = await _eavService.CreateEntityConfiguration(
             configurationCreateRequest,
             CancellationToken.None
         );
@@ -208,6 +206,21 @@ public class Tests
 
         createdConfiguration.MachineName.Should().Be(configurationCreateRequest.MachineName);
         createdConfiguration.Attributes.Count.Should().Be(configurationCreateRequest.Attributes.Count);
+    }
+    
+    [TestMethod]
+    public async Task CreateEntityConfiguration_ValidationError()
+    {
+        var configurationCreateRequest = EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
+        configurationCreateRequest.Name = new List<LocalizedStringCreateRequest>();
+        (EntityConfigurationViewModel? createdConfiguration, var errors) = await _eavService.CreateEntityConfiguration(
+            configurationCreateRequest,
+            CancellationToken.None
+        );
+        createdConfiguration.Should().BeNull();
+        errors.Should().NotBeNull();
+        errors.As<ValidationErrorResponse>().Errors.Should().ContainKey(configurationCreateRequest.MachineName);
+        errors.As<ValidationErrorResponse>().Errors[configurationCreateRequest.MachineName].Should().Contain("Name cannot be empty");
     }
 
     [TestMethod]
@@ -335,6 +348,72 @@ public class Tests
         updatedAttribute.As<NumberAttributeConfigurationViewModel>().MinimumValue.Should().Be(numberAttribute.MinimumValue);
     }
 
+    [TestMethod]
+    public async Task UpdateAttribute_ValidationError()
+    {
+        var cultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID;
+        var numberAttribute = new NumberAttributeConfigurationCreateUpdateRequest()
+        {
+            MachineName = "number_attribute",
+            Description =
+                new List<LocalizedStringCreateRequest>
+                {
+                    new LocalizedStringCreateRequest
+                    {
+                        CultureInfoId = cultureInfoId,
+                        String = "Number attribute description"
+                    }
+                },
+            Name = new List<LocalizedStringCreateRequest>
+            {
+                new LocalizedStringCreateRequest
+                {
+                    CultureInfoId = cultureInfoId,
+                    String = "New Number Attribute"
+                }
+            },
+            DefaultValue = 15,
+            IsRequired = true,
+            MaximumValue = 100,
+            MinimumValue = -100
+        };
+
+        var configCreateRequest = new EntityConfigurationCreateRequest()
+        {
+            MachineName = "test",
+            Name = new List<LocalizedStringCreateRequest>
+            {
+                new LocalizedStringCreateRequest
+                {
+                    CultureInfoId = cultureInfoId,
+                    String = "test"
+                }
+            },
+            Attributes = new List<EntityAttributeConfigurationCreateUpdateRequest>
+            {
+                numberAttribute
+            }
+        };
+
+        (EntityConfigurationViewModel? created, _) = await _eavService.CreateEntityConfiguration(configCreateRequest, CancellationToken.None);
+        created.Attributes.Count.Should().Be(1);
+
+        // update added attribute
+        numberAttribute.Name = new List<LocalizedStringCreateRequest>();
+
+        (AttributeConfigurationViewModel? updatedResult, ProblemDetails? errors) = await _eavService.UpdateAttribute(
+            created.Attributes[0].AttributeConfigurationId,
+            numberAttribute,
+            CancellationToken.None
+        );
+
+        updatedResult.Should().BeNull();
+        errors.Should().NotBeNull();
+        errors.As<ValidationErrorResponse>().Errors.Should().ContainKey(numberAttribute.MachineName);
+        errors.As<ValidationErrorResponse>().Errors[numberAttribute.MachineName].Should().Contain("Name cannot be empty");
+
+    }
+    
     [TestMethod]
     public async Task DeleteAttribute_Success()
     {
@@ -527,6 +606,39 @@ public class Tests
         //newAttribute.Should().NotBeNull();
         //newAttribute.Should().BeEquivalentTo(newAttributeRequest, opt => opt.ComparingRecordsByValue());
     }
+    
+    [TestMethod]
+    public async Task UpdateEntityConfiguration_AddedNewAttribute_ValidationError()
+    {
+        var cultureId = CultureInfo.GetCultureInfo("EN-us").LCID;
+
+        var configRequest = EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
+        (EntityConfigurationViewModel? createdConfig, _) = await _eavService.CreateEntityConfiguration(configRequest, CancellationToken.None);
+        const string newAttributeMachineName = "avg_time_mins";
+
+        var newAttributeRequest = new NumberAttributeConfigurationCreateUpdateRequest()
+        {
+            DefaultValue = 4,
+            IsRequired = true,
+            MachineName = newAttributeMachineName,
+            MinimumValue = 1,
+            Description = new List<LocalizedStringCreateRequest>()
+        };
+
+        configRequest.Attributes.Add(newAttributeRequest);
+
+        var updateRequest = new EntityConfigurationUpdateRequest()
+        {
+            Attributes = configRequest.Attributes,
+            Id = createdConfig.Id,
+            Name = configRequest.Name
+        };
+        var (updatedConfig, errors) = await _eavService.UpdateEntityConfiguration(updateRequest, CancellationToken.None);
+        errors.Should().NotBeNull();
+        errors.As<ValidationErrorResponse>().Errors.Should().ContainKey(newAttributeMachineName);
+        errors.As<ValidationErrorResponse>().Errors[newAttributeMachineName].Should().Contain("Name cannot be empty");
+
+    }
 
     [TestMethod]
     public async Task UpdateEntityConfiguration_ChangeName_Success()
@@ -665,6 +777,21 @@ public class Tests
             .Document?.Name.Should().BeEquivalentTo(numberAttribute.Name);
     }
 
+    [TestMethod]
+    public async Task CreateNumberAttribute_ValidationError()
+    {
+        var request = new NumberAttributeConfigurationCreateUpdateRequest
+        {
+            MachineName = "avg_time_mins"
+        };
+
+        (AttributeConfigurationViewModel? result, ValidationErrorResponse? errors) = await _eavService.CreateAttribute(request);
+        result.Should().BeNull();
+        errors.Should().NotBeNull();
+        errors.As<ValidationErrorResponse>().Errors.Should().ContainKey(request.MachineName);
+        errors.As<ValidationErrorResponse>().Errors[request.MachineName].Should().Contain("Name cannot be empty");
+    }
+    
     [TestMethod]
     public async Task CreateFileAttribute_Success()
     {
@@ -1072,7 +1199,7 @@ public class Tests
             }
         };
 
-        var valueFromListAttribute = await _eavService.CreateAttribute(valueFromListAttributeCreateRequest, CancellationToken.None);
+        var (valueFromListAttribute, _) = await _eavService.CreateAttribute(valueFromListAttributeCreateRequest, CancellationToken.None);
 
         // create request with changed properties and update attribute
         string affectedMachineName = Guid.NewGuid().ToString();
@@ -1211,7 +1338,7 @@ public class Tests
             MinimumValue = -100
         };
 
-        var createdAttribute = await _eavService.CreateAttribute(numberAttribute, CancellationToken.None);
+        var (createdAttribute, _) = await _eavService.CreateAttribute(numberAttribute, CancellationToken.None);
         createdAttribute.Should().NotBeNull();
 
         await _eavService.AddAttributeToEntityConfiguration(
@@ -1267,7 +1394,7 @@ public class Tests
             MinimumValue = -100
         };
 
-        var createdAttribute = await _eavService.CreateAttribute(numberAttribute, CancellationToken.None);
+        var (createdAttribute, _) = await _eavService.CreateAttribute(numberAttribute, CancellationToken.None);
         createdAttribute.Should().NotBeNull();
 
         (EntityConfigurationViewModel? entityConfig, ProblemDetails? error) = await _eavService.AddAttributeToEntityConfiguration(
@@ -1581,13 +1708,13 @@ public class Tests
                     String = "Price"
                 }
             },
-            DefaultValue = 0,
+            DefaultValue = 1,
             IsRequired = true,
-            MaximumValue = -1,
-            MinimumValue = 0
+            MaximumValue = 100,
+            MinimumValue = 1
         };
 
-        var priceAttributeCreated = await _eavService.CreateAttribute(priceAttribute, CancellationToken.None);
+        var (priceAttributeCreated,  errors) = await _eavService.CreateAttribute(priceAttribute, CancellationToken.None);
 
         var entityConfigurationCreateRequest = new EntityConfigurationCreateRequest()
         {
@@ -1714,10 +1841,10 @@ public class Tests
                     String = "Price"
                 }
             },
-            DefaultValue = 0,
+            DefaultValue = 1,
             IsRequired = true,
-            MaximumValue = -1,
-            MinimumValue = 0,
+            MaximumValue = 100,
+            MinimumValue = 1,
             Metadata = JsonSerializer.Serialize(new LocalizedStringCreateRequest { String = "test-metadata" })
         };
 
@@ -1776,10 +1903,10 @@ public class Tests
                     String = "Price"
                 }
             },
-            DefaultValue = 0,
+            DefaultValue = 1,
             IsRequired = true,
-            MaximumValue = -1,
-            MinimumValue = 0,
+            MaximumValue = 100,
+            MinimumValue = 1,
             Metadata = JsonSerializer.Serialize(new LocalizedStringCreateRequest { String = "test-metadata" })
         };
 
