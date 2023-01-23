@@ -18,17 +18,17 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
         public override List<string> Validate()
         {
             var errors = base.Validate();
-            if (MinimumValue > MaximumValue)
+            if (MinimumValue != null && MaximumValue != null && MinimumValue > MaximumValue)
             {
                 errors.Add("Minimum value cannot be greater than Maximum value");
             }
 
-            if (DefaultValue > MaximumValue)
+            if (MaximumValue != null && DefaultValue > MaximumValue)
             {
                 errors.Add("Default value cannot be greater than Maximum value");
             }
 
-            if (DefaultValue < MinimumValue)
+            if (MinimumValue != null && DefaultValue < MinimumValue)
             {
                 errors.Add("Default value cannot be less than Minimum value");
             }

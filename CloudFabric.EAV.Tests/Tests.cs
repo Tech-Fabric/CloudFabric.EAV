@@ -191,7 +191,7 @@ public class Tests
     public async Task CreateEntityConfiguration_Success()
     {
         var configurationCreateRequest = EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
-        (EntityConfigurationViewModel? createdConfiguration, _) = await _eavService.CreateEntityConfiguration(
+        (EntityConfigurationViewModel? createdConfiguration, var errors) = await _eavService.CreateEntityConfiguration(
             configurationCreateRequest,
             CancellationToken.None
         );
@@ -1708,13 +1708,13 @@ public class Tests
                     String = "Price"
                 }
             },
-            DefaultValue = 0,
+            DefaultValue = 1,
             IsRequired = true,
-            MaximumValue = -1,
-            MinimumValue = 0
+            MaximumValue = 100,
+            MinimumValue = 1
         };
 
-        var (priceAttributeCreated, _) = await _eavService.CreateAttribute(priceAttribute, CancellationToken.None);
+        var (priceAttributeCreated,  errors) = await _eavService.CreateAttribute(priceAttribute, CancellationToken.None);
 
         var entityConfigurationCreateRequest = new EntityConfigurationCreateRequest()
         {
