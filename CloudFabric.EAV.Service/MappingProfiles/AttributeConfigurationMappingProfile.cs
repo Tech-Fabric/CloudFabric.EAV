@@ -39,7 +39,6 @@ public class AttributeConfigurationProfile : Profile
                 Guid.NewGuid(),
                 o.MachineName,
                 ctx.Mapper.Map<List<LocalizedString>>(o.Name),
-                ctx.Mapper.Map<ImageAttributeValue>(o.DefaultValue),
                 ctx.Mapper.Map<List<ImageThumbnailDefinition>>(o.ThumbnailsConfiguration),
                 ctx.Mapper.Map<List<LocalizedString>>(o.Description),
                 o.IsRequired,
