@@ -1369,6 +1369,8 @@ public class Tests
     {
         var entityRepository = _aggregateRepositoryFactory.GetAggregateRepository<EntityConfiguration>();
 
+        var entityInstanceRepository = _aggregateRepositoryFactory.GetAggregateRepository<EntityInstance>();
+
         // create entity configuration and instance with serial attribute
         var cultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID;
         var serialAttributeCreateRequest = new SerialAttributeConfigurationCreateUpdateRequest()
@@ -1428,23 +1430,24 @@ public class Tests
         });
         result.Attributes.FirstOrDefault().ConfigurationAttributeMachineName.Should().Be(serialAttributeCreateRequest.MachineName);
 
-        // check override value
+        // check attribute override value in entity configuration
         var entity = await entityRepository.LoadAsyncOrThrowNotFound(entityConfig.Id, entityConfig.PartitionKey, CancellationToken.None);
-
-        var deserializeOptions = new JsonSerializerOptions();
-        deserializeOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
-
         long attributeOverrideValue = JsonSerializer.Deserialize<long>(
-            entity.Attributes.FirstOrDefault().Overrides.FirstOrDefault().ToString(),
-            deserializeOptions
+            entity.Attributes.FirstOrDefault().Overrides.FirstOrDefault().ToString()
         );
 
         attributeOverrideValue.Should()
             .Be(serialAttributeCreateRequest
                 .As<SerialAttributeConfigurationCreateUpdateRequest>().StartingNumber);
 
+        // check entity instance
+        var entityInstance = await entityInstanceRepository.LoadAsyncOrThrowNotFound(result.Id, result.PartitionKey);
+
+        entityInstance.Attributes.FirstOrDefault(x => x.ConfigurationAttributeMachineName == serialAttributeCreateRequest.MachineName)
+            .As<SerialAttributeInstance>().Value.Should().Be(serialAttributeCreateRequest.StartingNumber);
+
         // create another entity instance
-        await _eavService.CreateEntityInstance(new EntityInstanceCreateRequest()
+        (result, _) = await _eavService.CreateEntityInstance(new EntityInstanceCreateRequest()
         {
             EntityConfigurationId = entityConfig.Id,
             Attributes = new List<AttributeInstanceCreateUpdateRequest>()
@@ -1456,17 +1459,20 @@ public class Tests
             }
         });
 
-        // check that override value was updated
+        // check that override value in entity configuration was updated
         entity = await entityRepository.LoadAsyncOrThrowNotFound(entityConfig.Id, entityConfig.PartitionKey, CancellationToken.None);
-
         attributeOverrideValue = JsonSerializer.Deserialize<long>(
-            entity.Attributes.FirstOrDefault().Overrides.FirstOrDefault().ToString(),
-            deserializeOptions
+            entity.Attributes.FirstOrDefault().Overrides.FirstOrDefault().ToString()
         );
 
         attributeOverrideValue.Should()
             .Be(serialAttributeCreateRequest
                 .As<SerialAttributeConfigurationCreateUpdateRequest>().StartingNumber + serialAttributeCreateRequest.Increment);
+
+        //check another entity instance
+        entityInstance = await entityInstanceRepository.LoadAsyncOrThrowNotFound(result.Id, result.PartitionKey);
+        entityInstance.Attributes.FirstOrDefault(x => x.ConfigurationAttributeMachineName == serialAttributeCreateRequest.MachineName)
+            .As<SerialAttributeInstance>().Value.Should().Be(serialAttributeCreateRequest.StartingNumber + serialAttributeCreateRequest.Increment);
     }
 
     [TestMethod]

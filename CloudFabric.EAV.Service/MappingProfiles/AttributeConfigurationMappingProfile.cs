@@ -154,7 +154,8 @@ public class AttributeConfigurationProfile : Profile
                 o.Increment,
                 ctx.Mapper.Map<List<LocalizedString>>(o.Description),
                 o.IsRequired,
-                o.TenantId
+                o.TenantId,
+                o.Metadata
             ));
 
         CreateMap<ValueFromListOptionCreateUpdateRequest, ValueFromListOptionConfiguration>();

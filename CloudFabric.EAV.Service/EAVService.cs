@@ -23,7 +23,7 @@ using CloudFabric.Projections.Queries;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 
-using Newtonsoft.Json;
+using System.Text.Json;
 
 namespace CloudFabric.EAV.Service;
 
@@ -655,14 +655,7 @@ public class EAVService : IEAVService
             throw new Exception("Entity was not saved");
         }
 
-        var saved = await _entityConfigurationRepository.SaveAsync(_userInfo, entityConfiguration);
-
-        if (!saved)
-        {
-            throw new Exception("Entity was not saved");
-        }
-
-        saved = await _entityInstanceRepository.SaveAsync(_userInfo, entityInstance);
+        var saved = await _entityInstanceRepository.SaveAsync(_userInfo, entityInstance);
 
         if (!saved)
         {
@@ -936,7 +929,7 @@ public class EAVService : IEAVService
 
                     if (existingOverrideObject != null)
                     {
-                        deserializedOverride = JsonConvert.DeserializeObject<long>(existingOverrideObject.ToString());
+                        deserializedOverride = JsonSerializer.Deserialize<long>(existingOverrideObject.ToString());
                     }
 
                     var newOverride = existingOverrideObject == null

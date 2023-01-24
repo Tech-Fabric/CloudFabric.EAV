@@ -4,9 +4,9 @@ namespace CloudFabric.EAV.Models.RequestModels.Attributes
 {
     public class SerialAttributeConfigurationCreateUpdateRequest : AttributeConfigurationCreateUpdateRequest
     {
-        public long StartingNumber;
+        public long StartingNumber { get; set; }
 
-        public int Increment;
+        public int Increment { get; set; }
 
         public override EavAttributeType ValueType { get; } = EavAttributeType.Serial;
     }

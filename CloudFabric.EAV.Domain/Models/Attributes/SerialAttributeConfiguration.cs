@@ -47,7 +47,7 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
             string? metadata = null
         ) : base(id, machineName, name, EavAttributeType.Serial, description, isRequired, TenantId, metadata)
         {
-            Apply(new SerialAttributeConfigurationUpdate(id, startingNumber, increment));
+            Apply(new SerialAttributeConfigurationUpdated(id, startingNumber, increment));
         }
 
         public override void UpdateAttribute(AttributeConfiguration updatedAttribute)
@@ -65,7 +65,7 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
                 || Increment != updated.Increment)
             {
                 Apply(
-                    new SerialAttributeConfigurationUpdate(Id, updated.StartingNumber, updated.Increment)
+                    new SerialAttributeConfigurationUpdated(Id, updated.StartingNumber, updated.Increment)
                 );
             }
         }
@@ -87,7 +87,7 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
             return HashCode.Combine(StartingNumber, Increment, (int)ValueType);
         }
 
-        public void On(SerialAttributeConfigurationUpdate @event)
+        public void On(SerialAttributeConfigurationUpdated @event)
         {
             StartingNumber = @event.StartingNumber;
             Increment = @event.Increment;
