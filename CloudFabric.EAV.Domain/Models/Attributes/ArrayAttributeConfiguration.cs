@@ -25,10 +25,21 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
             Guid itemsAttributeConfigurationId,
             List<LocalizedString> description = null,
             bool isRequired = false,
-            Guid? tenantId = null
-        ) : base(id, machineName, name, EavAttributeType.Array, description, isRequired, tenantId)
+            Guid? tenantId = null,
+            string? metadata = null
+        ) : base(id, machineName, name, EavAttributeType.Array, description, isRequired, tenantId, metadata)
         {
             Apply(new ArrayAttributeConfigurationUpdated(id, itemsType, itemsAttributeConfigurationId));
+        }
+
+        public override List<string> Validate()
+        {
+            var errors = base.Validate();
+            if (!Enum.IsDefined(typeof(EavAttributeType), ItemsType))
+            {
+                errors.Add("Unknown value type");
+            }
+            return errors;
         }
 
         public override void UpdateAttribute(AttributeConfiguration updatedAttribute)

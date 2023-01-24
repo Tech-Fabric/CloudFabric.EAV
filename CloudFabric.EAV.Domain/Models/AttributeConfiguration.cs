@@ -25,12 +25,32 @@ namespace CloudFabric.EAV.Domain.Models
         public bool IsRequired { get; protected set; }
 
         public abstract EavAttributeType ValueType { get; }
-        
+
         public Guid? TenantId { get; protected set; }
 
         public bool IsDeleted { get; protected set; }
 
-        public virtual List<string> Validate(AttributeInstance? instance)
+        public string? Metadata { get; protected set; }
+
+        public virtual List<string> Validate()
+        {
+            var errors = new List<string>();
+            if (Name.Count == 0)
+            {
+                errors.Add("Name cannot be empty");
+            }
+            if (string.IsNullOrEmpty(MachineName) || string.IsNullOrWhiteSpace(MachineName))
+            {
+                errors.Add("MachineName cannot be empty");
+            }
+            if (!Enum.IsDefined(typeof(EavAttributeType), ValueType))
+            {
+                errors.Add("Unknown value type");
+            }
+            return errors;
+        }
+        
+        public virtual List<string> ValidateInstance(AttributeInstance? instance)
         {
             if (IsRequired && instance == null)
             {
@@ -51,10 +71,11 @@ namespace CloudFabric.EAV.Domain.Models
             EavAttributeType valueType,
             List<LocalizedString> description = null,
             bool isRequired = false,
-            Guid? TenantId = null
+            Guid? tenantId = null,
+            string? metadata = null
         )
         {
-            Apply(new AttributeConfigurationCreated(id, machineName, name, valueType, description, isRequired, TenantId));
+            Apply(new AttributeConfigurationCreated(id, machineName, name, valueType, description, isRequired, tenantId, metadata));
         }
 
         public void UpdateName(string newName)
@@ -100,7 +121,8 @@ namespace CloudFabric.EAV.Domain.Models
                         updatedAttribute.Name.ToList(),
                         updatedAttribute.Description.ToList(),
                         updatedAttribute.IsRequired,
-                        updatedAttribute.TenantId
+                        updatedAttribute.TenantId,
+                        updatedAttribute.Metadata
                     )
                 );
             }
@@ -128,7 +150,7 @@ namespace CloudFabric.EAV.Domain.Models
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(IsRequired, Name, Description, MachineName, (int)ValueType);
+            return HashCode.Combine(IsRequired, Name, Description, MachineName, (int)ValueType, TenantId, Metadata);
         }
 
         private bool Equals(AttributeConfiguration obj)
@@ -138,7 +160,9 @@ namespace CloudFabric.EAV.Domain.Models
                        && Description.SequenceEqual(obj.Description)
                        && IsRequired.Equals(obj.IsRequired)
                        && MachineName.Equals(obj.MachineName)
-                       && ValueType.Equals(obj.ValueType));
+                       && ValueType.Equals(obj.ValueType)
+                       && TenantId == obj.TenantId
+                       && Metadata == obj.Metadata);
         }
 
         #region EventHandlers
@@ -153,6 +177,7 @@ namespace CloudFabric.EAV.Domain.Models
                 : new List<LocalizedString>(@event.Description).AsReadOnly();
             IsRequired = @event.IsRequired;
             TenantId = @event.TenantId;
+            Metadata = @event.Metadata;
         }
 
         public void On(AttributeConfigurationNameUpdated @event)
@@ -212,12 +237,14 @@ namespace CloudFabric.EAV.Domain.Models
             Description = @event.Description.AsReadOnly();
             IsRequired = @event.IsRequired;
             TenantId = @event.TenantId;
+            Metadata = @event.Metadata;
         }
 
         public void On(AttributeConfigurationDeleted @event)
         {
             IsDeleted = true;
         }
+
         #endregion
     }
 }

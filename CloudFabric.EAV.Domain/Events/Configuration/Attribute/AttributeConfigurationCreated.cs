@@ -10,7 +10,7 @@ public record AttributeConfigurationCreated : Event
     {
     }
 
-    public AttributeConfigurationCreated(Guid id, string machineName, List<LocalizedString> name, EavAttributeType valueType, List<LocalizedString> description, bool isRequired, Guid? tenantId)
+    public AttributeConfigurationCreated(Guid id, string machineName, List<LocalizedString> name, EavAttributeType valueType, List<LocalizedString> description, bool isRequired, Guid? tenantId, string? metadata)
     {
         AggregateId = id;
         MachineName = machineName;
@@ -19,6 +19,7 @@ public record AttributeConfigurationCreated : Event
         Description = description;
         IsRequired = isRequired;
         TenantId = tenantId;
+        Metadata = metadata;
     }
 
     public string MachineName { get; set;}
@@ -32,4 +33,6 @@ public record AttributeConfigurationCreated : Event
     public bool IsRequired { get; set; }
 
     public Guid? TenantId { get; set; }
+
+    public string? Metadata { get; set; }
 }

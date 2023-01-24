@@ -29,7 +29,8 @@ public class AttributeConfigurationProfile : Profile
                 Guid.Empty, //o.ItemsAttributeConfiguration,
                 ctx.Mapper.Map<List<LocalizedString>>(o.Description),
                 o.IsRequired,
-                o.TenantId
+                o.TenantId,
+                o.Metadata
             ));
         //CreateMap<FileFieldConfigurationCreateUpdateRequest, FileFieldConfiguration>();
         CreateMap<HtmlTextAttributeConfigurationCreateUpdateRequest, HtmlTextAttributeConfiguration>();
@@ -38,11 +39,11 @@ public class AttributeConfigurationProfile : Profile
                 Guid.NewGuid(),
                 o.MachineName,
                 ctx.Mapper.Map<List<LocalizedString>>(o.Name),
-                ctx.Mapper.Map<ImageAttributeValue>(o.DefaultValue),
                 ctx.Mapper.Map<List<ImageThumbnailDefinition>>(o.ThumbnailsConfiguration),
                 ctx.Mapper.Map<List<LocalizedString>>(o.Description),
                 o.IsRequired,
-                o.TenantId
+                o.TenantId,
+                o.Metadata
             ));
         CreateMap<ImageThumbnailDefinitionCreateUpdateRequest, ImageThumbnailDefinition>();
         CreateMap<LocalizedTextAttributeConfigurationCreateUpdateRequest, LocalizedTextAttributeConfiguration>()
@@ -53,7 +54,8 @@ public class AttributeConfigurationProfile : Profile
                 ctx.Mapper.Map<LocalizedString>(o.DefaultValue),
                 ctx.Mapper.Map<List<LocalizedString>>(o.Description),
                 o.IsRequired,
-                o.TenantId
+                o.TenantId,
+                o.Metadata
             ));
         CreateMap<EntityReferenceAttributeConfigurationCreateUpdateRequest, EntityReferenceAttributeConfiguration>();
         CreateMap<NumberAttributeConfigurationCreateUpdateRequest, NumberAttributeConfiguration>()
@@ -67,7 +69,8 @@ public class AttributeConfigurationProfile : Profile
                 o.IsRequired,
                 o.MinimumValue,
                 o.MaximumValue,
-                o.TenantId
+                o.TenantId,
+                o.Metadata
             ));
         CreateMap<TextAttributeConfigurationCreateUpdateRequest, TextAttributeConfiguration>()
             .ConvertUsing((src, dst, ctx) =>
@@ -81,7 +84,8 @@ public class AttributeConfigurationProfile : Profile
                     src.IsSearchable,
                     ctx.Mapper.Map<List<LocalizedString>>(src.Description),
                     src.IsRequired,
-                    src.TenantId
+                    src.TenantId,
+                    src.Metadata
                 );
                 return r;
             });
@@ -94,7 +98,8 @@ public class AttributeConfigurationProfile : Profile
                 src.DateRangeAttributeType,
                 ctx.Mapper.Map<List<LocalizedString>>(src.Description),
                 src.IsRequired,
-                src.TenantId
+                src.TenantId,
+                src.Metadata
             ));
         CreateMap<ValueFromListAttributeConfigurationCreateUpdateRequest, ValueFromListAttributeConfiguration>()
             .ConvertUsing((src, _, ctx) =>
@@ -108,7 +113,8 @@ public class AttributeConfigurationProfile : Profile
                     src.AttributeMachineNameToAffect,
                     ctx.Mapper.Map<List<LocalizedString>>(src.Description),
                     src.IsRequired,
-                    src.TenantId
+                    src.TenantId,
+                    src.Metadata
                 );
                 return r;
             });
@@ -122,7 +128,20 @@ public class AttributeConfigurationProfile : Profile
                 o.FalseDisplayValue,
                 ctx.Mapper.Map<List<LocalizedString>>(o.Description),
                 o.IsRequired,
-                o.TenantId
+                o.TenantId,
+                o.Metadata
+            ));
+
+        CreateMap<FileAttributeConfigurationCreateUpdateRequest, FileAttributeConfiguration>()
+            .ConvertUsing((o, dst, ctx) => new FileAttributeConfiguration(
+                Guid.NewGuid(),
+                o.MachineName,
+                ctx.Mapper.Map<List<LocalizedString>>(o.Name),
+                o.IsDownloadable,
+                ctx.Mapper.Map<List<LocalizedString>>(o.Description),
+                o.IsRequired,
+                o.TenantId,
+                o.Metadata
             ));
 
         CreateMap<ValueFromListOptionCreateUpdateRequest, ValueFromListOptionConfiguration>();
@@ -142,6 +161,7 @@ public class AttributeConfigurationProfile : Profile
         CreateMap<TextAttributeConfiguration, TextAttributeConfigurationViewModel>();
         CreateMap<DateRangeAttributeConfiguration, DateRangeAttributeConfigurationViewModel>();
         CreateMap<BooleanAttributeConfiguration, BooleanAttributeConfigurationViewModel>();
+        CreateMap<FileAttributeConfiguration, FileAttributeConfigurationViewModel>();
 
         CreateMap<ValueFromListAttributeConfiguration, ValueFromListAttributeConfigurationViewModel>();
 

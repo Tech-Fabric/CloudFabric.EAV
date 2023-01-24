@@ -29,8 +29,8 @@ namespace CloudFabric.EAV.Models.JsonConverters
                 var newJson = obj.ToString();
                 return (T)JsonSerializer.Deserialize(newJson, typeToConvert, newOptions)! ?? throw new InvalidOperationException();
             }
-            var attributeTypeName = int.Parse(obj["valueType"]?.ToString() ?? throw new InvalidOperationException());
-            Type type = GetRequestTypeFromAttributeType((EavAttributeType)attributeTypeName);
+            var attributeTypeName = Enum.Parse<EavAttributeType>(obj["valueType"]?.ToString() ?? throw new InvalidOperationException());
+            Type type = GetRequestTypeFromAttributeType(attributeTypeName);
 
             var attributeRequestModel = JsonSerializer.Deserialize(obj.ToString(), type, options);
             return (T)attributeRequestModel! ?? throw new InvalidOperationException();
@@ -50,6 +50,10 @@ namespace CloudFabric.EAV.Models.JsonConverters
                     return typeof(DateRangeAttributeConfigurationUpdateRequest);
                 case EavAttributeType.Boolean:
                     return typeof(BooleanAttributeConfigurationCreateUpdateRequest);
+                case EavAttributeType.File:
+                    return typeof(FileAttributeConfigurationCreateUpdateRequest);
+                case EavAttributeType.ValueFromList:
+                    return typeof(ValueFromListAttributeConfigurationCreateUpdateRequest);
                 default:
                     throw new InvalidOperationException();
             }

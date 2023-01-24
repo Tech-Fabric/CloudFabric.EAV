@@ -1,9 +1,11 @@
 using System.Globalization;
 using System.Reflection;
 using System.Text.Json;
+
 using AutoMapper;
 
 using CloudFabric.EAV.Domain.Enums;
+using CloudFabric.EAV.Domain.Models.Attributes;
 using CloudFabric.EAV.Domain.LocalEventSourcingPackages.Projections.CategoryInstanceProjection;
 using CloudFabric.EAV.Domain.LocalEventSourcingPackages.Projections.EntityInstanceProjection;
 using CloudFabric.EAV.Domain.Models;
@@ -197,7 +199,7 @@ public class Tests
     public async Task CreateEntityConfiguration_Success()
     {
         var configurationCreateRequest = EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
-        (EntityConfigurationViewModel? createdConfiguration, _) = await _eavService.CreateEntityConfiguration(
+        (EntityConfigurationViewModel? createdConfiguration, var errors) = await _eavService.CreateEntityConfiguration(
             configurationCreateRequest,
             CancellationToken.None
         );
@@ -212,6 +214,21 @@ public class Tests
 
         createdConfiguration.MachineName.Should().Be(configurationCreateRequest.MachineName);
         createdConfiguration.Attributes.Count.Should().Be(configurationCreateRequest.Attributes.Count);
+    }
+    
+    [TestMethod]
+    public async Task CreateEntityConfiguration_ValidationError()
+    {
+        var configurationCreateRequest = EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
+        configurationCreateRequest.Name = new List<LocalizedStringCreateRequest>();
+        (EntityConfigurationViewModel? createdConfiguration, var errors) = await _eavService.CreateEntityConfiguration(
+            configurationCreateRequest,
+            CancellationToken.None
+        );
+        createdConfiguration.Should().BeNull();
+        errors.Should().NotBeNull();
+        errors.As<ValidationErrorResponse>().Errors.Should().ContainKey(configurationCreateRequest.MachineName);
+        errors.As<ValidationErrorResponse>().Errors[configurationCreateRequest.MachineName].Should().Contain("Name cannot be empty");
     }
 
     [TestMethod]
@@ -339,6 +356,72 @@ public class Tests
         updatedAttribute.As<NumberAttributeConfigurationViewModel>().MinimumValue.Should().Be(numberAttribute.MinimumValue);
     }
 
+    [TestMethod]
+    public async Task UpdateAttribute_ValidationError()
+    {
+        var cultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID;
+        var numberAttribute = new NumberAttributeConfigurationCreateUpdateRequest()
+        {
+            MachineName = "number_attribute",
+            Description =
+                new List<LocalizedStringCreateRequest>
+                {
+                    new LocalizedStringCreateRequest
+                    {
+                        CultureInfoId = cultureInfoId,
+                        String = "Number attribute description"
+                    }
+                },
+            Name = new List<LocalizedStringCreateRequest>
+            {
+                new LocalizedStringCreateRequest
+                {
+                    CultureInfoId = cultureInfoId,
+                    String = "New Number Attribute"
+                }
+            },
+            DefaultValue = 15,
+            IsRequired = true,
+            MaximumValue = 100,
+            MinimumValue = -100
+        };
+
+        var configCreateRequest = new EntityConfigurationCreateRequest()
+        {
+            MachineName = "test",
+            Name = new List<LocalizedStringCreateRequest>
+            {
+                new LocalizedStringCreateRequest
+                {
+                    CultureInfoId = cultureInfoId,
+                    String = "test"
+                }
+            },
+            Attributes = new List<EntityAttributeConfigurationCreateUpdateRequest>
+            {
+                numberAttribute
+            }
+        };
+
+        (EntityConfigurationViewModel? created, _) = await _eavService.CreateEntityConfiguration(configCreateRequest, CancellationToken.None);
+        created.Attributes.Count.Should().Be(1);
+
+        // update added attribute
+        numberAttribute.Name = new List<LocalizedStringCreateRequest>();
+
+        (AttributeConfigurationViewModel? updatedResult, ProblemDetails? errors) = await _eavService.UpdateAttribute(
+            created.Attributes[0].AttributeConfigurationId,
+            numberAttribute,
+            CancellationToken.None
+        );
+
+        updatedResult.Should().BeNull();
+        errors.Should().NotBeNull();
+        errors.As<ValidationErrorResponse>().Errors.Should().ContainKey(numberAttribute.MachineName);
+        errors.As<ValidationErrorResponse>().Errors[numberAttribute.MachineName].Should().Contain("Name cannot be empty");
+
+    }
+    
     [TestMethod]
     public async Task DeleteAttribute_Success()
     {
@@ -531,6 +614,39 @@ public class Tests
         //newAttribute.Should().NotBeNull();
         //newAttribute.Should().BeEquivalentTo(newAttributeRequest, opt => opt.ComparingRecordsByValue());
     }
+    
+    [TestMethod]
+    public async Task UpdateEntityConfiguration_AddedNewAttribute_ValidationError()
+    {
+        var cultureId = CultureInfo.GetCultureInfo("EN-us").LCID;
+
+        var configRequest = EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
+        (EntityConfigurationViewModel? createdConfig, _) = await _eavService.CreateEntityConfiguration(configRequest, CancellationToken.None);
+        const string newAttributeMachineName = "avg_time_mins";
+
+        var newAttributeRequest = new NumberAttributeConfigurationCreateUpdateRequest()
+        {
+            DefaultValue = 4,
+            IsRequired = true,
+            MachineName = newAttributeMachineName,
+            MinimumValue = 1,
+            Description = new List<LocalizedStringCreateRequest>()
+        };
+
+        configRequest.Attributes.Add(newAttributeRequest);
+
+        var updateRequest = new EntityConfigurationUpdateRequest()
+        {
+            Attributes = configRequest.Attributes,
+            Id = createdConfig.Id,
+            Name = configRequest.Name
+        };
+        var (updatedConfig, errors) = await _eavService.UpdateEntityConfiguration(updateRequest, CancellationToken.None);
+        errors.Should().NotBeNull();
+        errors.As<ValidationErrorResponse>().Errors.Should().ContainKey(newAttributeMachineName);
+        errors.As<ValidationErrorResponse>().Errors[newAttributeMachineName].Should().Contain("Name cannot be empty");
+
+    }
 
     [TestMethod]
     public async Task UpdateEntityConfiguration_ChangeName_Success()
@@ -560,7 +676,7 @@ public class Tests
     }
 
     [TestMethod]
-    public async Task TestEntityConfigurationProjectionCreated()
+    public async Task EntityConfigurationProjectionCreated()
     {
         var configurationItemsStart = await _eavService.ListEntityConfigurations(
             ProjectionQuery.Where<EntityConfigurationProjectionDocument>(x => x.MachineName == "BoardGame"),
@@ -611,7 +727,7 @@ public class Tests
     }
 
     [TestMethod]
-    public async Task TestCreateNumberAttribute_Success()
+    public async Task CreateNumberAttribute_Success()
     {
         var cultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID;
         var numberAttribute = new NumberAttributeConfigurationCreateUpdateRequest()
@@ -670,7 +786,205 @@ public class Tests
     }
 
     [TestMethod]
-    public async Task TestGetNumberAttribute_Success()
+    public async Task CreateNumberAttribute_ValidationError()
+    {
+        var request = new NumberAttributeConfigurationCreateUpdateRequest
+        {
+            MachineName = "avg_time_mins"
+        };
+
+        (AttributeConfigurationViewModel? result, ValidationErrorResponse? errors) = await _eavService.CreateAttribute(request);
+        result.Should().BeNull();
+        errors.Should().NotBeNull();
+        errors.As<ValidationErrorResponse>().Errors.Should().ContainKey(request.MachineName);
+        errors.As<ValidationErrorResponse>().Errors[request.MachineName].Should().Contain("Name cannot be empty");
+    }
+    
+    [TestMethod]
+    public async Task CreateFileAttribute_Success()
+    {
+        var cultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID;
+        var fileAttribute = new FileAttributeConfigurationCreateUpdateRequest()
+        {
+            MachineName = "testAttr",
+            Description =
+                new List<LocalizedStringCreateRequest>
+                {
+                    new LocalizedStringCreateRequest
+                    {
+                        CultureInfoId = cultureInfoId,
+                        String = "testAttrDesc"
+                    }
+                },
+            Name = new List<LocalizedStringCreateRequest>
+            {
+                new LocalizedStringCreateRequest
+                {
+                    CultureInfoId = cultureInfoId,
+                    String = "testAttrName"
+                }
+            },
+            IsRequired = true,
+            IsDownloadable = true
+        };
+
+        var configCreateRequest = new EntityConfigurationCreateRequest()
+        {
+            MachineName = "test",
+            Name = new List<LocalizedStringCreateRequest>
+            {
+                new LocalizedStringCreateRequest
+                {
+                    CultureInfoId = cultureInfoId,
+                    String = "test"
+                }
+            },
+            Attributes = new List<EntityAttributeConfigurationCreateUpdateRequest>
+            {
+                fileAttribute
+            }
+        };
+
+        (EntityConfigurationViewModel? created, _) = await _eavService.CreateEntityConfiguration(configCreateRequest, CancellationToken.None);
+        created.Attributes.Count.Should().Be(1);
+
+        var createdAttribute = await _eavService.GetAttribute(
+            created.Attributes[0].AttributeConfigurationId,
+            created.Attributes[0].AttributeConfigurationId.ToString(),
+            CancellationToken.None
+        );
+
+        createdAttribute.Name.Should().BeEquivalentTo(fileAttribute.Name);
+        createdAttribute.As<FileAttributeConfigurationViewModel>().IsDownloadable.Should().Be(fileAttribute.IsDownloadable);
+    }
+
+    [TestMethod]
+    public async Task UpdateFileAttribute_Success()
+    {
+        var cultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID;
+        var fileAttribute = new FileAttributeConfigurationCreateUpdateRequest()
+        {
+            MachineName = "testAttr",
+            Name = new List<LocalizedStringCreateRequest>
+            {
+                new LocalizedStringCreateRequest
+                {
+                    CultureInfoId = cultureInfoId,
+                    String = "testAttrName"
+                }
+            },
+            IsRequired = true,
+            IsDownloadable = true
+        };
+
+        var configCreateRequest = new EntityConfigurationCreateRequest()
+        {
+            MachineName = "test",
+            Name = new List<LocalizedStringCreateRequest>
+            {
+                new LocalizedStringCreateRequest
+                {
+                    CultureInfoId = cultureInfoId,
+                    String = "test"
+                }
+            },
+            Attributes = new List<EntityAttributeConfigurationCreateUpdateRequest>
+            {
+                fileAttribute
+            }
+        };
+
+        (EntityConfigurationViewModel? created, _) = await _eavService.CreateEntityConfiguration(configCreateRequest, CancellationToken.None);
+        created!.Attributes.Count.Should().Be(1);
+
+        fileAttribute.IsDownloadable = false;
+        fileAttribute.IsRequired = false;
+
+        (AttributeConfigurationViewModel? updated, _) = await _eavService.UpdateAttribute(
+            created.Attributes[0].AttributeConfigurationId,
+            fileAttribute,
+            CancellationToken.None
+        );
+
+        var createdAttribute = await _eavService.GetAttribute(updated!.Id, updated.Id.ToString(), CancellationToken.None);
+
+        createdAttribute.IsRequired.Should().Be(fileAttribute.IsRequired);
+        createdAttribute.As<FileAttributeConfigurationViewModel>().IsDownloadable.Should().Be(fileAttribute.IsDownloadable);
+    }
+
+    [TestMethod]
+    public async Task CreateFileAttributeInstance_Success()
+    {
+        var cultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID;
+        var fileAttribute = new FileAttributeConfigurationCreateUpdateRequest()
+        {
+            MachineName = "testAttr",
+            Name = new List<LocalizedStringCreateRequest>
+            {
+                new LocalizedStringCreateRequest
+                {
+                    CultureInfoId = cultureInfoId,
+                    String = "testAttrName"
+                }
+            },
+            IsRequired = true,
+            IsDownloadable = true
+        };
+
+        var configCreateRequest = new EntityConfigurationCreateRequest()
+        {
+            MachineName = "test",
+            Name = new List<LocalizedStringCreateRequest>
+            {
+                new LocalizedStringCreateRequest
+                {
+                    CultureInfoId = cultureInfoId,
+                    String = "test"
+                }
+            },
+            Attributes = new List<EntityAttributeConfigurationCreateUpdateRequest>
+            {
+                fileAttribute
+            }
+        };
+
+        (EntityConfigurationViewModel? createdConfig, _) = await _eavService.CreateEntityConfiguration(configCreateRequest, CancellationToken.None);
+        createdConfig!.Attributes.Count.Should().Be(1);
+
+        var instanceRequest = new EntityInstanceCreateRequest
+        {
+            EntityConfigurationId = createdConfig!.Id,
+            TenantId = createdConfig.TenantId,
+            Attributes = new List<AttributeInstanceCreateUpdateRequest>
+            {
+                new FileAttributeInstanceCreateUpdateRequest
+                {
+                    ConfigurationAttributeMachineName = fileAttribute.MachineName,
+                    Value = new FileAttributeValueCreateUpdateRequest
+                    {
+                        Filename = "test.pdf",
+                        Url = "/test.pdf"
+                    }
+                }
+            }
+        };
+
+        (EntityInstanceViewModel createdInstance, ProblemDetails _) = await _eavService.CreateEntityInstance(instanceRequest, CancellationToken.None);
+
+        createdInstance.Should().NotBeNull();
+
+        createdInstance = await _eavService.GetEntityInstance(createdInstance.Id, createdConfig.Id.ToString());
+        createdInstance.Attributes.Count.Should().Be(1);
+        createdInstance.Attributes[0]
+            .As<FileAttributeInstanceViewModel>()
+            .Value
+            .Url
+            .Should()
+            .Be("/test.pdf");
+    }
+
+    [TestMethod]
+    public async Task GetNumberAttribute_Success()
     {
         var cultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID;
         var numberAttribute = new NumberAttributeConfigurationCreateUpdateRequest()
@@ -726,6 +1040,266 @@ public class Tests
     }
 
     [TestMethod]
+    public async Task CreateValueFromListAttribute_Success()
+    {
+        var valueFromListAttributeRepository = _aggregateRepositoryFactory.GetAggregateRepository<ValueFromListAttributeConfiguration>();
+
+        var cultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID;
+        var valueFromListAttribute = new ValueFromListAttributeConfigurationCreateUpdateRequest()
+        {
+            MachineName = "testValueAttr",
+            Description =
+                new List<LocalizedStringCreateRequest>
+                {
+                    new LocalizedStringCreateRequest
+                    {
+                        CultureInfoId = cultureInfoId,
+                        String = "ValueAttributeDescription"
+                    }
+                },
+            Name = new List<LocalizedStringCreateRequest>
+            {
+                new LocalizedStringCreateRequest
+                {
+                    CultureInfoId = cultureInfoId,
+                    String = "testValueAttributeName"
+                }
+            },
+            IsRequired = true,
+            ValueFromListAttributeType = ValueFromListAttributeType.OneValueFromList,
+            ValuesList = new List<ValueFromListOptionCreateUpdateRequest>
+            {
+                new ValueFromListOptionCreateUpdateRequest("firstTestOption", "Premium wrap", 30),
+                new ValueFromListOptionCreateUpdateRequest("secondTestOption", "Card with wishes from shop", null)
+            }
+        };
+
+        var entityConfigurationCreateRequest = new EntityConfigurationCreateRequest()
+        {
+            MachineName = "test",
+            Name = new List<LocalizedStringCreateRequest>
+            {
+                new LocalizedStringCreateRequest
+                {
+                    CultureInfoId = cultureInfoId,
+                    String = "test"
+                }
+            },
+            Attributes = new List<EntityAttributeConfigurationCreateUpdateRequest>
+            {
+                valueFromListAttribute
+            }
+        };
+
+        (EntityConfigurationViewModel? created, _) = await _eavService.CreateEntityConfiguration(entityConfigurationCreateRequest, CancellationToken.None);
+        created!.Attributes.Count.Should().Be(1);
+
+        var allAttributes = await _eavService.ListAttributes(new ProjectionQuery()
+        {
+            Limit = 100
+        });
+
+        allAttributes.Records.First().As<QueryResultDocument<AttributeConfigurationListItemViewModel>>()
+            .Document?.Name.Should().BeEquivalentTo(valueFromListAttribute.Name);
+
+        var valuesAttribute = await valueFromListAttributeRepository.LoadAsync(
+            allAttributes.Records.First().Document!.Id!.Value,
+            allAttributes.Records.First().Document!.Id.ToString()!,
+            CancellationToken.None
+        );
+        valuesAttribute!.ValuesList.Count.Should().Be(2);
+    }
+
+    [TestMethod]
+    public async Task CreateValueFromListAttribute_OptionNamesNotUnique()
+    {
+        var cultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID;
+        var valueFromListAttribute = new ValueFromListAttributeConfigurationCreateUpdateRequest()
+        {
+            MachineName = "testValueAttr",
+            Description =
+                new List<LocalizedStringCreateRequest>
+                {
+                    new LocalizedStringCreateRequest
+                    {
+                        CultureInfoId = cultureInfoId,
+                        String = "ValueAttributeDescription"
+                    }
+                },
+            Name = new List<LocalizedStringCreateRequest>
+            {
+                new LocalizedStringCreateRequest
+                {
+                    CultureInfoId = cultureInfoId,
+                    String = "testValueAttributeName"
+                }
+            },
+            IsRequired = true,
+            ValueFromListAttributeType = ValueFromListAttributeType.OneValueFromList,
+            ValuesList = new List<ValueFromListOptionCreateUpdateRequest>
+            {
+                new ValueFromListOptionCreateUpdateRequest("repeatedMachineName", "Premium wrap", 30),
+                new ValueFromListOptionCreateUpdateRequest("repeatedMachineName", "Card with wishes from shop", null)
+            }
+        };
+
+        var entityConfigurationCreateRequest = new EntityConfigurationCreateRequest()
+        {
+            MachineName = "test",
+            Name = new List<LocalizedStringCreateRequest>
+            {
+                new LocalizedStringCreateRequest
+                {
+                    CultureInfoId = cultureInfoId,
+                    String = "test"
+                }
+            },
+            Attributes = new List<EntityAttributeConfigurationCreateUpdateRequest>
+            {
+                valueFromListAttribute
+            }
+        };
+
+        Func<Task> action = async () => await _eavService.CreateEntityConfiguration(entityConfigurationCreateRequest, CancellationToken.None);
+        await action.Should().ThrowAsync<Exception>();
+
+        valueFromListAttribute.ValuesList = new List<ValueFromListOptionCreateUpdateRequest>
+        {
+                new ValueFromListOptionCreateUpdateRequest(name: "Repeated Name", machineName: "firstTestOption", valueToAppend: 30),
+                new ValueFromListOptionCreateUpdateRequest(name: "Repeated Name", machineName: "secondTestOption", valueToAppend: null)
+        };
+
+        await action.Should().ThrowAsync<Exception>();
+    }
+
+    [TestMethod]
+    public async Task UpdateValueFromListAttribute_Success()
+    {
+        var valueFromListRepository = _aggregateRepositoryFactory.GetAggregateRepository<ValueFromListAttributeConfiguration>();
+
+        var cultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID;
+        var valueFromListAttributeCreateRequest = new ValueFromListAttributeConfigurationCreateUpdateRequest()
+        {
+            MachineName = "testValueAttr",
+            Description =
+                new List<LocalizedStringCreateRequest>
+                {
+                    new LocalizedStringCreateRequest
+                    {
+                        CultureInfoId = cultureInfoId,
+                        String = "ValueAttributeDescription"
+                    }
+                },
+            Name = new List<LocalizedStringCreateRequest>
+            {
+                new LocalizedStringCreateRequest
+                {
+                    CultureInfoId = cultureInfoId,
+                    String = "testValueAttributeName"
+                }
+            },
+            IsRequired = true,
+            ValueFromListAttributeType = ValueFromListAttributeType.OneValueFromList,
+            ValuesList = new List<ValueFromListOptionCreateUpdateRequest>
+            {
+                new ValueFromListOptionCreateUpdateRequest("firstTestOption", "Premium wrap", 30),
+                new ValueFromListOptionCreateUpdateRequest("secondTestOption", "Card with wishes from shop", null)
+            }
+        };
+
+        var (valueFromListAttribute, _) = await _eavService.CreateAttribute(valueFromListAttributeCreateRequest, CancellationToken.None);
+
+        // create request with changed properties and update attribute
+        string affectedMachineName = Guid.NewGuid().ToString();
+        valueFromListAttributeCreateRequest.AttributeMachineNameToAffect = affectedMachineName;
+        valueFromListAttributeCreateRequest.ValuesList = new()
+        {
+            new ValueFromListOptionCreateUpdateRequest("changedAttribute", "Card with wishes from shop", null)
+        };
+        valueFromListAttributeCreateRequest.ValueFromListAttributeType = ValueFromListAttributeType.MultipleValuesFromList;
+
+        (AttributeConfigurationViewModel? changedAttribute, _) = await _eavService.UpdateAttribute(valueFromListAttribute.Id, valueFromListAttributeCreateRequest!, CancellationToken.None);
+
+        var changedValueFromListAttribute = await valueFromListRepository.LoadAsync(changedAttribute!.Id, changedAttribute.Id.ToString(), CancellationToken.None);
+        changedValueFromListAttribute!.AttributeMachineNameToAffect.Should().Be(affectedMachineName);
+        changedValueFromListAttribute.ValueFromListAttributeType.Should().Be(ValueFromListAttributeType.MultipleValuesFromList);
+        changedValueFromListAttribute.ValuesList.Count.Should().Be(1);
+        changedValueFromListAttribute.ValuesList.FirstOrDefault()!.MachineName.Should().Be("changedAttribute");
+    }
+
+    [TestMethod]
+    public async Task CreateEntityInstanceWithValueFromListAttribute_ValidationError()
+    {
+        // create entity configuration with value from list attribute
+        var cultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID;
+        var valueFromListAttribute = new ValueFromListAttributeConfigurationCreateUpdateRequest()
+        {
+            MachineName = "testValueAttr",
+            Description =
+                new List<LocalizedStringCreateRequest>
+                {
+                    new LocalizedStringCreateRequest
+                    {
+                        CultureInfoId = cultureInfoId,
+                        String = "ValueAttributeDescription"
+                    }
+                },
+            Name = new List<LocalizedStringCreateRequest>
+            {
+                new LocalizedStringCreateRequest
+                {
+                    CultureInfoId = cultureInfoId,
+                    String = "testValueAttributeName"
+                }
+            },
+            IsRequired = true,
+            ValueFromListAttributeType = ValueFromListAttributeType.OneValueFromList,
+            ValuesList = new List<ValueFromListOptionCreateUpdateRequest>
+            {
+                new ValueFromListOptionCreateUpdateRequest("firstTestOption", "Premium wrap", 30)
+            }
+        };
+
+        var entityConfigurationCreateRequest = new EntityConfigurationCreateRequest()
+        {
+            MachineName = "test",
+            Name = new List<LocalizedStringCreateRequest>
+            {
+                new LocalizedStringCreateRequest
+                {
+                    CultureInfoId = cultureInfoId,
+                    String = "test"
+                }
+            },
+            Attributes = new List<EntityAttributeConfigurationCreateUpdateRequest>
+            {
+                valueFromListAttribute
+            }
+        };
+
+        (EntityConfigurationViewModel? entityConfiguration, _) = await _eavService.CreateEntityConfiguration(entityConfigurationCreateRequest, CancellationToken.None);
+
+        // create entity instance using wrong type of attribute
+        (EntityInstanceViewModel result, ProblemDetails validationErrors) = await _eavService.CreateEntityInstance(new EntityInstanceCreateRequest()
+        {
+            EntityConfigurationId = entityConfiguration.Id,
+            Attributes = new List<AttributeInstanceCreateUpdateRequest>()
+            {
+                new NumberAttributeInstanceCreateUpdateRequest()
+                {
+                    ConfigurationAttributeMachineName = "testValueAttr",
+                    Value = int.MaxValue
+                }
+            }
+        });
+
+        result.Should().BeNull();
+        validationErrors.Should().BeOfType<ValidationErrorResponse>();
+        validationErrors.As<ValidationErrorResponse>().Errors["testValueAttr"].First().Should()
+            .Be("Cannot validate attribute. Expected attribute type: Value from list");
+    }
+
+    [TestMethod]
     public async Task AddAttributeToEntityConfiguration_Success()
     {
         var cultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID;
@@ -772,7 +1346,7 @@ public class Tests
             MinimumValue = -100
         };
 
-        var createdAttribute = await _eavService.CreateAttribute(numberAttribute, CancellationToken.None);
+        var (createdAttribute, _) = await _eavService.CreateAttribute(numberAttribute, CancellationToken.None);
         createdAttribute.Should().NotBeNull();
 
         await _eavService.AddAttributeToEntityConfiguration(
@@ -828,7 +1402,7 @@ public class Tests
             MinimumValue = -100
         };
 
-        var createdAttribute = await _eavService.CreateAttribute(numberAttribute, CancellationToken.None);
+        var (createdAttribute, _) = await _eavService.CreateAttribute(numberAttribute, CancellationToken.None);
         createdAttribute.Should().NotBeNull();
 
         (EntityConfigurationViewModel? entityConfig, ProblemDetails? error) = await _eavService.AddAttributeToEntityConfiguration(
@@ -953,7 +1527,7 @@ public class Tests
         (EntityInstanceViewModel updatedInstance, _) = await _eavService.UpdateEntityInstance(createdConfiguration.Id.ToString(), updateRequest, CancellationToken.None);
         updatedInstance.Attributes.First(a => a.ConfigurationAttributeMachineName == changedAttributeName).As<NumberAttributeInstanceViewModel>().Value.Should().Be(30);
     }
-    
+
     [TestMethod]
     public async Task CreateInstance_NumberOfItemsWithAttributeUpdated_Success()
     {
@@ -1120,7 +1694,7 @@ public class Tests
     }
 
     [TestMethod]
-    public async Task TestCreateNumberAttributeAsReference_Success()
+    public async Task CreateNumberAttributeAsReference_Success()
     {
         var cultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID;
         var priceAttribute = new NumberAttributeConfigurationCreateUpdateRequest()
@@ -1142,13 +1716,13 @@ public class Tests
                     String = "Price"
                 }
             },
-            DefaultValue = 0,
+            DefaultValue = 1,
             IsRequired = true,
-            MaximumValue = -1,
-            MinimumValue = 0
+            MaximumValue = 100,
+            MinimumValue = 1
         };
 
-        var priceAttributeCreated = await _eavService.CreateAttribute(priceAttribute, CancellationToken.None);
+        var (priceAttributeCreated,  errors) = await _eavService.CreateAttribute(priceAttribute, CancellationToken.None);
 
         var entityConfigurationCreateRequest = new EntityConfigurationCreateRequest()
         {
@@ -1197,7 +1771,7 @@ public class Tests
     }
 
     [TestMethod]
-    public async Task TestCreateInstanceAndQuery()
+    public async Task CreateInstanceAndQuery()
     {
         var configurationCreateRequest = EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
 
@@ -1230,7 +1804,7 @@ public class Tests
     }
 
     [TestMethod]
-    public async Task TestSimpleJsonConverter()
+    public async Task SimpleJsonConverter()
     {
         var jsonString =
             "{\"valueType\" : 2, \"machineName\" : \"test\", \"name\" : [{\"string\" : \"Test\", \"cultureInfoId\" : 1033}], \"description\" : [{\"string\" : \"Test\", \"cultureInfoId\" : 1033}], \"defaultValue\" : 0, \"isRequired\" : true, \"maximumValue\" : 10, \"minimumValue\" : 0 }";
@@ -1242,7 +1816,7 @@ public class Tests
     }
 
     [TestMethod]
-    public async Task TestSimpleToPolymorphJsonConverter()
+    public async Task SimpleToPolymorphJsonConverter()
     {
         var jsonString =
             "{\"typeName\": \"CloudFabric.EAV.Models.RequestModels.Attributes.NumberAttributeConfigurationCreateUpdateRequest\", \"typeValue\": { \"valueType\" : 2, \"machineName\" : \"test\", \"name\" : [{\"string\" : \"Test\", \"cultureInfoId\" : 1033}], \"description\" : [{\"string\" : \"Test\", \"cultureInfoId\" : 1033}], \"defaultValue\" : 0, \"isRequired\" : true, \"maximumValue\" : -1, \"minimumValue\" : 0 }}";
@@ -1305,6 +1879,138 @@ public class Tests
 
         (EntityInstanceViewModel updatedInstance, _) = await _eavService.UpdateEntityInstance(parentCreatedInstance.Id.ToString(), updateRequest, CancellationToken.None);
 */
+    }
+
+    [TestMethod]
+    public async Task AddAttributeMetadata_Success()
+    {
+        var cultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID;
+        var priceAttribute = new NumberAttributeConfigurationCreateUpdateRequest()
+        {
+            MachineName = "price",
+            Description = new List<LocalizedStringCreateRequest>()
+            {
+                new LocalizedStringCreateRequest
+                {
+                    CultureInfoId = cultureInfoId,
+                    String = "Product Price"
+                }
+            },
+            Name = new List<LocalizedStringCreateRequest>()
+            {
+                new LocalizedStringCreateRequest
+                {
+                    CultureInfoId = cultureInfoId,
+                    String = "Price"
+                }
+            },
+            DefaultValue = 1,
+            IsRequired = true,
+            MaximumValue = 100,
+            MinimumValue = 1,
+            Metadata = JsonSerializer.Serialize(new LocalizedStringCreateRequest { String = "test-metadata" })
+        };
+
+        var entityConfigurationCreateRequest = new EntityConfigurationCreateRequest()
+        {
+            MachineName = "product",
+            Name = new List<LocalizedStringCreateRequest>
+            {
+                new LocalizedStringCreateRequest
+                {
+                    CultureInfoId = cultureInfoId,
+                    String = "Product"
+                }
+            },
+            Attributes = new List<EntityAttributeConfigurationCreateUpdateRequest> { priceAttribute }
+        };
+
+        (EntityConfigurationViewModel? createdConfig, ProblemDetails? error) = await _eavService.CreateEntityConfiguration(entityConfigurationCreateRequest, CancellationToken.None);
+        createdConfig.Should().NotBeNull();
+
+        AttributeConfigurationViewModel attribute = await _eavService.GetAttribute(
+            createdConfig!.Attributes[0].AttributeConfigurationId,
+            createdConfig.Attributes[0].AttributeConfigurationId.ToString(),
+            CancellationToken.None
+        );
+
+        attribute.Metadata.Should().NotBeNull();
+        var deserializedMetadata = JsonSerializer.Deserialize<LocalizedStringCreateRequest>(attribute.Metadata!);
+        deserializedMetadata!.String.Should().Be("test-metadata");
+
+        // check projections
+        var attributes = await _eavService.ListAttributes(new ProjectionQuery());
+        attributes.Records.First().Document!.Metadata.Should().Be(attribute.Metadata);
+    }
+
+    [TestMethod]
+    public async Task UpdateAttributeMetadata_Success()
+    {
+        var cultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID;
+        var priceAttribute = new NumberAttributeConfigurationCreateUpdateRequest()
+        {
+            MachineName = "price",
+            Description = new List<LocalizedStringCreateRequest>()
+            {
+                new LocalizedStringCreateRequest
+                {
+                    CultureInfoId = cultureInfoId,
+                    String = "Product Price"
+                }
+            },
+            Name = new List<LocalizedStringCreateRequest>()
+            {
+                new LocalizedStringCreateRequest
+                {
+                    CultureInfoId = cultureInfoId,
+                    String = "Price"
+                }
+            },
+            DefaultValue = 1,
+            IsRequired = true,
+            MaximumValue = 100,
+            MinimumValue = 1,
+            Metadata = JsonSerializer.Serialize(new LocalizedStringCreateRequest { String = "test-metadata" })
+        };
+
+        var entityConfigurationCreateRequest = new EntityConfigurationCreateRequest()
+        {
+            MachineName = "product",
+            Name = new List<LocalizedStringCreateRequest>
+            {
+                new LocalizedStringCreateRequest
+                {
+                    CultureInfoId = cultureInfoId,
+                    String = "Product"
+                }
+            },
+            Attributes = new List<EntityAttributeConfigurationCreateUpdateRequest> { priceAttribute }
+        };
+
+        (EntityConfigurationViewModel? createdConfig, ProblemDetails? error) = await _eavService.CreateEntityConfiguration(entityConfigurationCreateRequest, CancellationToken.None);
+        createdConfig.Should().NotBeNull();
+
+        // update attribute metadata
+        priceAttribute.Metadata = "updated metadata";
+        (AttributeConfigurationViewModel? updatedAttribute, error) = await _eavService.UpdateAttribute(
+            createdConfig.Attributes[0].AttributeConfigurationId,
+            priceAttribute,
+            CancellationToken.None
+        );
+
+        updatedAttribute.Should().NotBeNull();
+
+        var attribute = await _eavService.GetAttribute(
+            updatedAttribute.Id,
+            updatedAttribute.Id.ToString(),
+            CancellationToken.None
+        );
+
+        attribute.Metadata.Should().Be(priceAttribute.Metadata);
+
+        // check projections
+        var attributesList = await _eavService.ListAttributes(new ProjectionQuery());
+        attributesList.Records.First().Document!.Metadata.Should().Be(priceAttribute.Metadata);
     }
 
     private IProjectionRepository GetProjectionRepository(ProjectionDocumentSchema schema)

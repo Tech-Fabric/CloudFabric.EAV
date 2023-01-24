@@ -21,6 +21,7 @@ using CloudFabric.Projections.Queries;
 using FluentAssertions;
 
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace CloudFabric.EAV.Tests;
