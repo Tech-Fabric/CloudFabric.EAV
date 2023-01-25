@@ -1784,7 +1784,9 @@ public class Tests
 
         var (createdInstance, createProblemDetails) = await _eavService.CreateEntityInstance(instanceCreateRequest);
 
-        createdInstance.Should().BeEquivalentTo(instanceCreateRequest);
+        createdInstance.EntityConfigurationId.Should().Be(instanceCreateRequest.EntityConfigurationId);
+        createdInstance.TenantId.Should().Be(instanceCreateRequest.TenantId);
+        createdInstance.Attributes.Should().BeEquivalentTo(instanceCreateRequest.Attributes, x => x.Excluding(w => w.ValueType));
 
         var query = new ProjectionQuery()
         {
@@ -1816,6 +1818,57 @@ public class Tests
         AttributeConfigurationCreateUpdateRequest attribute = JsonSerializer.Deserialize<AttributeConfigurationCreateUpdateRequest>(jsonString, deserializeOptions)!;
         attribute.As<NumberAttributeConfigurationCreateUpdateRequest>().ValueType.Should().Be(EavAttributeType.Number);
         attribute.MachineName.Should().Be("test");
+    }
+
+    [TestMethod]
+    public async Task EntityInstanceJsonConverter()
+    {
+        string jsonString = @"
+        {
+            ""entityConfigurationId"": ""a786eaac-66c6-44e4-8a82-3b5cf87b43e1"",
+            ""tenantId"": ""a786eaac-66c6-44e4-8a82-3b5cf87b43e1"",
+            ""attributes"": [
+                {
+                    ""configurationAttributeMachineName"": ""test-number"",
+                    ""valueType"": ""Number"",
+                    ""value"": 5
+                },
+                {
+                    ""configurationAttributeMachineName"": ""test-text"",
+                    ""valueType"": ""Text"",
+                    ""value"": ""Json deserialization test""
+                },
+                {
+                    ""configurationAttributeMachineName"": ""test-date"",
+                    ""valueType"": ""DateRange"",
+                    ""from"": ""2023-01-24"",
+                    ""to"": ""2023-01-25""
+                }
+            ]
+        }";
+
+        var deserializeOptions = new JsonSerializerOptions
+        {
+            PropertyNameCaseInsensitive = true
+        };
+
+        EntityInstanceCreateRequest deserializedInstance = JsonSerializer.Deserialize<EntityInstanceCreateRequest>(jsonString, deserializeOptions)!;
+
+        deserializedInstance.EntityConfigurationId.Should().Be(Guid.Parse("a786eaac-66c6-44e4-8a82-3b5cf87b43e1"));
+        deserializedInstance.TenantId.Should().Be(Guid.Parse("a786eaac-66c6-44e4-8a82-3b5cf87b43e1"));
+
+        deserializedInstance.Attributes[0].ConfigurationAttributeMachineName.Should().Be("test-number");
+        deserializedInstance.Attributes[0].ValueType.Should().Be(EavAttributeType.Number);
+        deserializedInstance.Attributes[0].As<NumberAttributeInstanceCreateUpdateRequest>().Value.Should().Be(5);
+        
+        deserializedInstance.Attributes[1].ConfigurationAttributeMachineName.Should().Be("test-text");
+        deserializedInstance.Attributes[1].ValueType.Should().Be(EavAttributeType.Text);
+        deserializedInstance.Attributes[1].As<TextAttributeInstanceCreateUpdateRequest>().Value.Should().Be("Json deserialization test");
+        
+        deserializedInstance.Attributes[2].ConfigurationAttributeMachineName.Should().Be("test-date");
+        deserializedInstance.Attributes[2].ValueType.Should().Be(EavAttributeType.DateRange);
+        deserializedInstance.Attributes[2].As<DateRangeAttributeInstanceCreateUpdateRequest>().From.Should().Be(DateTime.Parse("2023-01-24"));
+        deserializedInstance.Attributes[2].As<DateRangeAttributeInstanceCreateUpdateRequest>().To.Should().Be(DateTime.Parse("2023-01-25"));
     }
 
     [TestMethod]
