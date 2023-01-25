@@ -11,7 +11,6 @@ public class EntityInstanceFactory
 {
     public static CategoryInstanceCreateRequest CreateCategoryInstanceRequest(Guid entityConfigurationId, 
         string categoryPath, 
-        Guid childEntityConfigurationId,
         int attributeIndexFrom = 0, 
         int attributeIndexTo = 1)
     {
@@ -29,7 +28,6 @@ public class EntityInstanceFactory
             EntityConfigurationId = entityConfigurationId,
             Attributes = attributeInstances,
             CategoryPath = categoryPath,
-            ChildEntityConfigurationId = childEntityConfigurationId,
         };
     }
     public static EntityInstanceCreateRequest CreateValidTireEntityInstanceCreateRequest(Guid entityConfigurationId)

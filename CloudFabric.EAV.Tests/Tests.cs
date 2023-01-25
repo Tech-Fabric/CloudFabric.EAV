@@ -63,7 +63,7 @@ public class Tests
                                + "Password=cloudfabric_eventsourcing_test;"
                                + "Database=cloudfabric_eventsourcing_test;"
                                + "Maximum Pool Size=1000;"
-                               + "Port=5433";
+                               + "Port=5432";
 
         _eventStore = new PostgresqlEventStore(
             connectionString,
@@ -1541,7 +1541,7 @@ public class Tests
         EntityInstanceCreateRequest entityInstanceCreateRequest = EntityInstanceFactory.CreateValidBoardGameEntityInstanceCreateRequest(createdConfiguration.Id);
 
         List<AttributeInstanceCreateUpdateRequest> attributesRequest = entityInstanceCreateRequest.Attributes;
-        (EntityInstanceViewModel createdInstance, _) = await _eavService.CreateEntityInstance(entityInstanceCreateRequest);
+                        (EntityInstanceViewModel createdInstance, _) = await _eavService.CreateEntityInstance(entityInstanceCreateRequest);
 
         attributesRequest.Add(new NumberAttributeInstanceCreateUpdateRequest
         {
@@ -1832,11 +1832,17 @@ public class Tests
         
         var categoryConfigurationCreateRequest = EntityConfigurationFactory.CreateBoardGameCategoryConfigurationCreateRequest(0, 10);
 
-        (EntityConfigurationViewModel? parentCreatedConfiguration, _) = await _eavService.CreateEntityConfiguration(
+        (EntityConfigurationViewModel? parentCreatedConfiguration1, _) = await _eavService.CreateEntityConfiguration(
             categoryConfigurationCreateRequest,
             CancellationToken.None
         );
 
+        var categoryConfigurationCreateRequest2 = EntityConfigurationFactory.CreateBoardGameCategoryConfigurationCreateRequest(11, 20);
+        categoryConfigurationCreateRequest2
+        (EntityConfigurationViewModel? parentCreatedConfiguration2, _) = await _eavService.CreateEntityConfiguration(
+            categoryConfigurationCreateRequest,
+            CancellationToken.None
+        );
         var childConfigurationCreateRequest = EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
 
         (EntityConfigurationViewModel? childCreatedConfiguration, _) = await _eavService.CreateEntityConfiguration(
@@ -1848,7 +1854,7 @@ public class Tests
 
 
         var categoryInstanceCreateRequest =
-            EntityInstanceFactory.CreateCategoryInstanceRequest(parentCreatedConfiguration.Id, "", childCreatedConfiguration.Id, 0, 10);
+            EntityInstanceFactory.CreateCategoryInstanceRequest(parentCreatedConfiguration.Id, "", 0, 10);
         
         var (createdParentInstance, _) = await _eavService.CreateCategory(categoryInstanceCreateRequest, CancellationToken.None);
         /*

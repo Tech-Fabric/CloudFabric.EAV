@@ -58,7 +58,7 @@ public static class EntityConfigurationFactory
                     String = "Настольная Игра"
                 }
             },
-            MachineName = "BoardGames_category",
+            MachineName = $"BoardGames_category_{attributeIndexFrom}_${attributeIndexTo}",
             TenantId = tenantId,
             Attributes = attributes
         };

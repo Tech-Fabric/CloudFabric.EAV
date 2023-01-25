@@ -27,6 +27,7 @@ using ProjectionDocumentSchemaFactory = CloudFabric.EAV.Domain.LocalEventSourcin
 
 namespace CloudFabric.EAV.Service;
 
+// ReSharper disable once InconsistentNaming
 public class EAVService : IEAVService
 {
     private readonly ILogger<EAVService> _logger;
@@ -43,7 +44,6 @@ public class EAVService : IEAVService
     private readonly IProjectionRepository<EntityConfigurationProjectionDocument>
         _entityConfigurationProjectionRepository;
 
-    private readonly AggregateRepositoryFactory _aggregateRepositoryFactory;
     private readonly ProjectionRepositoryFactory _projectionRepositoryFactory;
 
     private readonly EventUserInfo _userInfo;
@@ -60,17 +60,17 @@ public class EAVService : IEAVService
     {
         _logger = logger;
         _mapper = mapper;
-        _aggregateRepositoryFactory = aggregateRepositoryFactory;
+        AggregateRepositoryFactory aggregateRepositoryFactory1 = aggregateRepositoryFactory;
         _projectionRepositoryFactory = projectionRepositoryFactory;
         _userInfo = userInfo;
 
-        _attributeConfigurationRepository = _aggregateRepositoryFactory
+        _attributeConfigurationRepository = aggregateRepositoryFactory1
             .GetAggregateRepository<AttributeConfiguration>();
-        _entityConfigurationRepository = _aggregateRepositoryFactory
+        _entityConfigurationRepository = aggregateRepositoryFactory1
             .GetAggregateRepository<EntityConfiguration>();
-        _entityInstanceRepository = _aggregateRepositoryFactory
+        _entityInstanceRepository = aggregateRepositoryFactory1
             .GetAggregateRepository<EntityInstance>();
-        _categoryInstanceRepository = _aggregateRepositoryFactory.GetAggregateRepository<CategoryInstance>();
+        _categoryInstanceRepository = aggregateRepositoryFactory1.GetAggregateRepository<CategoryInstance>();
         
         _attributeConfigurationProjectionRepository = _projectionRepositoryFactory
             .GetProjectionRepository<AttributeConfigurationProjectionDocument>();
@@ -611,7 +611,7 @@ public class EAVService : IEAVService
             entity.EntityConfigurationId,
             entity.EntityConfigurationId.ToString(),
             cancellationToken
-        );
+        ).ConfigureAwait(false);
 
         if (entityConfiguration == null)
         {
@@ -639,7 +639,7 @@ public class EAVService : IEAVService
                 .FirstOrDefault(attr => a.MachineName == attr.ConfigurationAttributeMachineName);
 
             var attrValidationErrors = a.ValidateInstance(attributeValue);
-            if (attrValidationErrors is { Count: > 0 })
+            if (attrValidationErrors.Any())
             {
                 validationErrors.Add(a.MachineName, attrValidationErrors.ToArray());
             }
@@ -650,7 +650,7 @@ public class EAVService : IEAVService
             return (null, new ValidationErrorResponse(validationErrors))!;
         }
 
-        var saved = await _entityInstanceRepository.SaveAsync(_userInfo, entityInstance);
+        var saved = await _entityInstanceRepository.SaveAsync(_userInfo, entityInstance, cancellationToken).ConfigureAwait(false);
         if (!saved)
         {
             //TODO: What do we want to do with internal exceptions and unsuccessful flow?
@@ -847,15 +847,14 @@ public class EAVService : IEAVService
             await GetAttributeConfigurationsForEntityConfiguration(
                 entityConfiguration,
                 cancellationToken
-            );
+            ).ConfigureAwait(false);
 
         var categoryInstance = new CategoryInstance(
             Guid.NewGuid(),
             entity.EntityConfigurationId,
             entity.CategoryPath,
             _mapper.Map<List<AttributeInstance>>(entity.Attributes).AsReadOnly(),
-            entity.TenantId,
-            entity.ChildEntityConfigurationId
+            entity.TenantId
         );
 
         //TODO refactor code copypaste
@@ -865,7 +864,7 @@ public class EAVService : IEAVService
             var attributeValue = categoryInstance.Attributes
                 .FirstOrDefault(attr => a.MachineName == attr.ConfigurationAttributeMachineName);
 
-            var attrValidationErrors = a.Validate(attributeValue);
+            var attrValidationErrors = a.ValidateInstance(attributeValue);
             if (attrValidationErrors is { Count: > 0 })
             {
                 validationErrors.Add(a.MachineName, attrValidationErrors.ToArray());

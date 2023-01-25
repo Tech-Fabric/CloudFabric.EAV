@@ -17,41 +17,118 @@ namespace CloudFabric.EAV.Domain.LocalEventSourcingPackages.Projections.Category
         {
         }
 
-        public async Task On(CategoryCreated @event)
+        private async Task<(List<AttributeConfiguration> allParentalAttributesConfigurations, Dictionary<string, object?> allParentalAttributes)> BuildBranchAttributesAsync(string categoryPath)
         {
-            await CreateInstanceProjection(@event.AggregateId,
-                @event.EntityConfigurationId,
-                @event.TenantId,
-                @event.CategoryPath,
-                @event.Attributes,
-                @event.PartitionKey,
-                @event.Timestamp);
+            var parentIds = categoryPath.Split("/").ToList();
         
-            
+            // Parent attributes configurations for schema
+            var allParentalAttributesConfigurations = new List<AttributeConfiguration>();
+            var allParentalAttributes = new Dictionary<string, object?>();
+        
+            if (parentIds.Any())
+            {
+                var repo = _aggregateRepositoryFactory
+                    .GetAggregateRepository<EntityInstance>();
+                foreach (var parentIdString in parentIds)
+                {
+                    if (!string.IsNullOrEmpty(parentIdString))
+                    {
+                        var parentEntityInstance = await repo.LoadAsync(Guid.Parse(parentIdString), parentIdString).ConfigureAwait(false);
+                        if (parentEntityInstance != null)
+                        {
+                            (List<AttributeConfiguration> parentAttributesConfigurations, ReadOnlyCollection<AttributeInstance> parentAttributes) = await ExtractAttributesAndAttributeConfigurationsAsync(parentIdString).ConfigureAwait(false);
+                            allParentalAttributesConfigurations.AddRange(parentAttributesConfigurations);
+                            //TODO: rewrite on linq
+                            foreach (var attribute in parentAttributes)
+                            {
+                                allParentalAttributes[attribute.ConfigurationAttributeMachineName] = attribute.GetValue();
+                            }
+                        }
+                    }
+                }
+            }
+            return (allParentalAttributesConfigurations, allParentalAttributes);
+        }
+
+        private async Task<(List<AttributeConfiguration> attributesConfigurations, ReadOnlyCollection<AttributeInstance> Attributes)> ExtractAttributesAndAttributeConfigurationsAsync(string id)
+        {
+            var repo = _aggregateRepositoryFactory
+                .GetAggregateRepository<EntityInstance>();
+            var parentEntityInstance = await repo.LoadAsync(Guid.Parse(id), id).ConfigureAwait(false);
+            List<AttributeConfiguration> attributesConfigurations = new List<AttributeConfiguration>();
+
+            if (parentEntityInstance == null)
+            {
+                return (attributesConfigurations, new ReadOnlyCollection<AttributeInstance>(new List<AttributeInstance>()));
+            }
+            var entityConfiguration = await _aggregateRepositoryFactory
+                .GetAggregateRepository<EntityConfiguration>()
+                .LoadAsyncOrThrowNotFound(parentEntityInstance.EntityConfigurationId, parentEntityInstance.EntityConfigurationId.ToString()).ConfigureAwait(false);
+            attributesConfigurations = await BuildAttributesListFromAttributesReferences(entityConfiguration.Attributes.ToList()).ConfigureAwait(false);
+            return (attributesConfigurations, parentEntityInstance.Attributes);
         }
         
         
-        private async Task UpdateChildren(Guid instanceId,
+        public async Task On(CategoryCreated @event)
+        {
+            (List<AttributeConfiguration> allParentalAttributesConfigurations, Dictionary<string, object> allParentalAttributes) = await BuildBranchAttributesAsync( @event.CategoryPath).ConfigureAwait(false);
+
+            // Build schema for entity instance considering all parent attributes and their configurations
+            var projectionDocumentSchema = await BuildProjectionDocumentSchemaForEntityConfigurationId(
+                @event.EntityConfigurationId,
+                allParentalAttributesConfigurations
+            ).ConfigureAwait(false);
+
+            var document = new Dictionary<string, object?>()
+            {
+                {
+                    "Id",  @event.AggregateId
+                },
+                {
+                    "EntityConfigurationId",  @event.EntityConfigurationId
+                },
+                {
+                    "TenantId",  @event.TenantId
+                },
+                {
+                    "CategoryPath",  @event.CategoryPath
+                },
+                {
+                    "ParentalAttributes", allParentalAttributes
+                },
+                {
+                    "Attributes", new Dictionary<string, object?>()
+                }
+            };
+
+            // fill attributes
+            foreach (var attribute in  @event.Attributes)
+            {
+                document.Add(attribute.ConfigurationAttributeMachineName, attribute.GetValue());
+            }
+
+            // Add document
+            await UpsertDocument(
+                projectionDocumentSchema,
+                document,
+                @event.PartitionKey,
+                @event.Timestamp
+            ).ConfigureAwait(false);
+        }
+        
+        
+        private async Task UpdateChildrenAsync(Guid instanceId,
             ProjectionDocumentSchema categorySchema,
-            Guid childrenConfigurationId,
             string currentCategoryPath,
             List<AttributeInstance>? newAttributes = null,
             List<EntityConfigurationAttributeReference>? newAttributesReferences = null,
-
             string newCategoryPath = "")
         {
             // For children it's category path + category Id
             var childrenCategoryPath = currentCategoryPath + $"/{instanceId}";
-            
-
-            
-            // Build children document schema considering all branch attributes as parent attributes
-            var simplifiedChildProjectionDocumentSchema = await BuildEmptyProjectionDocumentSchemaForEntityConfigurationId(
-                childrenConfigurationId
-            );
 
             // Manage changes in the CategoryPath
-            List<string> idsToRemove = null;
+            List<string>? idsToRemove = null;
             List<string>? idsToAdd = null;
             if (!string.IsNullOrEmpty(newCategoryPath) && newCategoryPath != currentCategoryPath)
             {
@@ -62,7 +139,7 @@ namespace CloudFabric.EAV.Domain.LocalEventSourcingPackages.Projections.Category
             }
 
             // Get all children entities using simplified schema
-            var childrenRepo = ProjectionRepositoryFactory.GetProjectionRepository(simplifiedChildProjectionDocumentSchema);
+            var childrenRepo = ProjectionRepositoryFactory.GetProjectionRepository(categorySchema);
             var children = await childrenRepo.Query(new ProjectionQuery
             {
                 Filters = new List<Filter>
@@ -70,11 +147,11 @@ namespace CloudFabric.EAV.Domain.LocalEventSourcingPackages.Projections.Category
                     new Filter
                     {
                         PropertyName = "CategoryPath",
-                        Operator = FilterOperator.Equal,
+                        Operator = FilterOperator.StartsWith,
                         Value = childrenCategoryPath
                     }
                 }
-            });
+            }).ConfigureAwait(false);
 
             if (children.TotalRecordsFound > 0)
             {
@@ -90,19 +167,19 @@ namespace CloudFabric.EAV.Domain.LocalEventSourcingPackages.Projections.Category
                     }
                     
                     // Get all branch attributes and their configurations
-                    (List<AttributeConfiguration> allBranchAttributesConfigurations, Dictionary<string, object> allBranchAttributes) = await BuildBranchAttributes(childDocument["CategoryPath"] as string);
+                    (List<AttributeConfiguration> allBranchAttributesConfigurations, Dictionary<string, object?> allBranchAttributes) = await BuildBranchAttributesAsync(childDocument["CategoryPath"] as string).ConfigureAwait(false);
 
                     var childProjectionDocumentSchema = await BuildProjectionDocumentSchemaForEntityConfigurationId(
-                        new Guid(childDocument["ConfigurationId"] as string),
+                        new Guid(childDocument["ConfigurationId"] as string ?? string.Empty),
                         allBranchAttributesConfigurations
-                    );      
+                    ).ConfigureAwait(false);      
                     
                     // Get expanded child document
                     var childRepo = ProjectionRepositoryFactory.GetProjectionRepository(childProjectionDocumentSchema);
-                    var child = await childRepo.Single(new Guid(childDocument["Aggregateid"] as string), childDocument["PartitionKey"] as string, CancellationToken.None);
+                    var child = await childRepo.Single(new Guid(childDocument["AggregateId"] as string ?? string.Empty), childDocument["PartitionKey"] as string ?? string.Empty, CancellationToken.None).ConfigureAwait(false);
                     
                     // Get current child parental attributes
-                    Dictionary<string, object> parentalAttributes = child["ParentalAttributes"] as Dictionary<string, object> ?? new Dictionary<string, object>();
+                    Dictionary<string, object> parentalAttributes = child?["ParentalAttributes"] as Dictionary<string, object> ?? new Dictionary<string, object>();
                     
                     // Add to it all attributes from the new branch levels (e.g. if there is a new category in the the middle of the path)
                     if (idsToAdd != null)
@@ -111,7 +188,7 @@ namespace CloudFabric.EAV.Domain.LocalEventSourcingPackages.Projections.Category
                         foreach (var id in idsToAdd)
                         {
                             // get all attributes and configurations from the new level
-                            (List<AttributeConfiguration> parentAttributesConfigurations, ReadOnlyCollection<AttributeInstance> parentAttributes) = await ExtractAttributesAndAttributeConfigurations(id);
+                            (List<AttributeConfiguration> parentAttributesConfigurations, ReadOnlyCollection<AttributeInstance> parentAttributes) = await ExtractAttributesAndAttributeConfigurationsAsync(id).ConfigureAwait(false);
                             
                             // add them to the global pull of configurations and attributes
                             allBranchAttributesConfigurations.AddRange(parentAttributesConfigurations);
@@ -127,7 +204,7 @@ namespace CloudFabric.EAV.Domain.LocalEventSourcingPackages.Projections.Category
                     {
                         foreach (var id in idsToRemove)
                         {
-                            (List<AttributeConfiguration> parentAttributesConfigurations, ReadOnlyCollection<AttributeInstance> parentAttributes) = await ExtractAttributesAndAttributeConfigurations(id);
+                            (List<AttributeConfiguration> parentAttributesConfigurations, ReadOnlyCollection<AttributeInstance> parentAttributes) = await ExtractAttributesAndAttributeConfigurationsAsync(id).ConfigureAwait(false);
                             allBranchAttributesConfigurations.RemoveAll(ac => parentAttributesConfigurations.Any(pac => pac.MachineName == ac.MachineName));
                             foreach (AttributeInstance ai in parentAttributes)
                             {
@@ -139,7 +216,7 @@ namespace CloudFabric.EAV.Domain.LocalEventSourcingPackages.Projections.Category
                     // If there are new attributes in the CURRENT category itself add them to the global pull as well 
                     if (newAttributes != null && newAttributesReferences != null)
                     {
-                        var newAttributeConfigs = await BuildAttributesListFromAttributesReferences(newAttributesReferences);
+                        var newAttributeConfigs = await BuildAttributesListFromAttributesReferences(newAttributesReferences).ConfigureAwait(false);
                         allBranchAttributesConfigurations.AddRange(newAttributeConfigs);
                         foreach (var attribute in newAttributes)
                         {
@@ -149,9 +226,9 @@ namespace CloudFabric.EAV.Domain.LocalEventSourcingPackages.Projections.Category
                     
                     // Build a new schema for the child considering updated list of branch attributes and configs
                     childProjectionDocumentSchema = await BuildProjectionDocumentSchemaForEntityConfigurationId(
-                        childrenConfigurationId,
+                        new Guid(childDocument["ConfigurationId"] as string ?? string.Empty),
                         allBranchAttributesConfigurations
-                    );
+                    ).ConfigureAwait(false);
 
                     await UpdateDocument(childProjectionDocumentSchema,
                         new Guid(child["Id"] as string) ,
@@ -161,7 +238,7 @@ namespace CloudFabric.EAV.Domain.LocalEventSourcingPackages.Projections.Category
                         {
                             dict["ParentalAttributes"] = parentalAttributes;
                             dict["CategoryPath"] = string.IsNullOrEmpty(newCategoryPath) ? childrenCategoryPath : newCategoryPath + $"/{instanceId}";
-                        });
+                        }).ConfigureAwait(false);
                 }
             }
         }
@@ -169,36 +246,26 @@ namespace CloudFabric.EAV.Domain.LocalEventSourcingPackages.Projections.Category
         // Move category with all children to a new category
         public async Task On(CategoryPathChanged @event)
         {
-            (List<AttributeConfiguration> parentAttributesConfigurations, _) = await ExtractAttributesAndAttributeConfigurations(@event.AggregateId.ToString());   
+            (List<AttributeConfiguration> parentAttributesConfigurations, _) = await ExtractAttributesAndAttributeConfigurationsAsync(@event.AggregateId.ToString()).ConfigureAwait(false);   
             var categorySchema = await BuildProjectionDocumentSchemaForEntityConfigurationId(
                 @event.entityConfigurationId,
                 parentAttributesConfigurations
-            );
+            ).ConfigureAwait(false);
             await UpdateDocument(categorySchema,
                 @event.AggregateId ,
                 @event.PartitionKey,
                 updatedAt: @event.Timestamp,
-                async dict =>
+                dict =>
                 {
                     dict["CategoryPath"] = @event.newCategoryPath;
-                    // Update child entities
-                    await UpdateChildren(@event.AggregateId,
-                        categorySchema,
-                        @event.childConfigurationId,
-                        @event.currentCategoryPath,
-                        null,
-                        null,
-                        @event.newCategoryPath);
-                    
                     // Update subcategories
-                    await UpdateChildren(@event.AggregateId,
+                    return UpdateChildrenAsync(@event.AggregateId,
                         categorySchema,
-                        @event.entityConfigurationId,
                         @event.currentCategoryPath,
                         null,
                         null,
                         @event.newCategoryPath);
-                });        
+                }).ConfigureAwait(false);        
         }
         
         //TODO: Manage attribute changes

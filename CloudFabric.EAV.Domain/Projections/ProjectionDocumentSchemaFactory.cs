@@ -59,54 +59,52 @@ public static class ProjectionDocumentSchemaFactory
         var schema = new ProjectionDocumentSchema()
         {
             SchemaName = entityConfiguration.MachineName,
-            Properties = new List<ProjectionDocumentPropertySchema>()
+            Properties = new List<ProjectionDocumentPropertySchema>
+            {
+                new ProjectionDocumentPropertySchema()
+                {
+                    PropertyName = "Id",
+                    PropertyType = TypeCode.Object,
+                    IsKey = true,
+                    IsSearchable = false,
+                    IsRetrievable = true,
+                    IsFilterable = true,
+                    IsSortable = false,
+                    IsFacetable = false
+                },
+                new ProjectionDocumentPropertySchema()
+                {
+                    PropertyName = "EntityConfigurationId",
+                    PropertyType = TypeCode.Object,
+                    IsKey = false,
+                    IsSearchable = false,
+                    IsRetrievable = true,
+                    IsFilterable = true,
+                    IsSortable = false,
+                    IsFacetable = false
+                }
+            }
         };
 
-        schema.Properties.Add(
-            new ProjectionDocumentPropertySchema()
-            {
-                PropertyName = "Id",
-                PropertyType = TypeCode.Object,
-                IsKey = true,
-                IsSearchable = false,
-                IsRetrievable = true,
-                IsFilterable = true,
-                IsSortable = false,
-                IsFacetable = false
-            }
-        );
-
-        schema.Properties.Add(
-            new ProjectionDocumentPropertySchema()
-            {
-                PropertyName = "EntityConfigurationId",
-                PropertyType = TypeCode.Object,
-                IsKey = false,
-                IsSearchable = false,
-                IsRetrievable = true,
-                IsFilterable = true,
-                IsSortable = false,
-                IsFacetable = false
-            }
-        );
-
         schema.Properties.AddRange(attributeConfigurations.Select(GetAttributeProjectionPropertySchema));
-        
-        schema.Properties.Add(
-            new ProjectionDocumentPropertySchema()
-            {
-                PropertyName = "ParentalAttributes",
-                PropertyType = TypeCode.Object,
-                IsKey = false,
-                IsSearchable = false,
-                IsRetrievable = true,
-                IsFilterable = true,
-                IsSortable = false,
-                IsFacetable = false,
-                IsNestedObject = true,
-                NestedObjectProperties = parentAttributeConfigurations?.Select(GetAttributeProjectionPropertySchema).ToList() ?? new List<ProjectionDocumentPropertySchema>()
-            }
-        );
+        if (parentAttributeConfigurations != null)
+        {
+            schema.Properties.Add(
+                new ProjectionDocumentPropertySchema()
+                {
+                    PropertyName = "ParentalAttributes",
+                    PropertyType = TypeCode.Object,
+                    IsKey = false,
+                    IsSearchable = false,
+                    IsRetrievable = true,
+                    IsFilterable = true,
+                    IsSortable = false,
+                    IsFacetable = false,
+                    IsNestedObject = true,
+                    NestedObjectProperties = parentAttributeConfigurations?.Select(GetAttributeProjectionPropertySchema).ToList() ?? new List<ProjectionDocumentPropertySchema>()
+                }
+            );    
+        }
 
         schema.Properties.Add(new ProjectionDocumentPropertySchema()
         {

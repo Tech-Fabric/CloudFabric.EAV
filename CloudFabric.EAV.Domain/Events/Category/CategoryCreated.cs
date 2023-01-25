@@ -13,7 +13,6 @@ namespace CloudFabric.EAV.Domain.LocalEventSourcingPackages.Events.Category
         public ReadOnlyCollection<AttributeInstance> Attributes { get; }
         public Guid? TenantId { get; }
         public string CategoryPath { get; }
-        public Guid ChildEntityConfigurationId { get; }
         public DateTime Timestamp { get; }
 
         public CategoryCreated()
@@ -27,7 +26,6 @@ namespace CloudFabric.EAV.Domain.LocalEventSourcingPackages.Events.Category
             ReadOnlyCollection<AttributeInstance> attributes,
             Guid? tenantId,
             string categoryPath,
-            Guid childEntityConfigurationId,
             DateTime timestamp)
         {
             this.PartitionKey = partitionKey;
@@ -35,7 +33,6 @@ namespace CloudFabric.EAV.Domain.LocalEventSourcingPackages.Events.Category
             this.Attributes = attributes;
             TenantId = tenantId;
             CategoryPath = categoryPath;
-            ChildEntityConfigurationId = childEntityConfigurationId;
             Timestamp = timestamp;
             AggregateId = id;
         }    

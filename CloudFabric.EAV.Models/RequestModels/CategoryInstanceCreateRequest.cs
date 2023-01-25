@@ -11,8 +11,5 @@ namespace CloudFabric.EAV.Models.LocalEventSourcingPackages.RequestModels
         public Guid? TenantId { get; set; }
         
         public string CategoryPath { get; set; }
-        
-        public Guid ChildEntityConfigurationId { get; set; }
-
     }
 }

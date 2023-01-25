@@ -11,7 +11,5 @@ namespace CloudFabric.EAV.Models.LocalEventSourcingPackages.ViewModels
         public ReadOnlyCollection<AttributeInstanceViewModel> Attributes { get; protected set; }
         public Guid? TenantId { get; protected set; }
         public string CategoryPath { get; protected set; }
-        public Guid ChildEntityConfigurationId { get; set; }
-
     }
 }
