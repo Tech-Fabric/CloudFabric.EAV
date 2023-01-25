@@ -68,6 +68,28 @@ public static class EntityConfigurationFactory
                     },
                     TenantId = tenantId
                 },
+                new TextAttributeConfigurationCreateUpdateRequest()
+                {
+                    MachineName = "brand",
+                    Name = new List<LocalizedStringCreateRequest>()
+                    {
+                        new LocalizedStringCreateRequest()
+                        {
+                            CultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID,
+                            String = "Brand"
+                        },
+                        new LocalizedStringCreateRequest()
+                        {
+                            CultureInfoId = CultureInfo.GetCultureInfo("RU-ru").LCID,
+                            String = "Бренд"
+                        }
+                    },
+                    IsRequired = true,
+                    IsSearchable = true,
+                    MaxLength = 100,
+                    DefaultValue = "-",
+                    TenantId = tenantId
+                },
                 new NumberAttributeConfigurationCreateUpdateRequest()
                 {
                     MachineName = "players_min",
