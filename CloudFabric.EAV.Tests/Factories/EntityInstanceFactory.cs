@@ -12,6 +12,7 @@ public class EntityInstanceFactory
         return new EntityInstanceCreateRequest()
         {
             EntityConfigurationId = entityConfigurationId,
+            TenantId = Guid.NewGuid(),
             Attributes = new List<AttributeInstanceCreateUpdateRequest>()
             {
                 new LocalizedTextAttributeInstanceCreateUpdateRequest()
@@ -47,6 +48,11 @@ public class EntityInstanceFactory
                             String = "БлаБлаБла"
                         }
                     },
+                },
+                new TextAttributeInstanceCreateUpdateRequest()
+                {
+                    ConfigurationAttributeMachineName = "brand",
+                    Value = "HappyGames"
                 },
                 new NumberAttributeInstanceCreateUpdateRequest()
                 {

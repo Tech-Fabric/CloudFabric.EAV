@@ -136,6 +136,12 @@ public class EntityInstanceFromDictionaryDeserializer
                     Value = _mapper.Map<FileAttributeValueViewModel>(attributeValue)
                 };
                 break;
+            case EavAttributeType.Text:
+                attributeInstance = new TextAttributeInstanceViewModel
+                {
+                    Value = (string)attributeValue
+                };
+                break;
             case EavAttributeType.Serial:
                 attributeInstance = new SerialAttributeInstanceViewModel()
                 {

@@ -1,10 +1,9 @@
 ﻿using System.Text.Json.Serialization;
-
-using CloudFabric.EAV.Json.Utilities;
+using CloudFabric.EAV.Models.JsonConverters;
 
 namespace CloudFabric.EAV.Models.ViewModels.Attributes
 {
-    [JsonConverter(typeof(PolymorphicJsonConverter<AttributeInstanceViewModel>))]
+    [JsonConverter(typeof(AttributeInstanceResponseJsonConverter<AttributeInstanceViewModel>))]
     public class AttributeInstanceViewModel
     {
         public string ConfigurationAttributeMachineName { get; set; }

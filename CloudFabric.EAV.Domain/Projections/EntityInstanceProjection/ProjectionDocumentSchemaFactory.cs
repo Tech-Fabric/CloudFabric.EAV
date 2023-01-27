@@ -45,6 +45,20 @@ public static class ProjectionDocumentSchemaFactory
             }
         );
 
+        schema.Properties.Add(
+            new ProjectionDocumentPropertySchema()
+            {
+                PropertyName = "TenantId",
+                PropertyType = TypeCode.Object,
+                IsKey = false,
+                IsSearchable = false,
+                IsRetrievable = true,
+                IsFilterable = true,
+                IsSortable = false,
+                IsFacetable = false
+            }
+        );
+
         schema.Properties.AddRange(attributeConfigurations.Select(GetAttributeProjectionPropertySchema));
 
         return schema;

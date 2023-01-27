@@ -41,7 +41,7 @@ public class AttributeInstanceProfile : Profile
         CreateMap<NumberAttributeInstance, NumberAttributeInstanceViewModel>();
         CreateMap<TextAttributeInstance, TextAttributeInstanceViewModel>();
         CreateMap<ValueFromListAttributeInstance, ValueFromListAttributeInstanceViewModel>();
-        CreateMap<DateRangeAttributeInstance, DateRangeAttributeConfigurationViewModel>();
+        CreateMap<DateRangeAttributeInstance, DateRangeAttributeInstanceViewModel>();
         CreateMap<BooleanAttributeInstance, BooleanAttributeInstanceViewModel>();
         CreateMap<FileAttributeInstance, FileAttributeInstanceViewModel>();
         CreateMap<FileAttributeValue, FileAttributeValueViewModel>();

@@ -669,7 +669,7 @@ public class Tests
     }
 
     [TestMethod]
-    public async Task TestEntityConfigurationProjectionCreated()
+    public async Task EntityConfigurationProjectionCreated()
     {
         var configurationItemsStart = await _eavService.ListEntityConfigurations(
             ProjectionQuery.Where<EntityConfigurationProjectionDocument>(x => x.MachineName == "BoardGame"),
@@ -720,7 +720,7 @@ public class Tests
     }
 
     [TestMethod]
-    public async Task TestCreateNumberAttribute_Success()
+    public async Task CreateNumberAttribute_Success()
     {
         var cultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID;
         var numberAttribute = new NumberAttributeConfigurationCreateUpdateRequest()
@@ -977,7 +977,7 @@ public class Tests
     }
 
     [TestMethod]
-    public async Task TestGetNumberAttribute_Success()
+    public async Task GetNumberAttribute_Success()
     {
         var cultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID;
         var numberAttribute = new NumberAttributeConfigurationCreateUpdateRequest()
@@ -1033,7 +1033,7 @@ public class Tests
     }
 
     [TestMethod]
-    public async Task TestCreateValueFromListAttribute_Success()
+    public async Task CreateValueFromListAttribute_Success()
     {
         var valueFromListAttributeRepository = _aggregateRepositoryFactory.GetAggregateRepository<ValueFromListAttributeConfiguration>();
 
@@ -1104,7 +1104,7 @@ public class Tests
     }
 
     [TestMethod]
-    public async Task TestCreateValueFromListAttribute_OptionNamesNotUnique()
+    public async Task CreateValueFromListAttribute_OptionNamesNotUnique()
     {
         var cultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID;
         var valueFromListAttribute = new ValueFromListAttributeConfigurationCreateUpdateRequest()
@@ -1166,7 +1166,7 @@ public class Tests
     }
 
     [TestMethod]
-    public async Task TestUpdateValueFromListAttribute_Success()
+    public async Task UpdateValueFromListAttribute_Success()
     {
         var valueFromListRepository = _aggregateRepositoryFactory.GetAggregateRepository<ValueFromListAttributeConfiguration>();
 
@@ -1221,7 +1221,7 @@ public class Tests
     }
 
     [TestMethod]
-    public async Task TestCreateEntityInstanceWithValueFromListAttribute_ValidationError()
+    public async Task CreateEntityInstanceWithValueFromListAttribute_ValidationError()
     {
         // create entity configuration with value from list attribute
         var cultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID;
@@ -1996,7 +1996,7 @@ public class Tests
     }
 
     [TestMethod]
-    public async Task TestCreateNumberAttributeAsReference_Success()
+    public async Task CreateNumberAttributeAsReference_Success()
     {
         var cultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID;
         var priceAttribute = new NumberAttributeConfigurationCreateUpdateRequest()
@@ -2073,7 +2073,7 @@ public class Tests
     }
 
     [TestMethod]
-    public async Task TestCreateInstanceAndQuery()
+    public async Task CreateInstanceAndQuery()
     {
         var configurationCreateRequest = EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
 
@@ -2094,7 +2094,9 @@ public class Tests
 
         var (createdInstance, createProblemDetails) = await _eavService.CreateEntityInstance(instanceCreateRequest);
 
-        createdInstance.Should().BeEquivalentTo(instanceCreateRequest);
+        createdInstance.EntityConfigurationId.Should().Be(instanceCreateRequest.EntityConfigurationId);
+        createdInstance.TenantId.Should().Be(instanceCreateRequest.TenantId);
+        createdInstance.Attributes.Should().BeEquivalentTo(instanceCreateRequest.Attributes, x => x.Excluding(w => w.ValueType));
 
         var query = new ProjectionQuery()
         {
@@ -2106,7 +2108,7 @@ public class Tests
     }
 
     [TestMethod]
-    public async Task TestSimpleJsonConverter()
+    public async Task SimpleJsonConverter()
     {
         var jsonString =
             "{\"valueType\" : 2, \"machineName\" : \"test\", \"name\" : [{\"string\" : \"Test\", \"cultureInfoId\" : 1033}], \"description\" : [{\"string\" : \"Test\", \"cultureInfoId\" : 1033}], \"defaultValue\" : 0, \"isRequired\" : true, \"maximumValue\" : 10, \"minimumValue\" : 0 }";
@@ -2118,7 +2120,7 @@ public class Tests
     }
 
     [TestMethod]
-    public async Task TestSimpleToPolymorphJsonConverter()
+    public async Task SimpleToPolymorphJsonConverter()
     {
         var jsonString =
             "{\"typeName\": \"CloudFabric.EAV.Models.RequestModels.Attributes.NumberAttributeConfigurationCreateUpdateRequest\", \"typeValue\": { \"valueType\" : 2, \"machineName\" : \"test\", \"name\" : [{\"string\" : \"Test\", \"cultureInfoId\" : 1033}], \"description\" : [{\"string\" : \"Test\", \"cultureInfoId\" : 1033}], \"defaultValue\" : 0, \"isRequired\" : true, \"maximumValue\" : -1, \"minimumValue\" : 0 }}";
@@ -2126,6 +2128,57 @@ public class Tests
         AttributeConfigurationCreateUpdateRequest attribute = JsonSerializer.Deserialize<AttributeConfigurationCreateUpdateRequest>(jsonString, deserializeOptions)!;
         attribute.As<NumberAttributeConfigurationCreateUpdateRequest>().ValueType.Should().Be(EavAttributeType.Number);
         attribute.MachineName.Should().Be("test");
+    }
+
+    [TestMethod]
+    public async Task EntityInstanceJsonConverter()
+    {
+        string jsonString = @"
+        {
+            ""entityConfigurationId"": ""a786eaac-66c6-44e4-8a82-3b5cf87b43e1"",
+            ""tenantId"": ""a786eaac-66c6-44e4-8a82-3b5cf87b43e1"",
+            ""attributes"": [
+                {
+                    ""configurationAttributeMachineName"": ""test-number"",
+                    ""valueType"": ""Number"",
+                    ""value"": 5
+                },
+                {
+                    ""configurationAttributeMachineName"": ""test-text"",
+                    ""valueType"": ""Text"",
+                    ""value"": ""Json deserialization test""
+                },
+                {
+                    ""configurationAttributeMachineName"": ""test-date"",
+                    ""valueType"": ""DateRange"",
+                    ""from"": ""2023-01-24"",
+                    ""to"": ""2023-01-25""
+                }
+            ]
+        }";
+
+        var deserializeOptions = new JsonSerializerOptions
+        {
+            PropertyNameCaseInsensitive = true
+        };
+
+        EntityInstanceCreateRequest deserializedInstance = JsonSerializer.Deserialize<EntityInstanceCreateRequest>(jsonString, deserializeOptions)!;
+
+        deserializedInstance.EntityConfigurationId.Should().Be(Guid.Parse("a786eaac-66c6-44e4-8a82-3b5cf87b43e1"));
+        deserializedInstance.TenantId.Should().Be(Guid.Parse("a786eaac-66c6-44e4-8a82-3b5cf87b43e1"));
+
+        deserializedInstance.Attributes[0].ConfigurationAttributeMachineName.Should().Be("test-number");
+        deserializedInstance.Attributes[0].ValueType.Should().Be(EavAttributeType.Number);
+        deserializedInstance.Attributes[0].As<NumberAttributeInstanceCreateUpdateRequest>().Value.Should().Be(5);
+        
+        deserializedInstance.Attributes[1].ConfigurationAttributeMachineName.Should().Be("test-text");
+        deserializedInstance.Attributes[1].ValueType.Should().Be(EavAttributeType.Text);
+        deserializedInstance.Attributes[1].As<TextAttributeInstanceCreateUpdateRequest>().Value.Should().Be("Json deserialization test");
+        
+        deserializedInstance.Attributes[2].ConfigurationAttributeMachineName.Should().Be("test-date");
+        deserializedInstance.Attributes[2].ValueType.Should().Be(EavAttributeType.DateRange);
+        deserializedInstance.Attributes[2].As<DateRangeAttributeInstanceCreateUpdateRequest>().From.Should().Be(DateTime.Parse("2023-01-24"));
+        deserializedInstance.Attributes[2].As<DateRangeAttributeInstanceCreateUpdateRequest>().To.Should().Be(DateTime.Parse("2023-01-25"));
     }
 
     [TestMethod]

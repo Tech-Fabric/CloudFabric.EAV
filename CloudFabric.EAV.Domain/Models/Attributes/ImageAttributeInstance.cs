@@ -10,5 +10,7 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
         {
             return Value;
         }
+        
+        
     }
 }

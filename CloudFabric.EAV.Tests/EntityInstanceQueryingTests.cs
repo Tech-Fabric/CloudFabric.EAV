@@ -139,7 +139,10 @@ public abstract class EntityInstanceQueryingTests
 
         var (createdInstance, createProblemDetails) = await _eavService.CreateEntityInstance(instanceCreateRequest);
 
-        createdInstance.Should().BeEquivalentTo(instanceCreateRequest);
+        createdInstance.EntityConfigurationId.Should().Be(instanceCreateRequest.EntityConfigurationId);
+        createdInstance.TenantId.Should().Be(instanceCreateRequest.TenantId);
+        createdInstance.Attributes.Should().BeEquivalentTo(instanceCreateRequest.Attributes, x => x.Excluding(w => w.ValueType));
+
 
         var query = new ProjectionQuery()
         {
@@ -179,7 +182,10 @@ public abstract class EntityInstanceQueryingTests
 
         var (createdInstance, createProblemDetails) = await _eavService.CreateEntityInstance(instanceCreateRequest);
 
-        createdInstance.Should().BeEquivalentTo(instanceCreateRequest);
+        createdInstance.EntityConfigurationId.Should().Be(instanceCreateRequest.EntityConfigurationId);
+        createdInstance.TenantId.Should().Be(instanceCreateRequest.TenantId);
+        createdInstance.Attributes.Should().BeEquivalentTo(instanceCreateRequest.Attributes, x => x.Excluding(w => w.ValueType));
+
 
         var query = new ProjectionQuery()
         {
