@@ -31,6 +31,16 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
             return errors;
         }
 
+        public override List<string> Validate()
+        {
+            var errors = base.Validate();
+            if (Increment == 0)
+            {
+                errors.Add("Increment for serial number must not be 0");
+            }
+            return errors;
+        }
+
         public SerialAttributeConfiguration(IEnumerable<IEvent> events) : base(events)
         {
 
@@ -43,11 +53,11 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
             int increment,
             List<LocalizedString> description = null,
             bool isRequired = false,
-            Guid? TenantId = null,
+            Guid? tenantId = null,
             string? metadata = null
-        ) : base(id, machineName, name, EavAttributeType.Serial, description, isRequired, TenantId, metadata)
+        ) : base(id, machineName, name, EavAttributeType.Serial, description, isRequired, tenantId, metadata)
         {
-            Apply(new SerialAttributeConfigurationUpdated(id, startingNumber, increment));
+            Apply(new SerialAttributeConfigurationCreated(id, startingNumber, increment));
         }
 
         public override void UpdateAttribute(AttributeConfiguration updatedAttribute)
@@ -61,18 +71,24 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
 
             base.UpdateAttribute(updatedAttribute);
 
-            if (StartingNumber != updated.StartingNumber
-                || Increment != updated.Increment)
+            if (Increment != updated.Increment)
             {
                 Apply(
-                    new SerialAttributeConfigurationUpdated(Id, updated.StartingNumber, updated.Increment)
+                    new SerialAttributeConfigurationUpdated(Id, updated.Increment)
                 );
             }
         }
 
         public override bool Equals(object obj)
         {
-            return this.Equals(obj as SerialAttributeConfiguration);
+            var serialAttribute = obj as SerialAttributeConfiguration;
+
+            if (serialAttribute == null)
+            {
+                return false;
+            }
+
+            return this.Equals(serialAttribute);
         }
 
         private bool Equals(SerialAttributeConfiguration other)
@@ -87,9 +103,14 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
             return HashCode.Combine(StartingNumber, Increment, (int)ValueType);
         }
 
-        public void On(SerialAttributeConfigurationUpdated @event)
+        public void On(SerialAttributeConfigurationCreated @event)
         {
             StartingNumber = @event.StartingNumber;
+            Increment = @event.Increment;
+        }
+
+        public void On(SerialAttributeConfigurationUpdated @event)
+        {
             Increment = @event.Increment;
         }
     }

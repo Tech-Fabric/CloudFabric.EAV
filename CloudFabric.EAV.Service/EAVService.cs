@@ -179,12 +179,14 @@ public class EAVService : IEAVService
         updateRequest.MachineName = attribute.MachineName;
         AttributeConfiguration updatedAttribute = _mapper.Map<AttributeConfiguration>(updateRequest);
 
-        var validationErrors = updatedAttribute.Validate();
+        attribute.UpdateAttribute(updatedAttribute);
+
+        var validationErrors = attribute.Validate();
         if (validationErrors.Any())
         {
             return (null, new ValidationErrorResponse(updatedAttribute.MachineName, validationErrors.ToArray()));
         }
-        attribute.UpdateAttribute(updatedAttribute);
+
         await _attributeConfigurationRepository.SaveAsync(_userInfo, attribute, cancellationToken);
 
         return (_mapper.Map<AttributeConfigurationViewModel>(attribute), null);
@@ -640,7 +642,7 @@ public class EAVService : IEAVService
                 validationErrors.Add(a.MachineName, attrValidationErrors.ToArray());
             }
 
-            await InitializeAttributeInstanceWithEntityConfigurationOverrides(entityConfiguration, a, attributeValue);
+            InitializeAttributeInstanceWithExternalValuesFromEntity(entityConfiguration, a, attributeValue);
         }
 
         if (validationErrors.Count > 0)
@@ -648,16 +650,16 @@ public class EAVService : IEAVService
             return (null, new ValidationErrorResponse(validationErrors))!;
         }
 
-        var overridesSaved = await _entityConfigurationRepository.SaveAsync(_userInfo, entityConfiguration);
+        var entityConfigurationSaved = await _entityConfigurationRepository.SaveAsync(_userInfo, entityConfiguration, CancellationToken.None);
 
-        if (!overridesSaved)
+        if (!entityConfigurationSaved)
         {
             throw new Exception("Entity was not saved");
         }
 
-        var saved = await _entityInstanceRepository.SaveAsync(_userInfo, entityInstance);
+        var entityInstanceSaved = await _entityInstanceRepository.SaveAsync(_userInfo, entityInstance);
 
-        if (!saved)
+        if (!entityInstanceSaved)
         {
             //TODO: What do we want to do with internal exceptions and unsuccessful flow?
             throw new Exception("Entity was not saved");
@@ -903,10 +905,10 @@ public class EAVService : IEAVService
         return true;
     }
 
-    private async Task InitializeAttributeInstanceWithEntityConfigurationOverrides(
+    private void InitializeAttributeInstanceWithExternalValuesFromEntity(
         EntityConfiguration entityConfiguration,
         AttributeConfiguration attributeConfiguration,
-        AttributeInstance attributeInstance
+        AttributeInstance? attributeInstance
     )
     {
         switch (attributeConfiguration.ValueType)
@@ -918,29 +920,39 @@ public class EAVService : IEAVService
                         return;
                     }
 
+                    var serialAttributeConfiguration = attributeConfiguration as SerialAttributeConfiguration;
+
+                    var serialInstance = attributeInstance as SerialAttributeInstance;
+
+                    if (serialAttributeConfiguration == null || serialInstance == null)
+                    {
+                        throw new ArgumentException("Invalid attribute type");
+                    }
+
                     var entityAttribute = entityConfiguration.Attributes
                         .FirstOrDefault(x => x.AttributeConfigurationId == attributeConfiguration.Id);
 
-                    var serialAttributeConfiguration = attributeConfiguration as SerialAttributeConfiguration;
+                    if (entityAttribute == null)
+                    {
+                        throw new NotFoundException("Attribute not found");
+                    }
 
-                    var existingOverrideObject = entityAttribute.Overrides.FirstOrDefault();
+                    var existingOverrideObject = entityAttribute.AttributeConfigurationExternalValues.FirstOrDefault();
 
                     long? deserializedOverride = null;
 
                     if (existingOverrideObject != null)
                     {
-                        deserializedOverride = JsonSerializer.Deserialize<long>(existingOverrideObject.ToString());
+                        deserializedOverride = JsonSerializer.Deserialize<long>(existingOverrideObject.ToString()!);
                     }
 
                     var newOverride = existingOverrideObject == null
                         ? serialAttributeConfiguration.StartingNumber
                         : deserializedOverride += serialAttributeConfiguration.Increment;
 
-                    var serialInstance = attributeInstance as SerialAttributeInstance;
+                    serialInstance.Value = newOverride!.Value;
 
-                    serialInstance.Value = newOverride.Value;
-
-                    entityConfiguration.UpdateAttrributeOverrides(attributeConfiguration.Id, new List<object>() { newOverride });
+                    entityConfiguration.UpdateAttrributeExternalValues(attributeConfiguration.Id, new List<object>() { newOverride });
                 };
                 break;
         }

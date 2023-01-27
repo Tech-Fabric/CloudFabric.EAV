@@ -1298,7 +1298,7 @@ public class Tests
         var serialAttributeRepository = _aggregateRepositoryFactory.GetAggregateRepository<SerialAttributeConfiguration>();
 
         var cultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID;
-        var serialAttributeCreateRequest = new SerialAttributeConfigurationCreateUpdateRequest()
+        var serialAttributeCreateRequest = new SerialAttributeConfigurationCreateRequest()
         {
             MachineName = "serialAttr",
             Description =
@@ -1365,6 +1365,132 @@ public class Tests
     }
 
     [TestMethod]
+    public async Task TestCreateSerialAttribute_ValidationError()
+    {
+        var cultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID;
+        var serialAttributeCreateRequest = new SerialAttributeConfigurationCreateRequest()
+        {
+            MachineName = "serialAttr",
+            Description =
+                new List<LocalizedStringCreateRequest>
+                {
+                    new LocalizedStringCreateRequest
+                    {
+                        CultureInfoId = cultureInfoId,
+                        String = "SerialAttributeDescription"
+                    }
+                },
+            Name = new List<LocalizedStringCreateRequest>
+            {
+                new LocalizedStringCreateRequest
+                {
+                    CultureInfoId = cultureInfoId,
+                    String = "serialAttributeName"
+                }
+            },
+            IsRequired = true,
+            StartingNumber = 1,
+            Increment = 0
+        };
+
+        (AttributeConfigurationViewModel _, ValidationErrorResponse errors) = await _eavService.CreateAttribute(serialAttributeCreateRequest, CancellationToken.None);
+
+        errors.Should().BeOfType<ValidationErrorResponse>();
+        errors.Errors.Should().Contain(x => x.Value.Contains("Increment for serial number must not be 0"));
+    }
+
+    [TestMethod]
+    public async Task TestUpdateSerialAttribute_Success()
+    {
+        var serialAttributeRepository = _aggregateRepositoryFactory.GetAggregateRepository<SerialAttributeConfiguration>();
+
+        var cultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID;
+        var serialAttributeCreateRequest = new SerialAttributeConfigurationCreateRequest()
+        {
+            MachineName = "serialAttr",
+            Description =
+                new List<LocalizedStringCreateRequest>
+                {
+                    new LocalizedStringCreateRequest
+                    {
+                        CultureInfoId = cultureInfoId,
+                        String = "SerialAttributeDescription"
+                    }
+                },
+            Name = new List<LocalizedStringCreateRequest>
+            {
+                new LocalizedStringCreateRequest
+                {
+                    CultureInfoId = cultureInfoId,
+                    String = "serialAttributeName"
+                }
+            },
+            IsRequired = true,
+            StartingNumber = 100,
+            Increment = 1
+        };
+
+        var entityConfigurationCreateRequest = new EntityConfigurationCreateRequest()
+        {
+            MachineName = "test",
+            Name = new List<LocalizedStringCreateRequest>
+            {
+                new LocalizedStringCreateRequest
+                {
+                    CultureInfoId = cultureInfoId,
+                    String = "test"
+                }
+            },
+            Attributes = new List<EntityAttributeConfigurationCreateUpdateRequest>
+            {
+                serialAttributeCreateRequest
+            }
+        };
+
+        (EntityConfigurationViewModel? created, _) = await _eavService.CreateEntityConfiguration(entityConfigurationCreateRequest, CancellationToken.None);
+
+        // create update request and change attribute
+        var serialAttributeUpdateRequest = new SerialAttributeConfigurationUpdateRequest()
+        {
+            MachineName = "serialAttr",
+            Description =
+        new List<LocalizedStringCreateRequest>
+        {
+                    new LocalizedStringCreateRequest
+                    {
+                        CultureInfoId = cultureInfoId,
+                        String = "SerialAttributeDescription"
+                    }
+        },
+            Name = new List<LocalizedStringCreateRequest>
+            {
+                new LocalizedStringCreateRequest
+                {
+                    CultureInfoId = cultureInfoId,
+                    String = "serialAttributeName"
+                }
+            },
+            IsRequired = true,
+            Increment = 5
+        };
+
+        (AttributeConfigurationViewModel? updatedAttribute, ProblemDetails _) = await _eavService.UpdateAttribute(
+            created.Attributes.FirstOrDefault().AttributeConfigurationId,
+            serialAttributeUpdateRequest,
+            CancellationToken.None
+        );
+
+        var serialAttribute = await serialAttributeRepository.LoadAsync(
+            updatedAttribute.Id!,
+            updatedAttribute.Id.ToString(),
+            CancellationToken.None
+        );
+
+        serialAttribute.As<SerialAttributeConfiguration>().Increment.Should().Be(serialAttributeUpdateRequest.Increment);
+        serialAttribute.As<SerialAttributeConfiguration>().StartingNumber.Should().Be(serialAttributeCreateRequest.StartingNumber);
+    }
+
+    [TestMethod]
     public async Task TestCreateEntityInstanceWithSerialAttributes_Success()
     {
         var entityRepository = _aggregateRepositoryFactory.GetAggregateRepository<EntityConfiguration>();
@@ -1373,7 +1499,7 @@ public class Tests
 
         // create entity configuration and instance with serial attribute
         var cultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID;
-        var serialAttributeCreateRequest = new SerialAttributeConfigurationCreateUpdateRequest()
+        var serialAttributeCreateRequest = new SerialAttributeConfigurationCreateRequest()
         {
             MachineName = "serialAttr",
             Description =
@@ -1433,12 +1559,12 @@ public class Tests
         // check attribute override value in entity configuration
         var entity = await entityRepository.LoadAsyncOrThrowNotFound(entityConfig.Id, entityConfig.PartitionKey, CancellationToken.None);
         long attributeOverrideValue = JsonSerializer.Deserialize<long>(
-            entity.Attributes.FirstOrDefault().Overrides.FirstOrDefault().ToString()
+            entity.Attributes.FirstOrDefault().AttributeConfigurationExternalValues.FirstOrDefault().ToString()
         );
 
         attributeOverrideValue.Should()
             .Be(serialAttributeCreateRequest
-                .As<SerialAttributeConfigurationCreateUpdateRequest>().StartingNumber);
+                .As<SerialAttributeConfigurationCreateRequest>().StartingNumber);
 
         // check entity instance
         var entityInstance = await entityInstanceRepository.LoadAsyncOrThrowNotFound(result.Id, result.PartitionKey);
@@ -1462,12 +1588,12 @@ public class Tests
         // check that override value in entity configuration was updated
         entity = await entityRepository.LoadAsyncOrThrowNotFound(entityConfig.Id, entityConfig.PartitionKey, CancellationToken.None);
         attributeOverrideValue = JsonSerializer.Deserialize<long>(
-            entity.Attributes.FirstOrDefault().Overrides.FirstOrDefault().ToString()
+            entity.Attributes.FirstOrDefault().AttributeConfigurationExternalValues.FirstOrDefault().ToString()
         );
 
         attributeOverrideValue.Should()
             .Be(serialAttributeCreateRequest
-                .As<SerialAttributeConfigurationCreateUpdateRequest>().StartingNumber + serialAttributeCreateRequest.Increment);
+                .As<SerialAttributeConfigurationCreateRequest>().StartingNumber + serialAttributeCreateRequest.Increment);
 
         //check another entity instance
         entityInstance = await entityInstanceRepository.LoadAsyncOrThrowNotFound(result.Id, result.PartitionKey);

@@ -2,16 +2,17 @@
 
 namespace CloudFabric.EAV.Domain.Events.Configuration.Attributes
 {
-    public record SerialAttributeConfigurationUpdated : Event
+    public record SerialAttributeConfigurationCreated :Event
     {
-        public SerialAttributeConfigurationUpdated()
+        public SerialAttributeConfigurationCreated()
         {
 
         }
 
-        public SerialAttributeConfigurationUpdated(Guid id, int increment)
+        public SerialAttributeConfigurationCreated(Guid id, long startingNumber, int increment)
         {
             AggregateId = id;
+            StartingNumber = startingNumber;
             Increment = increment;
         }
 

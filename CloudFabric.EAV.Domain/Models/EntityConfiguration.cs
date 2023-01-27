@@ -79,9 +79,16 @@ namespace CloudFabric.EAV.Domain.Models
             Apply(new EntityConfigurationAttributeRemoved(Id, attributeConfigurationId));
         }
 
-        public void UpdateAttrributeOverrides(Guid attributeId, List<object> overrides)
+        public void UpdateAttrributeExternalValues(Guid attributeId, List<object> values)
         {
-            Apply(new EntityConfigurationAttributeOverridesUpdated(Id, attributeId, overrides));
+            var attributeReference = Attributes.FirstOrDefault(a => a.AttributeConfigurationId == attributeId);
+
+            if (attributeReference == null)
+            {
+                throw new NotFoundException("Attribute not found");
+            }
+
+            Apply(new EntityConfigurationAttributeExternalValuesUpdated(Id, attributeId, values));
         }
 
         #region EventHandlers
@@ -134,11 +141,11 @@ namespace CloudFabric.EAV.Domain.Models
                 .ToList()
                 .AsReadOnly();
         }
-        public void On(EntityConfigurationAttributeOverridesUpdated @event)
+        public void On(EntityConfigurationAttributeExternalValuesUpdated @event)
         {
-            var attributeReference = Attributes.FirstOrDefault(a => a.AttributeConfigurationId == @event.AttributeConfigurationId);
+            var attributeReference = Attributes.First(a => a.AttributeConfigurationId == @event.AttributeConfigurationId);
 
-            attributeReference.Overrides = @event.Overrides;
+            attributeReference.AttributeConfigurationExternalValues = @event.ExternalValues;
         }
         #endregion
     }

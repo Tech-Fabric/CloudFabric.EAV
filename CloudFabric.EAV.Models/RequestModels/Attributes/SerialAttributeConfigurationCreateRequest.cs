@@ -2,7 +2,7 @@
 
 namespace CloudFabric.EAV.Models.RequestModels.Attributes
 {
-    public class SerialAttributeConfigurationCreateUpdateRequest : AttributeConfigurationCreateUpdateRequest
+    public class SerialAttributeConfigurationCreateRequest : AttributeConfigurationCreateUpdateRequest
     {
         public long StartingNumber { get; set; }
 

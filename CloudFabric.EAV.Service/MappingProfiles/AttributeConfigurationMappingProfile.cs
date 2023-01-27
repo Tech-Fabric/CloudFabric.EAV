@@ -145,7 +145,7 @@ public class AttributeConfigurationProfile : Profile
                 o.Metadata
             ));
 
-        CreateMap<SerialAttributeConfigurationCreateUpdateRequest, SerialAttributeConfiguration>()
+        CreateMap<SerialAttributeConfigurationCreateRequest, SerialAttributeConfiguration>()
             .ConvertUsing((o, dst, ctx) => new SerialAttributeConfiguration(
                 Guid.NewGuid(),
                 o.MachineName,
@@ -157,6 +157,21 @@ public class AttributeConfigurationProfile : Profile
                 o.TenantId,
                 o.Metadata
             ));
+
+        // Use 0 as a StartingNumber default value for SerialAttributeConfiguration constructor.
+        // Value doesn't participate in attribute update. 
+        CreateMap<SerialAttributeConfigurationUpdateRequest, SerialAttributeConfiguration>()
+            .ConvertUsing((o, dst, ctx) => new SerialAttributeConfiguration(
+            Guid.NewGuid(),
+            o.MachineName,
+            ctx.Mapper.Map<List<LocalizedString>>(o.Name),
+            0,
+            o.Increment,
+            ctx.Mapper.Map<List<LocalizedString>>(o.Description),
+            o.IsRequired,
+            o.TenantId,
+            o.Metadata
+        ));
 
         CreateMap<ValueFromListOptionCreateUpdateRequest, ValueFromListOptionConfiguration>();
 
