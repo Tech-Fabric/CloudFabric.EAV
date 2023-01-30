@@ -16,9 +16,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CloudFabric.EAV.Models", "C
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CloudFabric.EAV.Json", "CloudFabric.EAV.Json\CloudFabric.EAV.Json.csproj", "{E80CD3FF-294A-4552-9553-DF92AD34208F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CloudFabric.EAV.Service", "CloudFabric.EAV.Service\CloudFabric.EAV.Service.csproj", "{DE16FDE5-E63F-4168-B0BB-7ED14A067E68}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CloudFabric.EAV.Service", "CloudFabric.EAV.Service\CloudFabric.EAV.Service.csproj", "{DE16FDE5-E63F-4168-B0BB-7ED14A067E68}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CloudFabric.EAV.Tests", "CloudFabric.EAV.Tests\CloudFabric.EAV.Tests.csproj", "{1B539CD2-48E9-428B-AB2E-6494ACA29CE6}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CloudFabric.EAV.Tests", "CloudFabric.EAV.Tests\CloudFabric.EAV.Tests.csproj", "{1B539CD2-48E9-428B-AB2E-6494ACA29CE6}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

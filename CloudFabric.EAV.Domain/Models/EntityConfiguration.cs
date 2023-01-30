@@ -17,7 +17,7 @@ namespace CloudFabric.EAV.Domain.Models
         public string MachineName { get; protected set; }
 
         public ReadOnlyCollection<EntityConfigurationAttributeReference> Attributes { get; protected set; }
-        
+
         public override string PartitionKey => Id.ToString();
         
         public Guid? TenantId { get; protected set; }
@@ -29,7 +29,7 @@ namespace CloudFabric.EAV.Domain.Models
 
         public EntityConfiguration(
             Guid id, 
-            List<LocalizedString> name, 
+            List<LocalizedString> name,
             string machineName, 
             List<EntityConfigurationAttributeReference> attributes,
             Guid? tenantId
@@ -77,6 +77,18 @@ namespace CloudFabric.EAV.Domain.Models
         public void RemoveAttribute(Guid attributeConfigurationId)
         {
             Apply(new EntityConfigurationAttributeRemoved(Id, attributeConfigurationId));
+        }
+
+        public void UpdateAttrributeExternalValues(Guid attributeId, List<object> values)
+        {
+            var attributeReference = Attributes.FirstOrDefault(a => a.AttributeConfigurationId == attributeId);
+
+            if (attributeReference == null)
+            {
+                throw new NotFoundException("Attribute not found");
+            }
+
+            Apply(new EntityConfigurationAttributeExternalValuesUpdated(Id, attributeId, values));
         }
 
         #region EventHandlers
@@ -129,7 +141,12 @@ namespace CloudFabric.EAV.Domain.Models
                 .ToList()
                 .AsReadOnly();
         }
-        
+        public void On(EntityConfigurationAttributeExternalValuesUpdated @event)
+        {
+            var attributeReference = Attributes.First(a => a.AttributeConfigurationId == @event.AttributeConfigurationId);
+
+            attributeReference.AttributeConfigurationExternalValues = @event.ExternalValues;
+        }
         #endregion
     }
 }

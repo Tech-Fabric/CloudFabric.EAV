@@ -27,6 +27,7 @@ public class AttributeInstanceProfile : Profile
         CreateMap<BooleanAttributeInstanceCreateUpdateRequest, BooleanAttributeInstance>();
         CreateMap<FileAttributeValueCreateUpdateRequest, FileAttributeValue>();
         CreateMap<FileAttributeInstanceCreateUpdateRequest, FileAttributeInstance>();
+        CreateMap<SerialAttributeInstanceCreateUpdateRequest, SerialAttributeInstance>();
 
         CreateMap<AttributeInstance, AttributeInstanceViewModel>().IncludeAllDerived();
         CreateMap<ArrayAttributeInstance, ArrayAttributeInstanceViewModel>();
@@ -44,5 +45,6 @@ public class AttributeInstanceProfile : Profile
         CreateMap<BooleanAttributeInstance, BooleanAttributeInstanceViewModel>();
         CreateMap<FileAttributeInstance, FileAttributeInstanceViewModel>();
         CreateMap<FileAttributeValue, FileAttributeValueViewModel>();
+        CreateMap<SerialAttributeInstance, SerialAttributeInstanceViewModel>();
     }
 }

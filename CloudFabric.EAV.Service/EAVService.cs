@@ -3,7 +3,9 @@ using System.Text.RegularExpressions;
 
 using AutoMapper;
 
+using CloudFabric.EAV.Domain.Enums;
 using CloudFabric.EAV.Domain.Models;
+using CloudFabric.EAV.Domain.Models.Attributes;
 using CloudFabric.EAV.Domain.Models.Base;
 using CloudFabric.EAV.Domain.Projections.AttributeConfigurationProjection;
 using CloudFabric.EAV.Domain.Projections.EntityConfigurationProjection;
@@ -20,6 +22,8 @@ using CloudFabric.Projections.Queries;
 
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+
+using System.Text.Json;
 
 namespace CloudFabric.EAV.Service;
 
@@ -175,12 +179,14 @@ public class EAVService : IEAVService
         updateRequest.MachineName = attribute.MachineName;
         AttributeConfiguration updatedAttribute = _mapper.Map<AttributeConfiguration>(updateRequest);
 
-        var validationErrors = updatedAttribute.Validate();
+        attribute.UpdateAttribute(updatedAttribute);
+
+        var validationErrors = attribute.Validate();
         if (validationErrors.Any())
         {
             return (null, new ValidationErrorResponse(updatedAttribute.MachineName, validationErrors.ToArray()));
         }
-        attribute.UpdateAttribute(updatedAttribute);
+
         await _attributeConfigurationRepository.SaveAsync(_userInfo, attribute, cancellationToken);
 
         return (_mapper.Map<AttributeConfigurationViewModel>(attribute), null);
@@ -635,6 +641,8 @@ public class EAVService : IEAVService
             {
                 validationErrors.Add(a.MachineName, attrValidationErrors.ToArray());
             }
+
+            InitializeAttributeInstanceWithExternalValuesFromEntity(entityConfiguration, a, attributeValue);
         }
 
         if (validationErrors.Count > 0)
@@ -642,8 +650,16 @@ public class EAVService : IEAVService
             return (null, new ValidationErrorResponse(validationErrors))!;
         }
 
-        var saved = await _entityInstanceRepository.SaveAsync(_userInfo, entityInstance);
-        if (!saved)
+        var entityConfigurationSaved = await _entityConfigurationRepository.SaveAsync(_userInfo, entityConfiguration, cancellationToken);
+
+        if (!entityConfigurationSaved)
+        {
+            throw new Exception("Entity was not saved");
+        }
+
+        var entityInstanceSaved = await _entityInstanceRepository.SaveAsync(_userInfo, entityInstance, cancellationToken);
+
+        if (!entityInstanceSaved)
         {
             //TODO: What do we want to do with internal exceptions and unsuccessful flow?
             throw new Exception("Entity was not saved");
@@ -887,6 +903,59 @@ public class EAVService : IEAVService
         }
 
         return true;
+    }
+
+    private void InitializeAttributeInstanceWithExternalValuesFromEntity(
+        EntityConfiguration entityConfiguration,
+        AttributeConfiguration attributeConfiguration,
+        AttributeInstance? attributeInstance
+    )
+    {
+        switch (attributeConfiguration.ValueType)
+        {
+            case EavAttributeType.Serial:
+                {
+                    if (attributeInstance == null)
+                    {
+                        return;
+                    }
+
+                    var serialAttributeConfiguration = attributeConfiguration as SerialAttributeConfiguration;
+
+                    var serialInstance = attributeInstance as SerialAttributeInstance;
+
+                    if (serialAttributeConfiguration == null || serialInstance == null)
+                    {
+                        throw new ArgumentException("Invalid attribute type");
+                    }
+
+                    var entityAttribute = entityConfiguration.Attributes
+                        .FirstOrDefault(x => x.AttributeConfigurationId == attributeConfiguration.Id);
+
+                    if (entityAttribute == null)
+                    {
+                        throw new NotFoundException("Attribute not found");
+                    }
+
+                    var existingAttributeValue = entityAttribute.AttributeConfigurationExternalValues.FirstOrDefault();
+
+                    long? deserializedValue = null;
+
+                    if (existingAttributeValue != null)
+                    {
+                        deserializedValue = JsonSerializer.Deserialize<long>(existingAttributeValue.ToString()!);
+                    }
+
+                    var newExternalValue = existingAttributeValue == null
+                        ? serialAttributeConfiguration.StartingNumber
+                        : deserializedValue += serialAttributeConfiguration.Increment;
+
+                    serialInstance.Value = newExternalValue!.Value;
+
+                    entityConfiguration.UpdateAttrributeExternalValues(attributeConfiguration.Id, new List<object>() { newExternalValue });
+                }
+                break;
+        }
     }
 
     private async Task<ProjectionQueryResult<AttributeConfigurationListItemViewModel>> GetAttributesByIds(List<Guid> attributesIds, CancellationToken cancellationToken)
