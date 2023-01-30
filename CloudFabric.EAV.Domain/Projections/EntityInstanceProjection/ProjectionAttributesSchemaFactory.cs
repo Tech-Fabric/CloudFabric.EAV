@@ -206,6 +206,7 @@ namespace CloudFabric.EAV.Domain.Projections.EntityInstanceProjection
                 EavAttributeType.Boolean => null,
                 EavAttributeType.HtmlText => null,
                 EavAttributeType.EntityReference => null,
+                EavAttributeType.Serial => null,
                 EavAttributeType.LocalizedText => GetLocalizedTextAttributeNestedProperties(),
                 EavAttributeType.ValueFromList => GetValueFromListAttributeNestedProperties(),
                 EavAttributeType.DateRange => GetDateAttributeNestedProperties(),
@@ -454,6 +455,9 @@ namespace CloudFabric.EAV.Domain.Projections.EntityInstanceProjection
                 case EavAttributeType.Array:
                 case EavAttributeType.File:
                     propertyType = TypeCode.Object;
+                    break;
+                case EavAttributeType.Serial:
+                    propertyType = TypeCode.Int64;
                     break;
                 default:
                     throw new Exception($"EavAttributeType {valueType} is not supported.");
