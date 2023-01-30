@@ -1293,7 +1293,7 @@ public class Tests
     }
 
     [TestMethod]
-    public async Task TestCreateSerialAttribute_Success()
+    public async Task CreateSerialAttribute_Success()
     {
         var serialAttributeRepository = _aggregateRepositoryFactory.GetAggregateRepository<SerialAttributeConfiguration>();
 
@@ -1365,7 +1365,7 @@ public class Tests
     }
 
     [TestMethod]
-    public async Task TestCreateSerialAttribute_ValidationError()
+    public async Task CreateSerialAttribute_ValidationError()
     {
         var cultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID;
         var serialAttributeCreateRequest = new SerialAttributeConfigurationCreateRequest()
@@ -1400,7 +1400,7 @@ public class Tests
     }
 
     [TestMethod]
-    public async Task TestUpdateSerialAttribute_Success()
+    public async Task UpdateSerialAttribute_Success()
     {
         var serialAttributeRepository = _aggregateRepositoryFactory.GetAggregateRepository<SerialAttributeConfiguration>();
 
@@ -1491,7 +1491,7 @@ public class Tests
     }
 
     [TestMethod]
-    public async Task TestCreateEntityInstanceWithSerialAttributes_Success()
+    public async Task CreateEntityInstanceWithSerialAttributes_Success()
     {
         var entityRepository = _aggregateRepositoryFactory.GetAggregateRepository<EntityConfiguration>();
 
@@ -1558,11 +1558,11 @@ public class Tests
 
         // check attribute override value in entity configuration
         var entity = await entityRepository.LoadAsyncOrThrowNotFound(entityConfig.Id, entityConfig.PartitionKey, CancellationToken.None);
-        long attributeOverrideValue = JsonSerializer.Deserialize<long>(
+        long attributeExternalValue = JsonSerializer.Deserialize<long>(
             entity.Attributes.FirstOrDefault().AttributeConfigurationExternalValues.FirstOrDefault().ToString()
         );
 
-        attributeOverrideValue.Should()
+        attributeExternalValue.Should()
             .Be(serialAttributeCreateRequest
                 .As<SerialAttributeConfigurationCreateRequest>().StartingNumber);
 
@@ -1587,11 +1587,11 @@ public class Tests
 
         // check that override value in entity configuration was updated
         entity = await entityRepository.LoadAsyncOrThrowNotFound(entityConfig.Id, entityConfig.PartitionKey, CancellationToken.None);
-        attributeOverrideValue = JsonSerializer.Deserialize<long>(
+        attributeExternalValue = JsonSerializer.Deserialize<long>(
             entity.Attributes.FirstOrDefault().AttributeConfigurationExternalValues.FirstOrDefault().ToString()
         );
 
-        attributeOverrideValue.Should()
+        attributeExternalValue.Should()
             .Be(serialAttributeCreateRequest
                 .As<SerialAttributeConfigurationCreateRequest>().StartingNumber + serialAttributeCreateRequest.Increment);
 

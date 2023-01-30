@@ -937,22 +937,22 @@ public class EAVService : IEAVService
                         throw new NotFoundException("Attribute not found");
                     }
 
-                    var existingOverrideObject = entityAttribute.AttributeConfigurationExternalValues.FirstOrDefault();
+                    var existingAttributeValue = entityAttribute.AttributeConfigurationExternalValues.FirstOrDefault();
 
-                    long? deserializedOverride = null;
+                    long? deserializedValue = null;
 
-                    if (existingOverrideObject != null)
+                    if (existingAttributeValue != null)
                     {
-                        deserializedOverride = JsonSerializer.Deserialize<long>(existingOverrideObject.ToString()!);
+                        deserializedValue = JsonSerializer.Deserialize<long>(existingAttributeValue.ToString()!);
                     }
 
-                    var newOverride = existingOverrideObject == null
+                    var newExternalValue = existingAttributeValue == null
                         ? serialAttributeConfiguration.StartingNumber
-                        : deserializedOverride += serialAttributeConfiguration.Increment;
+                        : deserializedValue += serialAttributeConfiguration.Increment;
 
-                    serialInstance.Value = newOverride!.Value;
+                    serialInstance.Value = newExternalValue!.Value;
 
-                    entityConfiguration.UpdateAttrributeExternalValues(attributeConfiguration.Id, new List<object>() { newOverride });
+                    entityConfiguration.UpdateAttrributeExternalValues(attributeConfiguration.Id, new List<object>() { newExternalValue });
                 }
                 break;
         }
