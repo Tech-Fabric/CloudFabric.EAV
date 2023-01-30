@@ -15,14 +15,16 @@ public class EntityInstance : AggregateBase
     public ReadOnlyCollection<AttributeInstance> Attributes { get; protected set; }
 
     public Guid? TenantId { get; protected set; }
-
+    
+    public string CategoryPath { get; protected set; }
+    
     public EntityInstance(IEnumerable<IEvent> events) : base(events)
     {
     }
 
-    public EntityInstance(Guid id, Guid entityConfigurationId, List<AttributeInstance> attributes, Guid? tenantId)
+    public EntityInstance(Guid id, Guid entityConfigurationId, List<AttributeInstance> attributes, Guid? tenantId, string categoryPath = "")
     {
-        Apply(new EntityInstanceCreated(id, entityConfigurationId, attributes, tenantId));
+        Apply(new EntityInstanceCreated(id, entityConfigurationId, attributes, tenantId, categoryPath));
     }
 
     public void AddAttributeInstance(AttributeInstance attribute)
@@ -48,6 +50,7 @@ public class EntityInstance : AggregateBase
         EntityConfigurationId = @event.EntityConfigurationId;
         Attributes = new List<AttributeInstance>(@event.Attributes).AsReadOnly();
         TenantId = @event.TenantId;
+        CategoryPath = @event.CategoryPath;
     }
 
     public void On(AttributeInstanceAdded @event)

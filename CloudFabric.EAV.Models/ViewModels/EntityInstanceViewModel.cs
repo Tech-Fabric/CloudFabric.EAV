@@ -16,5 +16,8 @@ namespace CloudFabric.EAV.Models.ViewModels.EAV
         public Guid? TenantId { get; set; }
 
         public string PartitionKey { get; set; }
+        
+        public string CategoryPath { get; set; }
+        
     }
 }
