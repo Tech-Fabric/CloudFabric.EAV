@@ -15,8 +15,6 @@ namespace CloudFabric.EAV.Domain.Events.Configuration.Attributes
             Increment = increment;
         }
 
-        public long StartingNumber { get; set; }
-
         public int Increment { get; set; }
     }
 }

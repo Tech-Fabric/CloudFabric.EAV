@@ -161,16 +161,16 @@ public class AttributeConfigurationProfile : Profile
         // Value doesn't participate in attribute update. 
         CreateMap<SerialAttributeConfigurationUpdateRequest, SerialAttributeConfiguration>()
             .ConvertUsing((o, dst, ctx) => new SerialAttributeConfiguration(
-            Guid.NewGuid(),
-            o.MachineName,
-            ctx.Mapper.Map<List<LocalizedString>>(o.Name),
-            0,
-            o.Increment,
-            ctx.Mapper.Map<List<LocalizedString>>(o.Description),
-            o.IsRequired,
-            o.TenantId,
-            o.Metadata
-        ));
+                Guid.NewGuid(),
+                o.MachineName,
+                ctx.Mapper.Map<List<LocalizedString>>(o.Name),
+                0,
+                o.Increment,
+                ctx.Mapper.Map<List<LocalizedString>>(o.Description),
+                o.IsRequired,
+                o.TenantId,
+                o.Metadata
+            ));
 
         CreateMap<ValueFromListOptionCreateUpdateRequest, ValueFromListOptionConfiguration>();
 

@@ -1454,14 +1454,14 @@ public class Tests
         {
             MachineName = "serialAttr",
             Description =
-        new List<LocalizedStringCreateRequest>
-        {
-                    new LocalizedStringCreateRequest
-                    {
-                        CultureInfoId = cultureInfoId,
-                        String = "SerialAttributeDescription"
-                    }
-        },
+            new List<LocalizedStringCreateRequest>
+            {
+                new LocalizedStringCreateRequest
+                {
+                    CultureInfoId = cultureInfoId,
+                    String = "SerialAttributeDescription"
+                }
+            },
             Name = new List<LocalizedStringCreateRequest>
             {
                 new LocalizedStringCreateRequest
@@ -1858,7 +1858,7 @@ public class Tests
             Id = createdInstance.Id
         };
 
-        (EntityInstanceViewModel updatedInstance, _) = await _eavService.UpdateEntityInstance(createdConfiguration.Id.ToString(), updateRequest, CancellationToken.None);
+        await _eavService.UpdateEntityInstance(createdConfiguration.Id.ToString(), updateRequest, CancellationToken.None);
 
         ProjectionQueryResult<AttributeConfigurationListItemViewModel> attributeConfigurations = await _eavService.ListAttributes(
             new ProjectionQuery

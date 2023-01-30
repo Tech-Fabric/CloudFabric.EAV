@@ -51,7 +51,7 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
             List<LocalizedString> name,
             long startingNumber,
             int increment,
-            List<LocalizedString> description = null,
+            List<LocalizedString>? description = null,
             bool isRequired = false,
             Guid? tenantId = null,
             string? metadata = null

@@ -650,14 +650,14 @@ public class EAVService : IEAVService
             return (null, new ValidationErrorResponse(validationErrors))!;
         }
 
-        var entityConfigurationSaved = await _entityConfigurationRepository.SaveAsync(_userInfo, entityConfiguration, CancellationToken.None);
+        var entityConfigurationSaved = await _entityConfigurationRepository.SaveAsync(_userInfo, entityConfiguration, cancellationToken);
 
         if (!entityConfigurationSaved)
         {
             throw new Exception("Entity was not saved");
         }
 
-        var entityInstanceSaved = await _entityInstanceRepository.SaveAsync(_userInfo, entityInstance);
+        var entityInstanceSaved = await _entityInstanceRepository.SaveAsync(_userInfo, entityInstance, cancellationToken);
 
         if (!entityInstanceSaved)
         {
@@ -953,7 +953,7 @@ public class EAVService : IEAVService
                     serialInstance.Value = newOverride!.Value;
 
                     entityConfiguration.UpdateAttrributeExternalValues(attributeConfiguration.Id, new List<object>() { newOverride });
-                };
+                }
                 break;
         }
     }

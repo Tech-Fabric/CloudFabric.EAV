@@ -4,7 +4,7 @@ namespace CloudFabric.EAV.Domain.Models;
 
 /// <summary>
 /// Links attribute configuration to entity configuration
-/// External values - values that inherent to an attribute, but assigned outside of it.
+/// External values - attribute data that must be stored on EntityConfiguration level, because one attribute can be assigned to many entity configurations.
 /// </summary>
 public class EntityConfigurationAttributeReference
 {
