@@ -455,6 +455,9 @@ namespace CloudFabric.EAV.Domain.Projections.EntityInstanceProjection
                 case EavAttributeType.File:
                     propertyType = TypeCode.Object;
                     break;
+                case EavAttributeType.Serial:
+                    propertyType = TypeCode.Int64;
+                    break;
                 default:
                     throw new Exception($"EavAttributeType {valueType} is not supported.");
             }

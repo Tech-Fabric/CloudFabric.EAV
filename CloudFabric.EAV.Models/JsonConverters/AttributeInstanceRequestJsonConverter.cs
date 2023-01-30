@@ -52,6 +52,8 @@ namespace CloudFabric.EAV.Models.JsonConverters
                     return typeof(FileAttributeInstanceCreateUpdateRequest);
                 case EavAttributeType.ValueFromList:
                     return typeof(ValueFromListAttributeInstanceCreateUpdateRequest);
+                case EavAttributeType.Serial:
+                    return typeof(SerialAttributeInstanceCreateUpdateRequest);
                 default:
                     throw new InvalidOperationException();
             }
