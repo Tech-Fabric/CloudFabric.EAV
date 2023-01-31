@@ -795,51 +795,21 @@ public class EAVService : IEAVService
         );
     }
     
-    public async Task<List<EntityTreeInstanceViewModel>> InstanceTreeView(
+    public async Task<List<EntityTreeInstanceViewModel>> GetInstanceTreeViewAsync(
         Guid entityConfigurationId,
         ProjectionQuery query,
         CancellationToken cancellationToken = default(CancellationToken)
     )
     {
-        var entityConfiguration = await _entityConfigurationRepository.LoadAsyncOrThrowNotFound(
-            entityConfigurationId,
-            entityConfigurationId.ToString(),
-            cancellationToken
-        ).ConfigureAwait(false);
-
-        var attributes = await GetAttributeConfigurationsForEntityConfiguration(
-            entityConfiguration,
-            cancellationToken
-        ).ConfigureAwait(false);
-
-        var schema = CloudFabric.EAV.Domain.Projections.EntityInstanceProjection.ProjectionDocumentSchemaFactory
-            .FromEntityConfiguration(entityConfiguration, attributes);
-
-        var projectionRepository = _projectionRepositoryFactory.GetProjectionRepository(schema);
-
-        var results = await projectionRepository.Query(query, entityConfigurationId.ToString(), cancellationToken)
-            .ConfigureAwait(false);
-
-        var resultInstances = results.TransformResultDocuments(
-            r => _entityInstanceFromDictionaryDeserializer.Deserialize(entityConfiguration, attributes, r)
-        );
+        var resultInstances = await QueryInstances(entityConfigurationId, query,cancellationToken).ConfigureAwait(false);
         var response = new List<EntityTreeInstanceViewModel>();
         
-        
         // Go through each instance once
-        foreach (var instance in resultInstances.Records.Select(x => x.Document).OrderBy(x => x.CategoryPath.Length))
+        foreach (var instance in resultInstances.Records.Select(x => x.Document!).OrderBy(x => x.CategoryPath.Length))
         {
 
-            var treeInstance = new EntityTreeInstanceViewModel()
-            {
-                Attributes = instance.Attributes,
-                CategoryPath = instance.CategoryPath,
-                EntityConfigurationId = instance.EntityConfigurationId,
-                Id = instance.Id,
-                TenantId = instance.TenantId,
-                PartitionKey = instance.PartitionKey,
-                Children = new List<EntityTreeInstanceViewModel>()
-            };
+            var treeInstance = _mapper.Map<EntityTreeInstanceViewModel>(instance);
+            
             if (string.IsNullOrEmpty(instance.CategoryPath))
             {
                 response.Add(treeInstance);
@@ -847,8 +817,8 @@ public class EAVService : IEAVService
             else
             {
                 var categoryPathElements = instance.CategoryPath.Split('/').Where(x => !string.IsNullOrEmpty(x));
-                EntityTreeInstanceViewModel currentLevel = null;
-                var response1 = categoryPathElements.Aggregate(response,
+                EntityTreeInstanceViewModel? currentLevel = null;
+                categoryPathElements.Aggregate(response,
                     (acc, pathComponent) =>
                     {
 
@@ -856,132 +826,16 @@ public class EAVService : IEAVService
                         if (parent == null)
                         {
                             var parentInstance = resultInstances.Records.Select(x => x.Document).FirstOrDefault(x => x.Id.ToString() == pathComponent);
-                            parent = new EntityTreeInstanceViewModel()
-                            {
-                                Attributes = parentInstance.Attributes,
-                                CategoryPath = parentInstance.CategoryPath,
-                                EntityConfigurationId = parentInstance.EntityConfigurationId,
-                                Id = parentInstance.Id,
-                                TenantId = parentInstance.TenantId,
-                                PartitionKey = parentInstance.PartitionKey,
-                                Children = new List<EntityTreeInstanceViewModel>()
-                            };
+                            parent = _mapper.Map<EntityTreeInstanceViewModel>(parentInstance);
                             acc.Add(parent);
                         }
                         currentLevel = parent;
                         return parent.Children;
                     });
-                currentLevel.Children.Add(treeInstance);
+                currentLevel?.Children.Add(treeInstance);
 
             }
         }
-        // Parse the category path to know parents ids or machine names
-            
-            
-            // Remember the last parent we processed for this instance
-            EntityTreeInstanceViewModel? previousParent = null;
-            
-            // for each category path element from the beginning
-            /*
-            foreach (var pathElement in categoryPathElements)
-            {
-
-                EntityTreeInstanceViewModel? parent = null;
-
-                // Check if parent with current processable path element already processes and pulled either from results list or from previous processed parent children list 
-                parent = previousParent != null ? previousParent.Children.FirstOrDefault(x => x.Id.ToString() == pathElement) : response.FirstOrDefault(x => x.Id.ToString() == pathElement);
-                
-                // If it's not processed yet, create from the instance with empty children array
-                if (parent == null)
-                {
-                    var parentInstance = resultInstances.Records.Select(x => x.Document).FirstOrDefault(x => x.Id.ToString() == pathElement);
-
-                    parent = new EntityTreeInstanceViewModel()
-                    {
-                        Attributes = parentInstance.Attributes,
-                        CategoryPath = parentInstance.CategoryPath,
-                        EntityConfigurationId = parentInstance.EntityConfigurationId,
-                        Id = parentInstance.Id,
-                        TenantId = parentInstance.TenantId,
-                        PartitionKey = parentInstance.PartitionKey,
-                        Children = new List<EntityTreeInstanceViewModel>()
-                    };                   
-                }
-                
-                // If it's not the first element of the category path, add the parent to the previous parent children list
-                if (previousParent != null)
-                {
-                    previousParent.Children.Add(parent);
-                }
-                // else add directly to the root results list so we can pull it later
-                else
-                {
-                    response.Add(parent);
-                }
-                
-                // remember it as the previous processed parent for the next iteration
-                previousParent = parent;
-            }
-            var treeViewInstance = new EntityTreeInstanceViewModel()
-            {
-                Attributes = instance.Attributes,
-                CategoryPath = instance.CategoryPath,
-                EntityConfigurationId = instance.EntityConfigurationId,
-                Id = instance.Id,
-                TenantId = instance.TenantId,
-                PartitionKey = instance.PartitionKey,
-                Children = new List<EntityTreeInstanceViewModel>()
-            };
-            // add the instance to the last processed parent children list
-            if (previousParent != null)
-            {
-                previousParent.Children.Add(treeViewInstance);
-            }
-            else
-            {
-                response.Add(treeViewInstance);
-            }
-        }
-        */
-        /*
-        var uniqueCategoryPaths = resultInstances.Records.Select(x => x.Document.CategoryPath).Distinct().OrderBy(x => x.Length).ToList();
-        var maxDepth = uniqueCategoryPaths.Last().Count(y => y == '/');
-        var currentLevelItems = new List<EntityTreeInstanceViewModel>();
-        for (i = 0; i < maxDepth; i++)
-        {
-            var currentDepth = i;
-            var currentDepthPaths = uniqueCategoryPaths.Where(x => x.Count(y => y == '/') == currentDepth).ToList();
-            foreach (var path in currentDepthPaths)
-            {
-                var children = resultInstances.Records.Select(x => x.Document).Where(x => x.CategoryPath == path).Select<EntityInstanceViewModel, EntityTreeInstanceViewModel>(x => new EntityInstanceTreeViewModel()
-                    {
-                        Attributes = x.Document.Attributes,
-                        CategoryPath = x.Document.CategoryPath,
-                        EntityConfigurationId = x.Document.EntityConfigurationId,
-                        Id = x.Document.Id,
-                        TenantId = x.Document.TenantId,
-                        PartitionKey = x.Document.PartitionKey,
-                        Children = new List<EntityInstanceTreeViewModel>()
-                    }).ToList();
-                    currentLevelItems.AddRange(children);
-                else 
-                {
-                    var lastPath = path.Substring(path.LastIndexOf('/') + 1);
-                    var parent = response.FirstOrDefault(x => x.Id.ToString() == lastPath);
-                    if (parent == null)
-                    {
-                        parent = resultInstances.Records.FirstOrDefault(x => x.Document.Id.ToString() == lastPath);
-                    }
-                    //var children = resultInstances.Records.Where(x => x.Document.CategoryPath.StartsWith(path)).ToList();
-                       
-                }
-//                var parentPath = path.Substring(0, path.LastIndexOf('/'));
-                if (parent != null)
-                {
-                    parent.Children.AddRange(children);
-                }
-            }
-        }*/
         return response;
     }
     

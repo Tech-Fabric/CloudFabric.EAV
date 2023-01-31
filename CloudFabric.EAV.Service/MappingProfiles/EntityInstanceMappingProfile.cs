@@ -14,5 +14,6 @@ public class EntityInstanceProfile : Profile
 
         CreateMap<EntityInstance, EntityInstanceViewModel>();
         CreateMap<EntityInstanceViewModel, EntityInstance>();
+        CreateMap<EntityInstanceViewModel, EntityTreeInstanceViewModel>().ForMember(o => o.Children, opt => opt.MapFrom(_ => new List<EntityTreeInstanceViewModel>()));
     }
 }

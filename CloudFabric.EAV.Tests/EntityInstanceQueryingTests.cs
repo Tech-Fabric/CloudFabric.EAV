@@ -174,26 +174,33 @@ public abstract class EntityInstanceQueryingTests
             await _eavService.CreateEntityInstance(entityInstanceCreateRequest);
 
         entityInstanceCreateRequest.CategoryPath = $"/{createdInstance1.Id}";
-        var (createdInstance2, _) =
+        var (createdInstance12, _) =
             await _eavService.CreateEntityInstance(entityInstanceCreateRequest);
 
         entityInstanceCreateRequest.CategoryPath = $"/{createdInstance1.Id}";
-        var (createdInstance3, _) =
+        var (createdInstance13, _) =
             await _eavService.CreateEntityInstance(entityInstanceCreateRequest);
         
-        entityInstanceCreateRequest.CategoryPath = $"/{createdInstance1.Id}/{createdInstance2.Id}";
-        var (createdInstance21, _) =
+        entityInstanceCreateRequest.CategoryPath = $"/{createdInstance1.Id}/{createdInstance12.Id}";
+        var (createdInstance121, _) =
             await _eavService.CreateEntityInstance(entityInstanceCreateRequest);
         
-        entityInstanceCreateRequest.CategoryPath = $"/{createdInstance1.Id}/{createdInstance2.Id}/{createdInstance21.Id}";
-        var ( createdInstance211, _) =
+        entityInstanceCreateRequest.CategoryPath = $"/{createdInstance1.Id}/{createdInstance12.Id}/{createdInstance121.Id}";
+        var ( createdInstance1211, _) =
             await _eavService.CreateEntityInstance(entityInstanceCreateRequest);
 
-        var list = await _eavService.InstanceTreeView(createdConfiguration.Id, new ProjectionQuery()
-        {
-            Limit = 100
-        }, CancellationToken.None);
-
+        var list = await _eavService.GetInstanceTreeViewAsync(createdConfiguration.Id, new ProjectionQuery(), CancellationToken.None);
+        list.Should().Contain(x => x.Id == createdInstance1.Id);
+        var instance1 = list[0];
+        instance1.Children.Should().Contain(x => x.Id == createdInstance13.Id);
+        var instance12 = instance1.Children.FirstOrDefault(x => x.Id == createdInstance12.Id);
+        var instance13 = instance1.Children.FirstOrDefault(x => x.Id == createdInstance13.Id);
+        instance12.Should().NotBeNull();
+        instance13.Should().NotBeNull();
+        var instance121 = instance12?.Children.FirstOrDefault(x => x.Id == createdInstance121.Id);
+        instance121.Should().NotBeNull();
+        var instance1211 = instance121?.Children.FirstOrDefault(x => x.Id == createdInstance1211.Id);
+        instance1211.Should().NotBeNull();
     }
 
     [TestMethod]
