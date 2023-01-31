@@ -9,7 +9,7 @@ public class EntityInstanceFactory
 {
     public static CategoryInstanceCreateRequest CreateCategoryInstanceRequest(Guid entityConfigurationId, 
         Guid treeId,
-        string categoryPath, 
+        Guid? parentId, 
         Guid? tenantId,
         int attributeIndexFrom = 0, 
         int attributeIndexTo = 1)
@@ -27,7 +27,7 @@ public class EntityInstanceFactory
         {
             CategoryConfigurationId = entityConfigurationId,
             Attributes = attributeInstances,
-            CategoryPath = categoryPath,
+            ParentId = parentId,
             TenantId = tenantId,
             CategoryTreeId = treeId
         };

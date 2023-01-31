@@ -46,17 +46,7 @@ public static class ProjectionDocumentSchemaFactory
         );
         
         schema.Properties.Add(
-            new ProjectionDocumentPropertySchema()
-            {
-                PropertyName = "CategoryPath",
-                PropertyType = TypeCode.Object,
-                IsKey = false,
-                IsSearchable = false,
-                IsRetrievable = true,
-                IsFilterable = true,
-                IsSortable = true,
-                IsFacetable = false
-            }
+            ProjectionAttributesSchemaFactory.GetCategoryPathsAttributeSchema()
         );
 
         schema.Properties.AddRange(attributeConfigurations.Select(GetAttributeProjectionPropertySchema));

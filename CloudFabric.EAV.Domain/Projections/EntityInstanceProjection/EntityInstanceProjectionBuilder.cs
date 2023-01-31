@@ -1,7 +1,6 @@
 using CloudFabric.EAV.Domain.Events.Instance.Entity;
 using CloudFabric.EAV.Domain.Models;
 using CloudFabric.EventSourcing.Domain;
-using CloudFabric.EventSourcing.EventStore;
 using CloudFabric.Projections;
 
 namespace CloudFabric.EAV.Domain.Projections.EntityInstanceProjection;
@@ -155,11 +154,21 @@ IHandleEvent<AggregateUpdatedEvent<EntityInstance>>
             @event.Timestamp,
             (document) =>
             {
-                if (document["CategoryPath"] is Dictionary<string, string> categoryPath)
-                {
-                    categoryPath[@event.CategoryTreeId] = @event.CategoryPath;
-                    document["CategoryPath"] = categoryPath;
-                }
+                var categoryPaths = document["CategoryPaths"] as List<CategoryPath> ?? new List<CategoryPath>();
+                    var categoryPath = categoryPaths.FirstOrDefault(x => x.TreeId.ToString() == @event.CategoryTreeId);
+                    if (categoryPath == null)
+                    {
+                        categoryPaths.Add(new CategoryPath()
+                        {
+                            Path = @event.CategoryPath,
+                            TreeId = Guid.Parse(@event.CategoryTreeId)
+                        });
+                    }
+                    else
+                    {
+                        categoryPath.Path = @event.CategoryPath;
+                    }
+                    document["CategoryPaths"] = categoryPaths;
             }
         ).ConfigureAwait(false);
     }

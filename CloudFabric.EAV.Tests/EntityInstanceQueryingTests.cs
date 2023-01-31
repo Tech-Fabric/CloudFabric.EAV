@@ -177,42 +177,41 @@ public abstract class EntityInstanceQueryingTests
         
         var (createdTree, _) = await _eavService.CreateCategoryTreeAsync(treeRequest, configurationCreateRequest.TenantId, CancellationToken.None);
         
-        
         var categoryInstanceRequest =
-            EntityInstanceFactory.CreateCategoryInstanceRequest(categoryConfiguration.Id, createdTree.Id, "", configurationCreateRequest.TenantId, 0, 9);
+            EntityInstanceFactory.CreateCategoryInstanceRequest(categoryConfiguration.Id, createdTree.Id, null, configurationCreateRequest.TenantId, 0, 9);
         
         var (createdCategory1, validationErrors) =
             await _eavService.CreateCategoryInstanceAsync(categoryInstanceRequest);
-/*
-        entityInstanceCreateRequest.CategoryPath = $"/{createdInstance1.Id}";
-        var (createdInstance12, _) =
-            await _eavService.CreateEntityInstance(entityInstanceCreateRequest);
 
-        entityInstanceCreateRequest.CategoryPath = $"/{createdInstance1.Id}";
-        var (createdInstance13, _) =
-            await _eavService.CreateEntityInstance(entityInstanceCreateRequest);
-        
-        entityInstanceCreateRequest.CategoryPath = $"/{createdInstance1.Id}/{createdInstance12.Id}";
-        var (createdInstance121, _) =
-            await _eavService.CreateEntityInstance(entityInstanceCreateRequest);
-        
-        entityInstanceCreateRequest.CategoryPath = $"/{createdInstance1.Id}/{createdInstance12.Id}/{createdInstance121.Id}";
-        var ( createdInstance1211, _) =
-            await _eavService.CreateEntityInstance(entityInstanceCreateRequest);
+        categoryInstanceRequest.ParentId = createdCategory1.Id;
+        var (createdCategory12, _) =
+            await _eavService.CreateCategoryInstanceAsync(categoryInstanceRequest);
 
-        var list = await _eavService.GetInstanceTreeViewAsync(createdConfiguration.Id, new ProjectionQuery(), CancellationToken.None);
-        list.Should().Contain(x => x.Id == createdInstance1.Id);
+        categoryInstanceRequest.ParentId = createdCategory1.Id;
+        var (createdCategory13, _) =
+            await _eavService.CreateCategoryInstanceAsync(categoryInstanceRequest);
+        
+        categoryInstanceRequest.ParentId = createdCategory12.Id;
+        var (createdCategory121, _) =
+            await _eavService.CreateCategoryInstanceAsync(categoryInstanceRequest);
+        
+        categoryInstanceRequest.ParentId = createdCategory121.Id;
+        var ( createdCategory1211, _) =
+            await _eavService.CreateCategoryInstanceAsync(categoryInstanceRequest);
+
+        var list = await _eavService.GetCategoryTreeViewAsync(createdTree.Id, CancellationToken.None);
+
+        list.Should().Contain(x => x.Id == createdCategory1.Id);
         var instance1 = list[0];
-        instance1.Children.Should().Contain(x => x.Id == createdInstance13.Id);
-        var instance12 = instance1.Children.FirstOrDefault(x => x.Id == createdInstance12.Id);
-        var instance13 = instance1.Children.FirstOrDefault(x => x.Id == createdInstance13.Id);
+        instance1.Children.Should().Contain(x => x.Id == createdCategory13.Id);
+        var instance12 = instance1.Children.FirstOrDefault(x => x.Id == createdCategory12.Id);
+        var instance13 = instance1.Children.FirstOrDefault(x => x.Id == createdCategory13.Id);
         instance12.Should().NotBeNull();
         instance13.Should().NotBeNull();
-        var instance121 = instance12?.Children.FirstOrDefault(x => x.Id == createdInstance121.Id);
+        var instance121 = instance12?.Children.FirstOrDefault(x => x.Id == createdCategory121.Id);
         instance121.Should().NotBeNull();
-        var instance1211 = instance121?.Children.FirstOrDefault(x => x.Id == createdInstance1211.Id);
+        var instance1211 = instance121?.Children.FirstOrDefault(x => x.Id == createdCategory1211.Id);
         instance1211.Should().NotBeNull();
-        */
     }
 
     [TestMethod]

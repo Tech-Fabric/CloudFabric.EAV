@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+
+using CloudFabric.EAV.Domain.Models;
 using CloudFabric.EAV.Models.ViewModels.Attributes;
 
 
@@ -17,8 +19,7 @@ namespace CloudFabric.EAV.Models.ViewModels.EAV
 
         public string PartitionKey { get; set; }
         
-        public Dictionary<string, string> CategoryPath { get; set; }
-        
+        public List<CategoryPath> CategoryPaths { get; set; }
     }
     
     public class EntityTreeInstanceViewModel
@@ -33,7 +34,7 @@ namespace CloudFabric.EAV.Models.ViewModels.EAV
 
         public string PartitionKey { get; set; }
         
-        public string CategoryPath { get; set; }
+        public List<CategoryPath> CategoryPaths { get; set; }
         
         public List<EntityTreeInstanceViewModel> Children { get; set; }
 

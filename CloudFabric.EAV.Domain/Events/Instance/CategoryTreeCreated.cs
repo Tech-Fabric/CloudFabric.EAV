@@ -5,6 +5,9 @@ namespace CloudFabric.EAV.Domain.Events.Instance
     public record CategoryTreeCreated : Event
     {
 
+        public CategoryTreeCreated()
+        {
+        }
 
         public CategoryTreeCreated(Guid id, Guid entityConfigurationId, string machineName, Guid? tenantId)
         {

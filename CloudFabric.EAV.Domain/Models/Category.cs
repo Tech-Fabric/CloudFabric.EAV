@@ -6,9 +6,12 @@ namespace CloudFabric.EAV.Domain.Models
 {
     public class Category : EntityInstanceBase
     {
-        public Guid CategoryTreeId { get; protected set; }
-        public string CategoryPath { get; protected set; }
         public Category(IEnumerable<IEvent> events) : base(events)
+        {
+            
+        }
+
+        public Category(Guid id, Guid entityConfigurationId, List<AttributeInstance> attributes, Guid? tenantId) : base(id, entityConfigurationId, attributes, tenantId)
         {
         }
 
@@ -16,11 +19,6 @@ namespace CloudFabric.EAV.Domain.Models
         {
             Apply(new EntityCategoryPathChanged(id, EntityConfigurationId, categoryTreeId, categoryPath));
         }
-        public void On(EntityCategoryPathChanged @event)
-        {
-            CategoryPath = @event.CategoryPath;
-            CategoryTreeId = new Guid(@event.CategoryTreeId);
-        }
-        
+
     }
 }

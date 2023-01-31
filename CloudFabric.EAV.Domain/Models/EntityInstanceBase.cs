@@ -9,6 +9,7 @@ namespace CloudFabric.EAV.Domain.Models
     public class EntityInstanceBase : AggregateBase
     {
         public override string PartitionKey => EntityConfigurationId.ToString();
+        public List<CategoryPath> CategoryPaths { get; protected set; }
 
         public Guid EntityConfigurationId { get; protected set; }
 
@@ -49,8 +50,30 @@ namespace CloudFabric.EAV.Domain.Models
             EntityConfigurationId = @event.EntityConfigurationId;
             Attributes = new List<AttributeInstance>(@event.Attributes).AsReadOnly();
             TenantId = @event.TenantId;
+            CategoryPaths = new List<CategoryPath>();
         }
-
+        public void ChangeCategoryPath(string treeId, string categoryPath)
+        {
+            Apply(new EntityCategoryPathChanged(Id, EntityConfigurationId, treeId, categoryPath));
+        }
+        
+        public void On(EntityCategoryPathChanged @event)
+        {
+            var categoryPath = CategoryPaths.FirstOrDefault(x => x.TreeId.ToString() == @event.CategoryTreeId);
+            if (categoryPath == null)
+            {
+                CategoryPaths.Add(new CategoryPath
+                {
+                    TreeId = new Guid(@event.CategoryTreeId),
+                    Path = @event.CategoryPath
+                });
+            }
+            else
+            {
+                categoryPath.Path = @event.CategoryPath;
+            }
+        }
+    
 
     
         public void On(AttributeInstanceAdded @event)

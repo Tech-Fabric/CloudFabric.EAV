@@ -5,7 +5,9 @@ namespace CloudFabric.EAV.Domain.Events.Instance.Entity;
 
 public record EntityInstanceCreated : Event
 {
-
+    public EntityInstanceCreated()
+    {
+    }
     public EntityInstanceCreated(Guid id, Guid entityConfigurationId, List<AttributeInstance> attributes, Guid? tenantId)
     {
         TenantId = tenantId;
