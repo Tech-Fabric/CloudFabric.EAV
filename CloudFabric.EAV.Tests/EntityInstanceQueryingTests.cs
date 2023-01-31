@@ -212,6 +212,29 @@ public abstract class EntityInstanceQueryingTests
         instance121.Should().NotBeNull();
         var instance1211 = instance121?.Children.FirstOrDefault(x => x.Id == createdCategory1211.Id);
         instance1211.Should().NotBeNull();
+
+        var subcategories12 = await _eavService.QueryInstances(categoryConfiguration.Id,
+            new ProjectionQuery()
+            {
+                Filters = new List<Filter>()
+                {
+                    new Filter("CategoryPaths.Path", FilterOperator.StartsWith, $"/{createdCategory1.Id}/{createdCategory12.Id}")
+                }
+            });
+        subcategories12.Records.Count.Should().Be(2);
+        
+        var productConfigurationCreateRequest = EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
+
+        var (createdConfiguration, _) = await _eavService.CreateEntityConfiguration(
+            productConfigurationCreateRequest,
+            CancellationToken.None
+        );
+        
+        var instanceCreateRequest =
+            EntityInstanceFactory.CreateValidBoardGameEntityInstanceCreateRequest(createdConfiguration.Id);
+    
+        var (createdInstance, createProblemDetails) = await _eavService.CreateEntityInstance(instanceCreateRequest);
+        
     }
 
     [TestMethod]
