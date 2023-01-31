@@ -49,7 +49,7 @@ public static class ProjectionDocumentSchemaFactory
             new ProjectionDocumentPropertySchema()
             {
                 PropertyName = "CategoryPath",
-                PropertyType = TypeCode.String,
+                PropertyType = TypeCode.Object,
                 IsKey = false,
                 IsSearchable = false,
                 IsRetrievable = true,

@@ -17,7 +17,7 @@ namespace CloudFabric.EAV.Models.ViewModels.EAV
 
         public string PartitionKey { get; set; }
         
-        public string CategoryPath { get; set; }
+        public Dictionary<string, string> CategoryPath { get; set; }
         
     }
     

@@ -11,7 +11,7 @@ public class EntityInstanceProjectionBuilder : ProjectionBuilder,
     // IHandleEvent<AttributeInstanceAdded>,
     IHandleEvent<AttributeInstanceUpdated>,
     // IHandleEvent<AttributeInstanceRemoved>,
-    IHandleEvent<CategoryPathChanged>,
+    IHandleEvent<EntityCategoryPathChanged>,
 IHandleEvent<AggregateUpdatedEvent<EntityInstance>>
 {
     private readonly AggregateRepositoryFactory _aggregateRepositoryFactory;
@@ -60,7 +60,6 @@ IHandleEvent<AggregateUpdatedEvent<EntityInstance>>
             { "Id", @event.AggregateId },
             { "EntityConfigurationId", @event.EntityConfigurationId },
             { "TenantId", @event.TenantId },
-            { "CategoryPath", @event.CategoryPath }
         };
 
         foreach (var attribute in @event.Attributes)
@@ -143,7 +142,7 @@ IHandleEvent<AggregateUpdatedEvent<EntityInstance>>
         await SetDocumentUpdatedAt(schema, @event.AggregateId, @event.PartitionKey, @event.UpdatedAt);
     }
 
-    public async Task On(CategoryPathChanged @event)
+    public async Task On(EntityCategoryPathChanged @event)
     {
         var projectionDocumentSchema = await BuildProjectionDocumentSchemaForEntityConfigurationIdAsync(
             @event.EntityConfigurationId
@@ -156,8 +155,11 @@ IHandleEvent<AggregateUpdatedEvent<EntityInstance>>
             @event.Timestamp,
             (document) =>
             {
-                document["CategoryPath"] =
-                    @event.CategoryPath;
+                if (document["CategoryPath"] is Dictionary<string, string> categoryPath)
+                {
+                    categoryPath[@event.CategoryTreeId] = @event.CategoryPath;
+                    document["CategoryPath"] = categoryPath;
+                }
             }
         ).ConfigureAwait(false);
     }

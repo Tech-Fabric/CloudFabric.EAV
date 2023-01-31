@@ -7,7 +7,8 @@ namespace CloudFabric.EAV.Tests.Factories;
 
 public class EntityInstanceFactory
 {
-    public static EntityInstanceCreateRequest CreateCategoryInstanceRequest(Guid entityConfigurationId, 
+    public static CategoryInstanceCreateRequest CreateCategoryInstanceRequest(Guid entityConfigurationId, 
+        Guid treeId,
         string categoryPath, 
         Guid? tenantId,
         int attributeIndexFrom = 0, 
@@ -22,12 +23,13 @@ public class EntityInstanceFactory
                 Value = i
             });
         }
-        return new EntityInstanceCreateRequest()
+        return new CategoryInstanceCreateRequest
         {
-            EntityConfigurationId = entityConfigurationId,
+            CategoryConfigurationId = entityConfigurationId,
             Attributes = attributeInstances,
             CategoryPath = categoryPath,
-            TenantId = tenantId
+            TenantId = tenantId,
+            CategoryTreeId = treeId
         };
     }
     
