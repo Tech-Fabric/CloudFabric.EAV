@@ -32,6 +32,11 @@ public class EntityInstance : AggregateBase
         Apply(new AttributeInstanceAdded(Id, attribute));
     }
 
+    public void ChangeCategoryPath(string categoryPath)
+    {
+        Apply(new CategoryPathChanged(EntityConfigurationId, categoryPath));
+    }
+    
     public void UpdateAttributeInstance(AttributeInstance attribute)
     {
         Apply(new AttributeInstanceUpdated(Id, EntityConfigurationId, attribute));
@@ -53,6 +58,11 @@ public class EntityInstance : AggregateBase
         CategoryPath = @event.CategoryPath;
     }
 
+    public void On(CategoryPathChanged @event)
+    {
+        CategoryPath = @event.CategoryPath;
+    }
+    
     public void On(AttributeInstanceAdded @event)
     {
         var newCollection = Attributes == null ? new List<AttributeInstance>() : new List<AttributeInstance>(Attributes);

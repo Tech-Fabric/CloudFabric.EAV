@@ -29,6 +29,7 @@ using FluentAssertions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+// ReSharper disable AsyncConverter.ConfigureAwaitHighlighting
 
 namespace CloudFabric.EAV.Tests;
 
