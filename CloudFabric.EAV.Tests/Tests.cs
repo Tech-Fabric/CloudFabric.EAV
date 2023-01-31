@@ -26,6 +26,8 @@ using CloudFabric.Projections.Queries;
 
 using FluentAssertions;
 
+using IdentityModel;
+
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -124,8 +126,10 @@ public class Tests
         }
     }
 
+
+    
     [TestMethod]
-    public async Task CreateInstance_Success()
+    public async Task CreateInstance_Success()  
     {
         var configurationCreateRequest = EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
 

@@ -7,6 +7,30 @@ namespace CloudFabric.EAV.Tests.Factories;
 
 public class EntityInstanceFactory
 {
+    public static EntityInstanceCreateRequest CreateCategoryInstanceRequest(Guid entityConfigurationId, 
+        string categoryPath, 
+        Guid? tenantId,
+        int attributeIndexFrom = 0, 
+        int attributeIndexTo = 1)
+    {
+        var attributeInstances = new List<AttributeInstanceCreateUpdateRequest>();
+        for (var i = attributeIndexFrom; i < attributeIndexTo; i++)
+        {
+            attributeInstances.Add(new NumberAttributeInstanceCreateUpdateRequest()
+            {
+                ConfigurationAttributeMachineName = $"category_attribute_{i}",
+                Value = i
+            });
+        }
+        return new EntityInstanceCreateRequest()
+        {
+            EntityConfigurationId = entityConfigurationId,
+            Attributes = attributeInstances,
+            CategoryPath = categoryPath,
+            TenantId = tenantId
+        };
+    }
+    
     public static EntityInstanceCreateRequest CreateValidBoardGameEntityInstanceCreateRequest(Guid entityConfigurationId)
     {
         return new EntityInstanceCreateRequest()

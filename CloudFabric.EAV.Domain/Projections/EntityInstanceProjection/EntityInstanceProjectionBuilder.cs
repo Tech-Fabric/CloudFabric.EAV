@@ -59,7 +59,8 @@ IHandleEvent<AggregateUpdatedEvent<EntityInstance>>
         {
             { "Id", @event.AggregateId },
             { "EntityConfigurationId", @event.EntityConfigurationId },
-            { "TenantId", @event.TenantId }
+            { "TenantId", @event.TenantId },
+            { "CategoryPath", @event.CategoryPath }
         };
 
         foreach (var attribute in @event.Attributes)

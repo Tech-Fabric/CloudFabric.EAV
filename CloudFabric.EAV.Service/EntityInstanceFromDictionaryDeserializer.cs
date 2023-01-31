@@ -37,7 +37,8 @@ public class EntityInstanceFromDictionaryDeserializer
                 .Select(attributeConfig =>
                     DeserializeAttribute(attributeConfig, record[attributeConfig.MachineName])
                 )
-                .ToList()
+                .ToList(),
+            CategoryPath = (string)record["CategoryPath"]!
         };
         return entityInstance;
     }

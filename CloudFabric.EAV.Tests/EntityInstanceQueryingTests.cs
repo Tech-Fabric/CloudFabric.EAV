@@ -159,6 +159,42 @@ public abstract class EntityInstanceQueryingTests
         results?.Records.Select(r => r.Document).First().Should().BeEquivalentTo(createdInstance);
     }
 
+    [TestMethod]
+    public async Task CreateCategory_Success()
+    {
+        var configurationCreateRequest = EntityConfigurationFactory.CreateBoardGameCategoryConfigurationCreateRequest(0, 9);
+        (EntityConfigurationViewModel? createdConfiguration, _) = await _eavService.CreateEntityConfiguration(
+            configurationCreateRequest,
+            CancellationToken.None
+        );
+        var entityInstanceCreateRequest =
+            EntityInstanceFactory.CreateCategoryInstanceRequest(createdConfiguration.Id, "", configurationCreateRequest.TenantId, 0, 9);
+        
+        var (createdInstance1, validationErrors) =
+            await _eavService.CreateEntityInstance(entityInstanceCreateRequest);
+
+        entityInstanceCreateRequest.CategoryPath = $"/{createdInstance1.Id}";
+        var (createdInstance2, _) =
+            await _eavService.CreateEntityInstance(entityInstanceCreateRequest);
+
+        entityInstanceCreateRequest.CategoryPath = $"/{createdInstance1.Id}";
+        var (createdInstance3, _) =
+            await _eavService.CreateEntityInstance(entityInstanceCreateRequest);
+        
+        entityInstanceCreateRequest.CategoryPath = $"/{createdInstance1.Id}/{createdInstance2.Id}";
+        var (createdInstance21, _) =
+            await _eavService.CreateEntityInstance(entityInstanceCreateRequest);
+        
+        entityInstanceCreateRequest.CategoryPath = $"/{createdInstance1.Id}/{createdInstance2.Id}/{createdInstance21.Id}";
+        var ( createdInstance211, _) =
+            await _eavService.CreateEntityInstance(entityInstanceCreateRequest);
+
+        var list = await _eavService.InstanceTreeView(createdConfiguration.Id, new ProjectionQuery()
+        {
+            Limit = 100
+        }, CancellationToken.None);
+
+    }
 
     [TestMethod]
     public async Task TestCreateInstanceUpdateAndQuery()

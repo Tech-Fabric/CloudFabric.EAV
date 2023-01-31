@@ -34,4 +34,6 @@ public class EntityInstanceQueryingTestsInMemory : EntityInstanceQueryingTests
     {
         return _projectionRepositoryFactory;
     }
+    
+    
 }
