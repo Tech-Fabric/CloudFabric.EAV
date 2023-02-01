@@ -14,25 +14,18 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
         public ValueFromListAttributeConfiguration(Guid id,
             string machineName,
             List<LocalizedString> name,
-            ValueFromListAttributeType valueFromListAttributeType,
             List<ValueFromListOptionConfiguration> valuesList,
-            string? attributeMachineNameToAffect,
-            List<LocalizedString> description = null,
+            List<LocalizedString>? description = null,
             bool isRequired = false,
             Guid? tenantId = null,
             string? metadata = null
         ) : base(id, machineName, name, EavAttributeType.ValueFromList, description, isRequired, tenantId, metadata)
         {
-            ValueFromListAttributeType = valueFromListAttributeType;
             ValuesList = valuesList;
-            AttributeMachineNameToAffect = attributeMachineNameToAffect;
-            Apply(new ValueFromListConfigurationUpdated(id, valueFromListAttributeType, valuesList, attributeMachineNameToAffect));
-
+            Apply(new ValueFromListConfigurationUpdated(id, valuesList));
         }
 
-        public ValueFromListAttributeType ValueFromListAttributeType { get; set; }
         public List<ValueFromListOptionConfiguration> ValuesList { get; set; }
-        public string? AttributeMachineNameToAffect { get; set; }
         public override EavAttributeType ValueType => EavAttributeType.ValueFromList;
 
         public override List<string> ValidateInstance(AttributeInstance? instance)
@@ -44,9 +37,15 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
                 return errors;
             }
 
-            if (instance is not ValueFromListAttributeInstance)
+            if (instance is not ValueFromListAttributeInstance valueInstance)
             {
                 errors.Add("Cannot validate attribute. Expected attribute type: Value from list");
+                return errors;
+            }
+
+            if (!ValuesList.Any(x => x.MachineName == valueInstance.Value))
+            {
+                errors.Add("Cannot validate attribute. Wrong option");
                 return errors;
             }
 
@@ -64,21 +63,17 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
 
             base.UpdateAttribute(updatedAttribute);
 
-            if (ValueFromListAttributeType != updated.ValueFromListAttributeType
-                || !ValuesList.Equals(updated.ValuesList)
-                || AttributeMachineNameToAffect != updated.AttributeMachineNameToAffect
+            if (!ValuesList.Equals(updated.ValuesList)
             )
             {
-                Apply(new ValueFromListConfigurationUpdated(Id, updated.ValueFromListAttributeType, updated.ValuesList, updated.AttributeMachineNameToAffect));
+                Apply(new ValueFromListConfigurationUpdated(Id, updated.ValuesList));
             }
         }
 
         protected bool Equals(ValueFromListAttributeConfiguration other)
         {
             return base.Equals(other)
-                   && ValueFromListAttributeType == other.ValueFromListAttributeType
-                   && ValuesList.Equals(other.ValuesList)
-                   && AttributeMachineNameToAffect == other.AttributeMachineNameToAffect;
+                   && ValuesList.Equals(other.ValuesList);
         }
 
         public override bool Equals(object? obj)
@@ -100,7 +95,7 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
         }
         public override int GetHashCode()
         {
-            return HashCode.Combine(base.GetHashCode(), (int)ValueFromListAttributeType, ValuesList, AttributeMachineNameToAffect);
+            return HashCode.Combine(base.GetHashCode(), ValuesList);
         }
 
         #region EventHandlers
@@ -113,9 +108,7 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
                 throw new Exception("Identical options' names not allowed");
             }
 
-            ValueFromListAttributeType = @event.ValueFromListAttributeType;
             ValuesList = @event.ValueFromListOptions;
-            AttributeMachineNameToAffect = @event.AttributeMachineNameToAffect;
         }
 
         #endregion

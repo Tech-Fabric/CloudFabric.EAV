@@ -10,18 +10,12 @@ namespace CloudFabric.EAV.Domain.Events.Configuration.Attributes
         {
         }
 
-        public ValueFromListConfigurationUpdated(Guid id, ValueFromListAttributeType valueFromListAttributeType, List<ValueFromListOptionConfiguration> valueFromListOptions, string? attributeMachineNameToAffect)
+        public ValueFromListConfigurationUpdated(Guid id, List<ValueFromListOptionConfiguration> valueFromListOptions)
         {
             AggregateId = id;
-            ValueFromListAttributeType = valueFromListAttributeType;
             ValueFromListOptions = valueFromListOptions;
-            AttributeMachineNameToAffect = attributeMachineNameToAffect;
         }
 
-        public ValueFromListAttributeType ValueFromListAttributeType { get; set; }
-
         public List<ValueFromListOptionConfiguration> ValueFromListOptions { get; set; }
-
-        public string? AttributeMachineNameToAffect { get; set; }
     }
 }

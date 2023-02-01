@@ -108,9 +108,7 @@ public class AttributeConfigurationProfile : Profile
                     Guid.NewGuid(),
                     src.MachineName,
                     ctx.Mapper.Map<List<LocalizedString>>(src.Name),
-                    src.ValueFromListAttributeType,
                     ctx.Mapper.Map<List<ValueFromListOptionConfiguration>>(src.ValuesList),
-                    src.AttributeMachineNameToAffect,
                     ctx.Mapper.Map<List<LocalizedString>>(src.Description),
                     src.IsRequired,
                     src.TenantId,
@@ -191,7 +189,6 @@ public class AttributeConfigurationProfile : Profile
         CreateMap<BooleanAttributeConfiguration, BooleanAttributeConfigurationViewModel>();
         CreateMap<FileAttributeConfiguration, FileAttributeConfigurationViewModel>();
         CreateMap<SerialAttributeConfiguration, SerialAttributeConfigurationViewModel>();
-
         CreateMap<ValueFromListAttributeConfiguration, ValueFromListAttributeConfigurationViewModel>();
 
         #region Projections

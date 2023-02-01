@@ -1059,11 +1059,10 @@ public class Tests
                 }
             },
             IsRequired = true,
-            ValueFromListAttributeType = ValueFromListAttributeType.OneValueFromList,
             ValuesList = new List<ValueFromListOptionCreateUpdateRequest>
             {
-                new ValueFromListOptionCreateUpdateRequest("firstTestOption", "Premium wrap", 30),
-                new ValueFromListOptionCreateUpdateRequest("secondTestOption", "Card with wishes from shop", null)
+                new ValueFromListOptionCreateUpdateRequest("firstTestOption", "Premium wrap"),
+                new ValueFromListOptionCreateUpdateRequest("secondTestOption", "Card with wishes from shop")
             }
         };
 
@@ -1128,11 +1127,10 @@ public class Tests
                 }
             },
             IsRequired = true,
-            ValueFromListAttributeType = ValueFromListAttributeType.OneValueFromList,
             ValuesList = new List<ValueFromListOptionCreateUpdateRequest>
             {
-                new ValueFromListOptionCreateUpdateRequest("repeatedMachineName", "Premium wrap", 30),
-                new ValueFromListOptionCreateUpdateRequest("repeatedMachineName", "Card with wishes from shop", null)
+                new ValueFromListOptionCreateUpdateRequest("Repeated Name", "firstTestOption"),
+                new ValueFromListOptionCreateUpdateRequest("Repeated Name", "secondTestOption")
             }
         };
 
@@ -1158,8 +1156,8 @@ public class Tests
 
         valueFromListAttribute.ValuesList = new List<ValueFromListOptionCreateUpdateRequest>
         {
-                new ValueFromListOptionCreateUpdateRequest(name: "Repeated Name", machineName: "firstTestOption", valueToAppend: 30),
-                new ValueFromListOptionCreateUpdateRequest(name: "Repeated Name", machineName: "secondTestOption", valueToAppend: null)
+                new ValueFromListOptionCreateUpdateRequest(machineName: "repeatedMachineName", name: "Standard"),
+                new ValueFromListOptionCreateUpdateRequest(machineName: "repeatedMachineName", name: "Premium")
         };
 
         await action.Should().ThrowAsync<Exception>();
@@ -1192,11 +1190,10 @@ public class Tests
                 }
             },
             IsRequired = true,
-            ValueFromListAttributeType = ValueFromListAttributeType.OneValueFromList,
             ValuesList = new List<ValueFromListOptionCreateUpdateRequest>
             {
-                new ValueFromListOptionCreateUpdateRequest("firstTestOption", "Premium wrap", 30),
-                new ValueFromListOptionCreateUpdateRequest("secondTestOption", "Card with wishes from shop", null)
+                new ValueFromListOptionCreateUpdateRequest("Premium wrap", "firstTestOption"),
+                new ValueFromListOptionCreateUpdateRequest("Card with wishes from shop", "secondTestOption")
             }
         };
 
@@ -1204,18 +1201,14 @@ public class Tests
 
         // create request with changed properties and update attribute
         string affectedMachineName = Guid.NewGuid().ToString();
-        valueFromListAttributeCreateRequest.AttributeMachineNameToAffect = affectedMachineName;
         valueFromListAttributeCreateRequest.ValuesList = new()
         {
-            new ValueFromListOptionCreateUpdateRequest("changedAttribute", "Card with wishes from shop", null)
+            new ValueFromListOptionCreateUpdateRequest("Card with wishes from shop", "changedAttribute")
         };
-        valueFromListAttributeCreateRequest.ValueFromListAttributeType = ValueFromListAttributeType.MultipleValuesFromList;
 
         (AttributeConfigurationViewModel? changedAttribute, _) = await _eavService.UpdateAttribute(valueFromListAttribute.Id, valueFromListAttributeCreateRequest!, CancellationToken.None);
 
         var changedValueFromListAttribute = await valueFromListRepository.LoadAsync(changedAttribute!.Id, changedAttribute.Id.ToString(), CancellationToken.None);
-        changedValueFromListAttribute!.AttributeMachineNameToAffect.Should().Be(affectedMachineName);
-        changedValueFromListAttribute.ValueFromListAttributeType.Should().Be(ValueFromListAttributeType.MultipleValuesFromList);
         changedValueFromListAttribute.ValuesList.Count.Should().Be(1);
         changedValueFromListAttribute.ValuesList.FirstOrDefault()!.MachineName.Should().Be("changedAttribute");
     }
@@ -1246,10 +1239,9 @@ public class Tests
                 }
             },
             IsRequired = true,
-            ValueFromListAttributeType = ValueFromListAttributeType.OneValueFromList,
             ValuesList = new List<ValueFromListOptionCreateUpdateRequest>
             {
-                new ValueFromListOptionCreateUpdateRequest("firstTestOption", "Premium wrap", 30)
+                new ValueFromListOptionCreateUpdateRequest("firstTestOption", "Premium wrap")
             }
         };
 
@@ -1290,6 +1282,24 @@ public class Tests
         validationErrors.Should().BeOfType<ValidationErrorResponse>();
         validationErrors.As<ValidationErrorResponse>().Errors["testValueAttr"].First().Should()
             .Be("Cannot validate attribute. Expected attribute type: Value from list");
+
+        (result, validationErrors) = await _eavService.CreateEntityInstance(new EntityInstanceCreateRequest()
+        {
+            EntityConfigurationId = entityConfiguration.Id,
+            Attributes = new List<AttributeInstanceCreateUpdateRequest>()
+            {
+                new ValueFromListAttributeInstanceCreateUpdateRequest()
+                {
+                    ConfigurationAttributeMachineName = "testValueAttr",
+                    Value = "notvalidmachineneme"
+                }
+            }
+        });
+
+        result.Should().BeNull();
+        validationErrors.Should().BeOfType<ValidationErrorResponse>();
+        validationErrors.As<ValidationErrorResponse>().Errors["testValueAttr"].First().Should()
+            .Be("Cannot validate attribute. Wrong option");
     }
 
     [TestMethod]
