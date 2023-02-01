@@ -325,7 +325,7 @@ namespace CloudFabric.EAV.Domain.Projections.EntityInstanceProjection
                     PropertyName = "Path",
                     PropertyType = TypeCode.String,
                     IsRetrievable = true,
-                    IsFilterable = false,
+                    IsFilterable = true,
                     IsSortable = true
                 }
             };

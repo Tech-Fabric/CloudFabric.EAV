@@ -7,13 +7,13 @@ namespace CloudFabric.EAV.Domain.Events.Instance.Entity
         public string CategoryPath { get; set; }
         public Guid EntityConfigurationId { get; set; }
 
-        public string CategoryTreeId { get; set; }
+        public Guid CategoryTreeId { get; set; }
 
         public EntityCategoryPathChanged()
         {
         }
 
-        public EntityCategoryPathChanged(Guid id, Guid entityConfigurationId, string categoryTreeId, string categoryPath)
+        public EntityCategoryPathChanged(Guid id, Guid entityConfigurationId, Guid categoryTreeId, string categoryPath)
         {
             AggregateId = id;
             EntityConfigurationId = entityConfigurationId;

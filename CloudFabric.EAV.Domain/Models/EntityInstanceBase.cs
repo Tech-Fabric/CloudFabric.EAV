@@ -52,19 +52,19 @@ namespace CloudFabric.EAV.Domain.Models
             TenantId = @event.TenantId;
             CategoryPaths = new List<CategoryPath>();
         }
-        public void ChangeCategoryPath(string treeId, string categoryPath)
+        public void ChangeCategoryPath(Guid treeId, string categoryPath)
         {
             Apply(new EntityCategoryPathChanged(Id, EntityConfigurationId, treeId, categoryPath));
         }
         
         public void On(EntityCategoryPathChanged @event)
         {
-            var categoryPath = CategoryPaths.FirstOrDefault(x => x.TreeId.ToString() == @event.CategoryTreeId);
+            var categoryPath = CategoryPaths.FirstOrDefault(x => x.TreeId == @event.CategoryTreeId);
             if (categoryPath == null)
             {
                 CategoryPaths.Add(new CategoryPath
                 {
-                    TreeId = new Guid(@event.CategoryTreeId),
+                    TreeId = @event.CategoryTreeId,
                     Path = @event.CategoryPath
                 });
             }

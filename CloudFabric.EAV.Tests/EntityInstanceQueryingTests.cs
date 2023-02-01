@@ -218,6 +218,7 @@ public abstract class EntityInstanceQueryingTests
             {
                 Filters = new List<Filter>()
                 {
+                    new Filter("CategoryPaths.TreeId", FilterOperator.Equal, createdTree.Id),
                     new Filter("CategoryPaths.Path", FilterOperator.StartsWith, $"/{createdCategory1.Id}/{createdCategory12.Id}")
                 }
             });

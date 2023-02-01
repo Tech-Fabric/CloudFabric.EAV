@@ -15,7 +15,7 @@ namespace CloudFabric.EAV.Domain.Models
         {
         }
 
-        public Category(Guid id, Guid entityConfigurationId, List<AttributeInstance> attributes, Guid? tenantId, string categoryPath, string categoryTreeId) : base(id, entityConfigurationId, attributes, tenantId)
+        public Category(Guid id, Guid entityConfigurationId, List<AttributeInstance> attributes, Guid? tenantId, string categoryPath, Guid categoryTreeId) : base(id, entityConfigurationId, attributes, tenantId)
         {
             Apply(new EntityCategoryPathChanged(id, EntityConfigurationId, categoryTreeId, categoryPath));
         }

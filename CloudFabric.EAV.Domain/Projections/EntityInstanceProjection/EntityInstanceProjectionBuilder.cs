@@ -155,13 +155,13 @@ IHandleEvent<AggregateUpdatedEvent<EntityInstance>>
             (document) =>
             {
                 var categoryPaths = document["CategoryPaths"] as List<CategoryPath> ?? new List<CategoryPath>();
-                    var categoryPath = categoryPaths.FirstOrDefault(x => x.TreeId.ToString() == @event.CategoryTreeId);
+                    var categoryPath = categoryPaths.FirstOrDefault(x => x.TreeId == @event.CategoryTreeId);
                     if (categoryPath == null)
                     {
                         categoryPaths.Add(new CategoryPath()
                         {
                             Path = @event.CategoryPath,
-                            TreeId = Guid.Parse(@event.CategoryTreeId)
+                            TreeId = @event.CategoryTreeId
                         });
                     }
                     else

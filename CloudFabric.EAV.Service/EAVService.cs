@@ -685,7 +685,7 @@ public class EAVService : IEAVService
             _mapper.Map<List<AttributeInstance>>(entity.Attributes),
             entity.TenantId,
             categoryPath,
-            entity.CategoryTreeId.ToString()
+            entity.CategoryTreeId
         );
 
         var validationErrors = new Dictionary<string, string[]>();
