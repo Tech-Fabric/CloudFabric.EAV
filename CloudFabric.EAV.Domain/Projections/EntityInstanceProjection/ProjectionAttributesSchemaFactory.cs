@@ -399,15 +399,13 @@ namespace CloudFabric.EAV.Domain.Projections.EntityInstanceProjection
                 case EavAttributeType.Text:
                 case EavAttributeType.HtmlText:
                 case EavAttributeType.EntityReference:
+                case EavAttributeType.ValueFromList:
                     propertyType = TypeCode.String;
                     break;
                 case EavAttributeType.Boolean:
                     propertyType = TypeCode.Boolean;
                     break;
                 case EavAttributeType.LocalizedText:
-                case EavAttributeType.ValueFromList:
-                    propertyType = TypeCode.String;
-                    break;
                 case EavAttributeType.DateRange:
                 case EavAttributeType.Image:
                 case EavAttributeType.Array:
