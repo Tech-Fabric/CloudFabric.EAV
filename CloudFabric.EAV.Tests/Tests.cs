@@ -2151,8 +2151,10 @@ public class Tests
                 {
                     ""configurationAttributeMachineName"": ""test-date"",
                     ""valueType"": ""DateRange"",
-                    ""from"": ""2023-01-24"",
-                    ""to"": ""2023-01-25""
+                    ""value"": {
+                        ""from"": ""2023-01-24"",
+                        ""to"": ""2023-01-25""
+                    }
                 }
             ]
         }";
@@ -2177,8 +2179,8 @@ public class Tests
         
         deserializedInstance.Attributes[2].ConfigurationAttributeMachineName.Should().Be("test-date");
         deserializedInstance.Attributes[2].ValueType.Should().Be(EavAttributeType.DateRange);
-        deserializedInstance.Attributes[2].As<DateRangeAttributeInstanceCreateUpdateRequest>().From.Should().Be(DateTime.Parse("2023-01-24"));
-        deserializedInstance.Attributes[2].As<DateRangeAttributeInstanceCreateUpdateRequest>().To.Should().Be(DateTime.Parse("2023-01-25"));
+        deserializedInstance.Attributes[2].As<DateRangeAttributeInstanceCreateUpdateRequest>().Value.From.Should().Be(DateTime.Parse("2023-01-24"));
+        deserializedInstance.Attributes[2].As<DateRangeAttributeInstanceCreateUpdateRequest>().Value.To.Should().Be(DateTime.Parse("2023-01-25"));
     }
 
     [TestMethod]

@@ -97,6 +97,7 @@ public class EntityInstanceFromDictionaryDeserializer
             case EavAttributeType.DateRange:
                 attributeInstance = new DateRangeAttributeInstanceViewModel()
                 {
+                    Value = _mapper.Map<DateRangeAttributeInstanceValueViewModel>(attributeValue)
                 };
                 break;
             case EavAttributeType.Image:
