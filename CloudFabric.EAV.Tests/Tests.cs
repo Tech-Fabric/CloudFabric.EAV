@@ -1061,7 +1061,7 @@ public class Tests
             IsRequired = true,
             ValuesList = new List<ValueFromListOptionCreateUpdateRequest>
             {
-                new ValueFromListOptionCreateUpdateRequest("First OptionFirst OptionFirst OptionFirst OptionFirst OptionFirst OptionFirst OptionFirst OptionFirst OptionFirst OptionFirst OptionFirst OptionFirst OptionFirst OptionFirst OptionFirst OptionFirst OptionFirst OptionFirst OptionFirst OptionFirst OptionFirst OptionFirst OptionFirst OptionFirst OptionFirst OptionFirst OptionFirst OptionFirst OptionFirst OptionFirst OptionFirst OptionFirst OptionFirst OptionFirst OptionFirst OptionFirst OptionFirst OptionFirst OptionFirst OptionFirst Option", null),
+                new ValueFromListOptionCreateUpdateRequest("First Option", null),
                 new ValueFromListOptionCreateUpdateRequest("Second 65 : Option! --!", null),
                 new ValueFromListOptionCreateUpdateRequest("Third option", "custom_machine_name")
             }
