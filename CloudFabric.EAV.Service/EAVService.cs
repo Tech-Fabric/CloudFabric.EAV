@@ -32,7 +32,6 @@ public class EAVService : IEAVService
     private readonly AggregateRepository<EntityConfiguration> _entityConfigurationRepository;
     private readonly AggregateRepository<EntityInstance> _entityInstanceRepository;
     private readonly AggregateRepository<CategoryTree> _categoryTreeRepository;
-    private readonly AggregateRepository<Category> _categoryRepository;
 
     private readonly IProjectionRepository<AttributeConfigurationProjectionDocument>
         _attributeConfigurationProjectionRepository;
@@ -69,10 +68,7 @@ public class EAVService : IEAVService
             .GetAggregateRepository<EntityInstance>();
         _categoryTreeRepository = _aggregateRepositoryFactory
             .GetAggregateRepository<CategoryTree>();
-        _categoryRepository = _aggregateRepositoryFactory
-            .GetAggregateRepository<Category>();
 
-        
         _attributeConfigurationProjectionRepository = _projectionRepositoryFactory
             .GetProjectionRepository<AttributeConfigurationProjectionDocument>();
         _entityConfigurationProjectionRepository = _projectionRepositoryFactory
@@ -705,7 +701,8 @@ public class EAVService : IEAVService
             return (null, new ValidationErrorResponse(validationErrors))!;
         }
 
-        var saved = await _categoryRepository.SaveAsync(_userInfo, entityInstance, cancellationToken).ConfigureAwait(false);
+        var mappedInstance = _mapper.Map<EntityInstance>(entityInstance);
+        var saved = await _entityInstanceRepository.SaveAsync(_userInfo, mappedInstance, cancellationToken).ConfigureAwait(false);
         if (!saved)
         {
             //TODO: What do we want to do with internal exceptions and unsuccessful flow?
@@ -713,22 +710,6 @@ public class EAVService : IEAVService
         }
 
         return (_mapper.Map<CategoryViewModel>(entityInstance), null)!;    
-    }
-
-    
-    private async Task<(string, ProblemDetails)> BuildCategoryPathAsync(Guid treeId, string partitionKey, Guid? parentId, CancellationToken cancellationToken)
-    {
-
-        Category? parent = parentId == null ? null : await _categoryRepository.LoadAsync(parentId.Value, partitionKey, cancellationToken).ConfigureAwait(false);
-        
-        if (parent == null && parentId != null)
-        {
-            return (null, new ValidationErrorResponse("ParentId", "Parent category not found"))!;
-        }
-
-        var parentPath = parent?.CategoryPaths.FirstOrDefault(x => x.TreeId == treeId);
-        var categoryPath = parentPath == null ? "" : $"{parentPath.Path}/{parent?.Id}";
-        return (categoryPath, null)!;
     }
     
     public async Task<List<EntityTreeInstanceViewModel>> GetCategoryTreeViewAsync(
@@ -985,6 +966,32 @@ public class EAVService : IEAVService
         );
     }
 
+    public async Task<(EntityInstanceViewModel, ProblemDetails)> MoveItemAsync(Guid itemId, string itemPartitionKey, string categoryPartitionKey, Guid treeId, Guid newParentId, CancellationToken cancellationToken)
+    {
+        var item = await _entityInstanceRepository.LoadAsync(itemId, itemPartitionKey, cancellationToken).ConfigureAwait(false);
+        if (item == null)
+        {
+            return (null, new ValidationErrorResponse(nameof(itemId), "Item not found"))!;
+        }
+        var (newCategoryPath, errors) = await BuildCategoryPathAsync(treeId, categoryPartitionKey, newParentId, cancellationToken).ConfigureAwait(false);
+        if (errors != null)
+        {
+            return (null, errors)!;
+        }
+        var itemCategoryPath = item.CategoryPaths.FirstOrDefault(x => x.TreeId == treeId) ?? new CategoryPath()
+        {
+            TreeId = treeId
+        };
+        itemCategoryPath.Path = newCategoryPath!;
+        
+        var saved = await _entityInstanceRepository.SaveAsync(_userInfo, item, cancellationToken).ConfigureAwait(false);
+        if (!saved)
+        {
+            //TODO: What do we want to do with internal exceptions and unsuccessful flow?
+            throw new Exception("Entity was not saved");
+        }
+        return (_mapper.Map<EntityInstanceViewModel>(item), null)!;
+    }
     private async Task<List<AttributeConfiguration>> GetAttributeConfigurationsForEntityConfiguration(
         EntityConfiguration entityConfiguration, CancellationToken cancellationToken = default
     )
@@ -1107,4 +1114,20 @@ public class EAVService : IEAVService
 
         return attributes;
     }
+    
+    private async Task<(string?, ProblemDetails?)> BuildCategoryPathAsync(Guid treeId, string categoryPartitionKey, Guid? parentId, CancellationToken cancellationToken)
+    {
+
+        Category? parent = parentId == null ? null : _mapper.Map<Category>(await _entityInstanceRepository.LoadAsync(parentId.Value, categoryPartitionKey, cancellationToken).ConfigureAwait(false));
+        
+        if (parent == null && parentId != null)
+        {
+            return (null, new ValidationErrorResponse("ParentId", "Parent category not found"))!;
+        }
+
+        var parentPath = parent?.CategoryPaths.FirstOrDefault(x => x.TreeId == treeId);
+        var categoryPath = parentPath == null ? "" : $"{parentPath.Path}/{parent?.Id}";
+        return (categoryPath, null)!;
+    }
+
 }

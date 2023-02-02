@@ -67,6 +67,9 @@ public class EntityInstanceFromDictionaryDeserializer
                     categoryPaths.Add(categoryPath);
                 }
             }
+        } else if (paths is List<CategoryPath> pathsListOriginal)
+        {
+            categoryPaths = pathsListOriginal;
         }
         return categoryPaths;
     }

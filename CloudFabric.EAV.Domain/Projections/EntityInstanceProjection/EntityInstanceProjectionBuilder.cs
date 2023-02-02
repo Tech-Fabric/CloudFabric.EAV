@@ -154,7 +154,9 @@ IHandleEvent<AggregateUpdatedEvent<EntityInstance>>
             @event.Timestamp,
             (document) =>
             {
-                var categoryPaths = document["CategoryPaths"] as List<CategoryPath> ?? new List<CategoryPath>();
+
+                    document.TryGetValue("CategoryPaths", out var categoryPathsObj);
+                    List<CategoryPath> categoryPaths = categoryPathsObj as List<CategoryPath> ?? new List<CategoryPath>();
                     var categoryPath = categoryPaths.FirstOrDefault(x => x.TreeId == @event.CategoryTreeId);
                     if (categoryPath == null)
                     {
