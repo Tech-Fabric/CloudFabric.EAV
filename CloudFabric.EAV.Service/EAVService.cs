@@ -664,21 +664,20 @@ public class EAVService : IEAVService
             return (null, new ValidationErrorResponse("CategoryConfigurationId", "Configuration not found"))!;
         }
         
-        Category? parent = entity.ParentId == null ? null : await _categoryRepository.LoadAsync(entity.ParentId.Value, entityConfiguration.PartitionKey, cancellationToken).ConfigureAwait(false);
-        
-        if (parent == null && entity.ParentId != null)
-        {
-            return (null, new ValidationErrorResponse("ParentId", "Parent category not found"))!;
-        }
-
-        var parentPath = parent?.CategoryPaths.FirstOrDefault(x => x.TreeId == entity.CategoryTreeId);
-        var categoryPath = parentPath == null ? "" : $"{parentPath.Path}/{parent.Id}";
         List<AttributeConfiguration> attributeConfigurations =
             await GetAttributeConfigurationsForEntityConfiguration(
                 entityConfiguration,
                 cancellationToken
             ).ConfigureAwait(false);
 
+        
+        var (categoryPath, errors) = await BuildCategoryPathAsync(tree.Id, entityConfiguration.PartitionKey, entity.ParentId, cancellationToken).ConfigureAwait(false);
+        
+        if (errors != null)
+        {
+            return (null, errors)!;
+        }
+        
         var entityInstance = new Category(
             Guid.NewGuid(),
             entity.CategoryConfigurationId,
@@ -716,6 +715,22 @@ public class EAVService : IEAVService
         return (_mapper.Map<CategoryViewModel>(entityInstance), null)!;    
     }
 
+    
+    private async Task<(string, ProblemDetails)> BuildCategoryPathAsync(Guid treeId, string partitionKey, Guid? parentId, CancellationToken cancellationToken)
+    {
+
+        Category? parent = parentId == null ? null : await _categoryRepository.LoadAsync(parentId.Value, partitionKey, cancellationToken).ConfigureAwait(false);
+        
+        if (parent == null && parentId != null)
+        {
+            return (null, new ValidationErrorResponse("ParentId", "Parent category not found"))!;
+        }
+
+        var parentPath = parent?.CategoryPaths.FirstOrDefault(x => x.TreeId == treeId);
+        var categoryPath = parentPath == null ? "" : $"{parentPath.Path}/{parent?.Id}";
+        return (categoryPath, null)!;
+    }
+    
     public async Task<List<EntityTreeInstanceViewModel>> GetCategoryTreeViewAsync(
         Guid treeId,
         CancellationToken cancellationToken = default(CancellationToken)
@@ -771,8 +786,6 @@ public class EAVService : IEAVService
     #endregion
     
     #region EntityInstance
-
-    
 
     public async Task<(EntityInstanceViewModel, ProblemDetails)> CreateEntityInstance(
         EntityInstanceCreateRequest entity, CancellationToken cancellationToken = default

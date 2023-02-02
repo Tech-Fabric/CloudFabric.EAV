@@ -1,5 +1,4 @@
 using CloudFabric.EAV.Domain.Events.Instance.Entity;
-using CloudFabric.EventSourcing.Domain;
 using CloudFabric.EventSourcing.EventStore;
 
 namespace CloudFabric.EAV.Domain.Models

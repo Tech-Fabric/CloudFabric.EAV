@@ -24,7 +24,7 @@ namespace CloudFabric.EAV.Domain.Models
         
         public void On(CategoryTreeCreated @event)
         {
-            Id = @event.Id;
+            Id = @event.AggregateId;
             MachineName = @event.MachineName;
             EntityConfigurationId = @event.EntityConfigurationId;
             TenantId = @event.TenantId;
