@@ -201,6 +201,19 @@ public abstract class EntityInstanceQueryingTests
 
         var list = await _eavService.GetCategoryTreeViewAsync(createdTree.Id, CancellationToken.None);
 
+        var allResults = await _eavService.QueryInstances(categoryConfiguration.Id,
+            new ProjectionQuery()
+            {
+            });
+        var subcategories12 = await _eavService.QueryInstances(categoryConfiguration.Id,
+            new ProjectionQuery()
+            {
+                Filters = new List<Filter>()
+                {
+                    new Filter("CategoryPaths.TreeId", FilterOperator.Equal, createdTree.Id),
+                    new Filter("CategoryPaths.Path", FilterOperator.StartsWith, $"\\/{createdCategory1.Id}\\/{createdCategory12.Id}")
+                }
+            });S
         list.Should().Contain(x => x.Id == createdCategory1.Id);
         var instance1 = list.FirstOrDefault(x => x.Id == createdCategory1.Id);
         instance1.Children.Should().Contain(x => x.Id == createdCategory13.Id);
@@ -213,15 +226,7 @@ public abstract class EntityInstanceQueryingTests
         var instance1211 = instance121?.Children.FirstOrDefault(x => x.Id == createdCategory1211.Id);
         instance1211.Should().NotBeNull();
 
-        var subcategories12 = await _eavService.QueryInstances(categoryConfiguration.Id,
-            new ProjectionQuery()
-            {
-                Filters = new List<Filter>()
-                {
-                    //new Filter("CategoryPaths.TreeId", FilterOperator.Equal, createdTree.Id),
-                    new Filter("CategoryPaths.Path", FilterOperator.StartsWith, $"/{createdCategory1.Id}/{createdCategory12.Id}")
-                }
-            });
+
         subcategories12.Records.Count.Should().Be(2);
         
         var productConfigurationCreateRequest = EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();

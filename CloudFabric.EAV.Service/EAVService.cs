@@ -731,7 +731,10 @@ public class EAVService : IEAVService
 
         var resultInstances = await QueryInstances(tree.EntityConfigurationId, new ProjectionQuery()
         {                
-            //TODO: add filter for treeID
+            Filters = new List<Filter>()
+            {
+                new Filter("CategoryPaths.TreeId", FilterOperator.Equal, treeId)
+            },
         },cancellationToken).ConfigureAwait(false);
         var response = new List<EntityTreeInstanceViewModel>();
         
