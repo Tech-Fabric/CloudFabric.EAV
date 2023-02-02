@@ -1061,8 +1061,9 @@ public class Tests
             IsRequired = true,
             ValuesList = new List<ValueFromListOptionCreateUpdateRequest>
             {
-                new ValueFromListOptionCreateUpdateRequest("firstTestOption", "Premium wrap"),
-                new ValueFromListOptionCreateUpdateRequest("secondTestOption", "Card with wishes from shop")
+                new ValueFromListOptionCreateUpdateRequest("First OptionFirst OptionFirst OptionFirst OptionFirst OptionFirst OptionFirst OptionFirst OptionFirst OptionFirst OptionFirst OptionFirst OptionFirst OptionFirst OptionFirst OptionFirst OptionFirst OptionFirst OptionFirst OptionFirst OptionFirst OptionFirst OptionFirst OptionFirst OptionFirst OptionFirst OptionFirst OptionFirst OptionFirst OptionFirst OptionFirst OptionFirst OptionFirst OptionFirst OptionFirst OptionFirst OptionFirst OptionFirst OptionFirst OptionFirst OptionFirst Option", null),
+                new ValueFromListOptionCreateUpdateRequest("Second 65 : Option! --!", null),
+                new ValueFromListOptionCreateUpdateRequest("Third option", "custom_machine_name")
             }
         };
 
@@ -1099,7 +1100,7 @@ public class Tests
             allAttributes.Records.First().Document!.Id.ToString()!,
             CancellationToken.None
         );
-        valuesAttribute!.ValuesList.Count.Should().Be(2);
+        valuesAttribute!.ValuesList.Count.Should().Be(3);
     }
 
     [TestMethod]

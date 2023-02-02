@@ -13,7 +13,7 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
             if (string.IsNullOrEmpty(machineName))
             {
                 machineName = name.Replace(" ", "_");
-                Regex specSymbolsRegex = new Regex("[^\\d\\w_]*");
+                Regex specSymbolsRegex = new Regex("[^\\d\\w_]*", RegexOptions.None, TimeSpan.FromMilliseconds(100));
                 machineName = specSymbolsRegex.Replace(machineName, "").ToLower();
             }
 
