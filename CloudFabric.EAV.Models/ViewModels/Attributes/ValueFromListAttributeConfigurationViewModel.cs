@@ -1,12 +1,16 @@
-using CloudFabric.EAV.Domain.Enums;
-using CloudFabric.EAV.Domain.Models.Attributes;
-
 namespace CloudFabric.EAV.Models.ViewModels.Attributes
 {
+    public class ValueFromListOptionViewModel
+    {
+        public string Name { get; set; }
+
+        public string MachineName { get; set; }
+
+        public Guid Id { get; set; }
+    }
+
     public class ValueFromListAttributeConfigurationViewModel : AttributeConfigurationViewModel
     {
-        public ValueFromListAttributeType ValueFromListAttributeType { get; set; }
-        public List<ValueFromListOptionConfiguration> ValuesList { get; set; }
-        public string? AttributeMachineNameToAffect { get; set; }
+        public List<ValueFromListOptionViewModel> ValuesList { get; set; }
     }
 }
