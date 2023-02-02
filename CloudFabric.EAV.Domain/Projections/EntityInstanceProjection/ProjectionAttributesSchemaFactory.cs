@@ -229,6 +229,25 @@ namespace CloudFabric.EAV.Domain.Projections.EntityInstanceProjection
             };
         }
 
+        public static ProjectionDocumentPropertySchema GetSerialAttributeShema(AttributeConfiguration attributeConfiguration)
+        {
+            var attribute = attributeConfiguration as SerialAttributeConfiguration;
+
+            if (attribute == null)
+            {
+                throw new ArgumentException("Invalid attribute type");
+            }
+
+            return new ProjectionDocumentPropertySchema
+            {
+                PropertyName = attributeConfiguration.MachineName,
+                PropertyType = GetPropertyType(attributeConfiguration.ValueType).GetValueOrDefault(),
+                IsRetrievable = true,
+                IsFilterable = true,
+                IsSortable = true
+            };
+        }
+
         #region Nested Properties
 
         private static List<ProjectionDocumentPropertySchema> GetDateAttributeNestedProperties()
@@ -472,6 +491,9 @@ namespace CloudFabric.EAV.Domain.Projections.EntityInstanceProjection
                 case EavAttributeType.Array:
                 case EavAttributeType.File:
                     propertyType = TypeCode.Object;
+                    break;
+                case EavAttributeType.Serial:
+                    propertyType = TypeCode.Int64;
                     break;
                 default:
                     throw new Exception($"EavAttributeType {valueType} is not supported.");

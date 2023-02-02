@@ -15,5 +15,6 @@ public enum EavAttributeType
     LocalizedText,
     DateRange,
     Boolean,
-    File
+    File,
+    Serial
 }

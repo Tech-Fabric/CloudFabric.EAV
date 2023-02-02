@@ -49,6 +49,20 @@ public static class ProjectionDocumentSchemaFactory
             ProjectionAttributesSchemaFactory.GetCategoryPathsAttributeSchema()
         );
 
+        schema.Properties.Add(
+            new ProjectionDocumentPropertySchema()
+            {
+                PropertyName = "TenantId",
+                PropertyType = TypeCode.Object,
+                IsKey = false,
+                IsSearchable = false,
+                IsRetrievable = true,
+                IsFilterable = true,
+                IsSortable = false,
+                IsFacetable = false
+            }
+        );
+
         schema.Properties.AddRange(attributeConfigurations.Select(GetAttributeProjectionPropertySchema));
 
         return schema;
@@ -82,6 +96,8 @@ public static class ProjectionDocumentSchemaFactory
                 return ProjectionAttributesSchemaFactory.GetFileAttributeSchema(attributeConfiguration);
             case EavAttributeType.Array:
                 return ProjectionAttributesSchemaFactory.GetArrayAttributeSchema(attributeConfiguration);
+            case EavAttributeType.Serial:
+                return ProjectionAttributesSchemaFactory.GetSerialAttributeShema(attributeConfiguration);
             default:
                 throw new Exception($"EavAttributeType {attributeConfiguration.ValueType} is not supported.");
         }
