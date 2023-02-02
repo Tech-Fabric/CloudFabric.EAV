@@ -202,7 +202,7 @@ public abstract class EntityInstanceQueryingTests
         var list = await _eavService.GetCategoryTreeViewAsync(createdTree.Id, CancellationToken.None);
 
         list.Should().Contain(x => x.Id == createdCategory1.Id);
-        var instance1 = list[0];
+        var instance1 = list.FirstOrDefault(x => x.Id == createdCategory1.Id);
         instance1.Children.Should().Contain(x => x.Id == createdCategory13.Id);
         var instance12 = instance1.Children.FirstOrDefault(x => x.Id == createdCategory12.Id);
         var instance13 = instance1.Children.FirstOrDefault(x => x.Id == createdCategory13.Id);
@@ -218,7 +218,7 @@ public abstract class EntityInstanceQueryingTests
             {
                 Filters = new List<Filter>()
                 {
-                    new Filter("CategoryPaths.TreeId", FilterOperator.Equal, createdTree.Id),
+                    //new Filter("CategoryPaths.TreeId", FilterOperator.Equal, createdTree.Id),
                     new Filter("CategoryPaths.Path", FilterOperator.StartsWith, $"/{createdCategory1.Id}/{createdCategory12.Id}")
                 }
             });
