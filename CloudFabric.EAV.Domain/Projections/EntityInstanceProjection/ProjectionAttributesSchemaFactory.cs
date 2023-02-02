@@ -147,9 +147,7 @@ namespace CloudFabric.EAV.Domain.Projections.EntityInstanceProjection
                 PropertyType = GetPropertyType(attributeConfiguration.ValueType).GetValueOrDefault(),
                 IsRetrievable = true,
                 IsFilterable = true,
-                IsSortable = true,
-                IsNestedObject = true,
-                NestedObjectProperties = GetValueFromListAttributeNestedProperties()
+                IsSortable = true
             };
         }
 
@@ -206,8 +204,8 @@ namespace CloudFabric.EAV.Domain.Projections.EntityInstanceProjection
                 EavAttributeType.Boolean => null,
                 EavAttributeType.HtmlText => null,
                 EavAttributeType.EntityReference => null,
+                EavAttributeType.ValueFromList => null,
                 EavAttributeType.LocalizedText => GetLocalizedTextAttributeNestedProperties(),
-                EavAttributeType.ValueFromList => GetValueFromListAttributeNestedProperties(),
                 EavAttributeType.DateRange => GetDateAttributeNestedProperties(),
                 EavAttributeType.Image => GetImageAttributeNestedProperties(),
                 EavAttributeType.File => GetFileAttributeNestedProperties(),
@@ -313,47 +311,6 @@ namespace CloudFabric.EAV.Domain.Projections.EntityInstanceProjection
             };
         }
 
-        private static List<ProjectionDocumentPropertySchema> GetValueFromListAttributeNestedProperties()
-        {
-            return new List<ProjectionDocumentPropertySchema>
-            {
-                new ProjectionDocumentPropertySchema
-                {
-                    PropertyName = nameof(ValueFromListAttributeInstance.PreselectedOptionsMachineNames),
-                    PropertyType = Type.GetTypeCode(
-                            typeof(ValueFromListAttributeInstance)
-                                .GetProperty(nameof(ValueFromListAttributeInstance.PreselectedOptionsMachineNames))
-                                ?.PropertyType
-                    ),
-                    IsRetrievable = true,
-                    IsNestedArray = true,
-                    ArrayElementType = Type.GetTypeCode(
-                        typeof(ValueFromListAttributeInstance)
-                            .GetProperty(nameof(ValueFromListAttributeInstance.PreselectedOptionsMachineNames))
-                            ?.PropertyType
-                            .GetGenericArguments()[0]
-                    )
-                },
-                new ProjectionDocumentPropertySchema
-                {
-                    PropertyName = nameof(ValueFromListAttributeInstance.UnavailableOptionsMachineNames),
-                    PropertyType = Type.GetTypeCode(
-                        typeof(ValueFromListAttributeInstance)
-                            .GetProperty(nameof(ValueFromListAttributeInstance.UnavailableOptionsMachineNames))
-                            ?.PropertyType
-                    ),
-                    IsRetrievable = true,
-                    IsNestedArray = true,
-                    ArrayElementType = Type.GetTypeCode(
-                        typeof(ValueFromListAttributeInstance)
-                            .GetProperty(nameof(ValueFromListAttributeInstance.PreselectedOptionsMachineNames))
-                            ?.PropertyType
-                            .GetGenericArguments()[0]
-                    )
-                }
-            };
-        }
-
         private static List<ProjectionDocumentPropertySchema> GetImageAttributeNestedProperties()
         {
             return new List<ProjectionDocumentPropertySchema>
@@ -442,13 +399,13 @@ namespace CloudFabric.EAV.Domain.Projections.EntityInstanceProjection
                 case EavAttributeType.Text:
                 case EavAttributeType.HtmlText:
                 case EavAttributeType.EntityReference:
+                case EavAttributeType.ValueFromList:
                     propertyType = TypeCode.String;
                     break;
                 case EavAttributeType.Boolean:
                     propertyType = TypeCode.Boolean;
                     break;
                 case EavAttributeType.LocalizedText:
-                case EavAttributeType.ValueFromList:
                 case EavAttributeType.DateRange:
                 case EavAttributeType.Image:
                 case EavAttributeType.Array:

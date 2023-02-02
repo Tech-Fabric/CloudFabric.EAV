@@ -1,8 +1,7 @@
 namespace CloudFabric.EAV.Models.ViewModels.Attributes
 {
-    public class ValueFromListAttributeInstanceViewModel: AttributeInstanceViewModel
+    public class ValueFromListAttributeInstanceViewModel : AttributeInstanceViewModel
     {
-        public List<string> UnavailableOptionsMachineNames { get; set; }
-        public List<string> PreselectedOptionsMachineNames { get; set; }
+        public string Value { get; set; }
     }
 }

@@ -120,8 +120,7 @@ public class EntityInstanceFromDictionaryDeserializer
             case EavAttributeType.ValueFromList:
                 attributeInstance = new ValueFromListAttributeInstanceViewModel()
                 {
-                    PreselectedOptionsMachineNames = new List<string>(),
-                    UnavailableOptionsMachineNames = new List<string>()
+                    Value = (string)attributeValue
                 };
                 break;
             case EavAttributeType.Boolean:
