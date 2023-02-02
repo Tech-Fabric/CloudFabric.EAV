@@ -255,11 +255,7 @@ namespace CloudFabric.EAV.Domain.Projections.EntityInstanceProjection
                 new ProjectionDocumentPropertySchema
                 {
                     PropertyName = nameof(DateRangeAttributeInstanceValue.From),
-                    PropertyType = Type.GetTypeCode(
-                        typeof(DateRangeAttributeInstanceValue)
-                            .GetProperty(nameof(DateRangeAttributeInstanceValue.From))
-                            ?.GetType()
-                    ),
+                    PropertyType = TypeCode.DateTime,
                     IsRetrievable = true,
                     IsFilterable = true,
                     IsSortable = true,
@@ -268,11 +264,7 @@ namespace CloudFabric.EAV.Domain.Projections.EntityInstanceProjection
                 new ProjectionDocumentPropertySchema
                 {
                     PropertyName = nameof(DateRangeAttributeInstanceValue.To),
-                    PropertyType = Type.GetTypeCode(
-                        typeof(DateRangeAttributeInstanceValue)
-                            .GetProperty(nameof(DateRangeAttributeInstanceValue.To))
-                            ?.GetType()
-                    ),
+                    PropertyType = TypeCode.DateTime,
                     IsRetrievable = true,
                     IsFilterable = true,
                     IsSortable = true

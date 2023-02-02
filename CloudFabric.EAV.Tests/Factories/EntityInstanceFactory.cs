@@ -77,7 +77,10 @@ public class EntityInstanceFactory
                 new DateRangeAttributeInstanceCreateUpdateRequest
                 {
                     ConfigurationAttributeMachineName = "release_date",
-                    From = DateTime.Today
+                    Value = new DateRangeAttributeInstanceValueRequest
+                    {
+                        From = DateTime.Today
+                    }
                 },
                 new ArrayAttributeInstanceCreateUpdateRequest()
                 {
