@@ -7,7 +7,7 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
 
         public override object? GetValue()
         {
-            return this;
+            return Value;
         }
     }
 }
