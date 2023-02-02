@@ -28,6 +28,24 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
         public List<ValueFromListOptionConfiguration> ValuesList { get; set; }
         public override EavAttributeType ValueType => EavAttributeType.ValueFromList;
 
+        public override List<string> Validate()
+        {
+            var errors = base.Validate();
+
+            if (ValuesList.Count == 0)
+            {
+                errors.Add("Cannot create attribute without options");
+            }
+
+            if (ValuesList.GroupBy(x => x.MachineName).Any(x => x.Count() > 1)
+                || ValuesList.GroupBy(x => x.Name).Any(x => x.Count() > 1))
+            {
+                errors.Add("Identical options not allowed");
+            }
+
+            return errors;
+        }
+
         public override List<string> ValidateInstance(AttributeInstance? instance)
         {
             var errors = base.ValidateInstance(instance);
@@ -102,12 +120,6 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
 
         public void On(ValueFromListConfigurationUpdated @event)
         {
-            if (@event.ValueFromListOptions.GroupBy(x => x.MachineName).Any(x => x.Count() > 1)
-                || @event.ValueFromListOptions.GroupBy(x => x.Name).Any(x => x.Count() > 1))
-            {
-                throw new Exception("Identical options' names not allowed");
-            }
-
             ValuesList = @event.ValueFromListOptions;
         }
 

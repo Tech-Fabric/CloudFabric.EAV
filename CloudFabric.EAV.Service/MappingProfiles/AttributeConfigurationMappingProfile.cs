@@ -190,6 +190,7 @@ public class AttributeConfigurationProfile : Profile
         CreateMap<FileAttributeConfiguration, FileAttributeConfigurationViewModel>();
         CreateMap<SerialAttributeConfiguration, SerialAttributeConfigurationViewModel>();
         CreateMap<ValueFromListAttributeConfiguration, ValueFromListAttributeConfigurationViewModel>();
+        CreateMap<ValueFromListOptionConfiguration, ValueFromListOptionViewModel>();
 
         #region Projections
 

@@ -1103,7 +1103,7 @@ public class Tests
     }
 
     [TestMethod]
-    public async Task CreateValueFromListAttribute_OptionNamesNotUnique()
+    public async Task CreateValueFromListAttribute_ValidationError()
     {
         var cultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID;
         var valueFromListAttribute = new ValueFromListAttributeConfigurationCreateUpdateRequest()
@@ -1151,16 +1151,34 @@ public class Tests
             }
         };
 
-        Func<Task> action = async () => await _eavService.CreateEntityConfiguration(entityConfigurationCreateRequest, CancellationToken.None);
-        await action.Should().ThrowAsync<Exception>();
+        // case check repeated name
+        (EntityConfigurationViewModel entity, ProblemDetails errors) = await _eavService.CreateEntityConfiguration(entityConfigurationCreateRequest, CancellationToken.None);
 
+        entity.Should().BeNull();
+        errors.Should().BeOfType<ValidationErrorResponse>();
+        errors.As<ValidationErrorResponse>().Errors.Should().Contain(x => x.Value.Contains("Identical options not allowed"));
+
+        // case check repeated machine name
         valueFromListAttribute.ValuesList = new List<ValueFromListOptionCreateUpdateRequest>
         {
-                new ValueFromListOptionCreateUpdateRequest(machineName: "repeatedMachineName", name: "Standard"),
-                new ValueFromListOptionCreateUpdateRequest(machineName: "repeatedMachineName", name: "Premium")
+            new ValueFromListOptionCreateUpdateRequest("First Option Name", "repeatedMachineName"),
+            new ValueFromListOptionCreateUpdateRequest("Second Oprion Name", "repeatedMachineName")
         };
 
-        await action.Should().ThrowAsync<Exception>();
+        (entity, errors) = await _eavService.CreateEntityConfiguration(entityConfigurationCreateRequest, CancellationToken.None);
+
+        entity.Should().BeNull();
+        errors.Should().BeOfType<ValidationErrorResponse>();
+        errors.As<ValidationErrorResponse>().Errors.Should().Contain(x => x.Value.Contains("Identical options not allowed"));
+
+        // case check empty options list
+        valueFromListAttribute.ValuesList = new List<ValueFromListOptionCreateUpdateRequest>();
+
+        (entity, errors) = await _eavService.CreateEntityConfiguration(entityConfigurationCreateRequest, CancellationToken.None);
+
+        entity.Should().BeNull();
+        errors.Should().BeOfType<ValidationErrorResponse>();
+        errors.As<ValidationErrorResponse>().Errors.Should().Contain(x => x.Value.Contains("Cannot create attribute without options"));
     }
 
     [TestMethod]
