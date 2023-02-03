@@ -1,3 +1,4 @@
+using System.Runtime.Serialization.Formatters;
 using System.Globalization;
 using System.Text.RegularExpressions;
 
@@ -24,6 +25,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 
 using System.Text.Json;
+using CloudFabric.EAV.Service.Factories;
 
 namespace CloudFabric.EAV.Service;
 
@@ -577,30 +579,6 @@ public class EAVService : IEAVService
 
     #endregion
 
-    // public async Task<List<EntityInstanceViewModel>> ListEntityInstances(string entityConfigurationMachineName, int take, int skip = 0)
-    // {
-    //     var records = await _entityInstanceRepository
-    //         .GetQuery()
-    //         .Where(e => e.EntityConfiguration.MachineName == entityConfigurationMachineName)
-    //         .Take(take)
-    //         .Skip(skip)
-    //         .ToListAsync();
-    //
-    //     return _mapper.Map<List<EntityInstanceViewModel>>(records);
-    // }
-    //
-    // public async Task<List<EntityInstanceViewModel>> ListEntityInstances(Guid entityConfigurationId, int take, int skip = 0)
-    // {
-    //     var records = await _entityInstanceRepository
-    //         .GetQuery()
-    //         .Where(e => e.EntityConfigurationId == entityConfigurationId)
-    //         .Take(take)
-    //         .Skip(skip)
-    //         .ToListAsync();
-    //
-    //     return _mapper.Map<List<EntityInstanceViewModel>>(records);
-    // }
-
     #region EntityInstance
 
     public async Task<(EntityInstanceViewModel, ProblemDetails)> CreateEntityInstance(
@@ -807,6 +785,73 @@ public class EAVService : IEAVService
         return results.TransformResultDocuments(
             r => _entityInstanceFromDictionaryDeserializer.Deserialize(entityConfiguration, attributes, r)
         );
+    }
+
+    public async Task<(List<Guid>?, ProblemDetails?)> ApplyAttributesToEntityInstances(Guid entityConfigurationId, List<Guid> attributesIds, List<Guid> entityInstancesIds, CancellationToken cancellationToken = default)
+    {
+        EntityConfiguration? entityConfiguration = await _entityConfigurationRepository.LoadAsync(
+            entityConfigurationId,
+            entityConfigurationId.ToString(),
+            cancellationToken
+        );
+
+        if (entityConfigurationId == null)
+        {
+            return (null, new ValidationErrorResponse(nameof(entityConfigurationId), "Invalid entity configuration"));
+        }
+
+        List<AttributeConfiguration> attributeConfigurations = await GetAttributeConfigurationsForEntityConfiguration(entityConfiguration!, cancellationToken);
+        List<AttributeConfiguration> attributesToBeApplied = attributeConfigurations.Where(x => attributesIds.Contains(x.Id)).ToList();
+
+        if (attributesToBeApplied.Count != attributesIds.Count)
+        {
+            return (null, new ValidationErrorResponse(nameof(entityConfigurationId), "Some attributes are missing inside the entity configuration"));
+        }
+
+        // apply attributes to each item
+        List<Guid> updatedItems = new();
+        foreach (var instanceId in entityInstancesIds)
+        {
+            EntityInstance? entityInstance = await _entityInstanceRepository.LoadAsync(
+                instanceId,
+                instanceId.ToString(),
+                cancellationToken
+            );
+
+            if (entityInstance == null || entityInstance.EntityConfigurationId != entityConfigurationId)
+            {
+                continue;
+            }
+
+            foreach (var attributeConfiguration in attributesToBeApplied)
+            {
+                // skip already added attributes
+                if (entityInstance.Attributes.Any(x => x.ConfigurationAttributeMachineName == attributeConfiguration.MachineName))
+                {
+                    continue;
+                }
+
+                AttributeInstance attributeInstance = AttributeInstanceFactory.GetDefaultInstanceValue(attributeConfiguration);
+                InitializeAttributeInstanceWithExternalValuesFromEntity(entityConfiguration!, attributeConfiguration, attributeInstance);
+
+                entityInstance.AddAttributeInstance(attributeInstance);
+            }
+
+            bool savingResult = await _entityInstanceRepository.SaveAsync(_userInfo, entityInstance, cancellationToken);
+
+            if (savingResult)
+            {
+                updatedItems.Add(entityInstance.Id);
+            }
+        }
+
+        // TODO: check whether the instance is a category or an item. In case of category - retrieve all the instances under this category and apply the attributes to them.
+
+        // TODO: if attribute is required - add it to every item
+
+        // TODO: long-running process support
+
+        return (updatedItems, null);
     }
 
     private async Task<List<AttributeConfiguration>> GetAttributeConfigurationsForEntityConfiguration(

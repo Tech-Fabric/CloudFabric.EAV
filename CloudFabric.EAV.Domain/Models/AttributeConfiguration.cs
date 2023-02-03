@@ -52,7 +52,7 @@ namespace CloudFabric.EAV.Domain.Models
         
         public virtual List<string> ValidateInstance(AttributeInstance? instance)
         {
-            if (IsRequired && instance == null)
+            if (IsRequired && (instance == null || instance.GetValue() == null))
             {
                 return new List<string>() { "Attribute is Required" };
             }

@@ -7,7 +7,7 @@ namespace CloudFabric.EAV.Domain.Events.Configuration.Attributes
         public TextAttributeConfigurationUpdated()
         {
         }
-        public TextAttributeConfigurationUpdated(Guid id, string defaultValue, int? maxLength, bool isSearchable)
+        public TextAttributeConfigurationUpdated(Guid id, string? defaultValue, int? maxLength, bool isSearchable)
         {
             AggregateId = id;
             IsSearchable = isSearchable;
@@ -15,10 +15,10 @@ namespace CloudFabric.EAV.Domain.Events.Configuration.Attributes
             DefaultValue = defaultValue;
         }
 
-        public string DefaultValue { get; set; }
+        public string? DefaultValue { get; set; }
 
         public int? MaxLength { get; set; }
-        
+
         public bool IsSearchable { get; set; }
     }
 }

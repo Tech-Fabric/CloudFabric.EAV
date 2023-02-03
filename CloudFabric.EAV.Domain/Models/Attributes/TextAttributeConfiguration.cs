@@ -7,27 +7,26 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
 {
     public class TextAttributeConfiguration : AttributeConfiguration
     {
-        public string DefaultValue { get; set; }
+        public string? DefaultValue { get; set; }
 
         public bool IsSearchable { get; set; }
-        
+
         public int? MaxLength { get; set; }
-        
+
         public override EavAttributeType ValueType { get; } = EavAttributeType.Text;
-        
+
         public TextAttributeConfiguration(IEnumerable<IEvent> events) : base(events)
         {
-            
         }
-        
+
         public TextAttributeConfiguration(
-            Guid id, 
-            string machineName, 
+            Guid id,
+            string machineName,
             List<LocalizedString> name,
             string defaultValue,
             int? maxLength,
             bool isSearchable,
-            List<LocalizedString> description = null, 
+            List<LocalizedString> description = null,
             bool isRequired = false,
             Guid? tenantId = null,
             string? metadata = null
@@ -39,10 +38,12 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
         public override List<string> Validate()
         {
             var errors = base.Validate();
-            if (MaxLength != null && DefaultValue.Length > MaxLength)
+
+            if (MaxLength != null && DefaultValue != null && DefaultValue.Length > MaxLength)
             {
                 errors.Add("Default value length cannot be greater than MaxLength");
             }
+
             return errors;
         }
 
@@ -71,7 +72,7 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
             {
                 errors.Add($"Text length can't be greater than {MaxLength}");
             }
-            
+
             return errors;
         }
 
@@ -94,7 +95,7 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
                 Apply(new TextAttributeConfigurationUpdated(Id, updated.DefaultValue, updated.MaxLength, updated.IsSearchable));
             }
         }
-        
+
         public override bool Equals(object obj)
         {
             return this.Equals(obj as TextAttributeConfiguration);
@@ -103,7 +104,7 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
         private bool Equals(TextAttributeConfiguration other)
         {
             return base.Equals(other)
-                   && DefaultValue.Equals(other.DefaultValue)
+                   && DefaultValue == DefaultValue
                    && Nullable.Equals(MaxLength, other.MaxLength)
                    && IsSearchable == other.IsSearchable
                    && ValueType == other.ValueType;

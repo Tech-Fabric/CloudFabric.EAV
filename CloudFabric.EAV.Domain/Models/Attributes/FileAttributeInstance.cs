@@ -2,7 +2,7 @@
 {
     public class FileAttributeInstance : AttributeInstance
     {
-        public FileAttributeValue Value { get; set; }
+        public FileAttributeValue? Value { get; set; }
 
         public override object? GetValue()
         {

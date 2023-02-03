@@ -4,6 +4,6 @@ namespace CloudFabric.EAV.Models.RequestModels.Attributes
 {
     public class ImageAttributeInstanceViewModel : AttributeInstanceViewModel
     {
-        public ImageAttributeValueViewModel Value { get; set; }
+        public ImageAttributeValueViewModel? Value { get; set; }
     }
 }
