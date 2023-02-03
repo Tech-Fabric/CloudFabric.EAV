@@ -52,4 +52,5 @@ public class EntityInstanceQueryingTestsPostgresqlWithElasticSearch : EntityInst
     {
         return _projectionRepositoryFactory;
     }
+    
 }

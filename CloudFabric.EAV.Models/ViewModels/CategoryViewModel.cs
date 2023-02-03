@@ -1,3 +1,4 @@
+using CloudFabric.EAV.Domain.Models;
 using CloudFabric.EAV.Models.ViewModels.Attributes;
 
 public class CategoryViewModel
@@ -11,7 +12,6 @@ public class CategoryViewModel
     public Guid? TenantId { get; set; }
 
     public string PartitionKey { get; set; }
-        
-    public Guid CategoryTreeId { get; protected set; }
-    public string CategoryPath { get; set; }
+    
+    public List<CategoryPath> CategoryPaths { get; set; }
 }

@@ -213,7 +213,7 @@ public abstract class EntityInstanceQueryingTests
                     new Filter("CategoryPaths.TreeId", FilterOperator.Equal, createdTree.Id),
                     new Filter("CategoryPaths.Path", FilterOperator.StartsWith, $"\\/{createdCategory1.Id}\\/{createdCategory12.Id}")
                 }
-            });S
+            });
         list.Should().Contain(x => x.Id == createdCategory1.Id);
         var instance1 = list.FirstOrDefault(x => x.Id == createdCategory1.Id);
         instance1.Children.Should().Contain(x => x.Id == createdCategory13.Id);
