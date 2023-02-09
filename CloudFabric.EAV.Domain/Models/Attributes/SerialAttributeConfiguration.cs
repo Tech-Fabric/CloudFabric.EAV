@@ -34,10 +34,16 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
         public override List<string> Validate()
         {
             var errors = base.Validate();
-            if (Increment == 0)
+            if (Increment == 0 || Increment < 0)
             {
-                errors.Add("Increment for serial number must not be 0");
+                errors.Add("Increment value must not be negative or 0");
             }
+
+            if (StartingNumber < 0)
+            {
+                errors.Add("Statring number must not be negative");
+            }
+
             return errors;
         }
 
