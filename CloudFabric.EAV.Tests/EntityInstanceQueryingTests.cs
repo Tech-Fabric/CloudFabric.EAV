@@ -22,14 +22,24 @@ using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+// ReSharper disable AsyncConverter.ConfigureAwaitHighlighting
 
 namespace CloudFabric.EAV.Tests;
+
+public enum ProjectionStorageType
+{
+    InMemory,
+    Postgresql,
+    PostgresqlWithElasticsearch
+}
 
 public abstract class EntityInstanceQueryingTests
 {
     private EAVService _eavService;
     private IEventStore _eventStore;
     private ILogger<EAVService> _logger;
+    
+    protected virtual ProjectionStorageType _projectionStorageType { get; set; } = ProjectionStorageType.InMemory;
 
     /// <summary>
     /// Some projection engines take time to catch events and update projection records
@@ -158,10 +168,13 @@ public abstract class EntityInstanceQueryingTests
 
         results?.Records.Select(r => r.Document).First().Should().BeEquivalentTo(createdInstance);
     }
-    
-    
-    [TestMethod]
-    public async Task CreateCategory_Success()
+
+    private async Task<(HierarchyViewModel tree,
+        CategoryViewModel category1,
+        CategoryViewModel category12,
+        CategoryViewModel category13,
+        CategoryViewModel category121,
+        CategoryViewModel category1211)> BuildTestTreeAsync()
     {
         var configurationCreateRequest = EntityConfigurationFactory.CreateBoardGameCategoryConfigurationCreateRequest(0, 9);
         (EntityConfigurationViewModel? categoryConfiguration, _) = await _eavService.CreateEntityConfiguration(
@@ -198,22 +211,37 @@ public abstract class EntityInstanceQueryingTests
         categoryInstanceRequest.ParentId = createdCategory121.Id;
         var ( createdCategory1211, _) =
             await _eavService.CreateCategoryInstanceAsync(categoryInstanceRequest);
+        return (createdTree, createdCategory1, createdCategory12, createdCategory13, createdCategory121, createdCategory1211);
+    }
+    
+    
+    [TestMethod]
+    public async Task CreateCategory_Success()
+    {
+        var (createdTree, createdCategory1, createdCategory12, createdCategory13, createdCategory121, createdCategory1211) = await BuildTestTreeAsync();
+        //Skip unimplemented for InMemory test
+        // if (_projectionStorageType == ProjectionStorageType.InMemory)
+        // {
+        //     return;
+        // }
+        
+        createdCategory1.Id.Should().NotBeEmpty();
+        createdCategory1.Attributes.Count.Should().Be(9);
+        createdCategory1.TenantId.Should().NotBeNull();
+        createdCategory12.CategoryPaths.Should().Contain(x => x.Path.Contains(createdCategory1.Id.ToString()));
+    }
+
+    [TestMethod]
+    public async Task GetTreeViewAsync()
+    {
+        if (_projectionStorageType == ProjectionStorageType.InMemory)
+        {
+            return;
+        }
+        var (createdTree, createdCategory1, createdCategory12, createdCategory13, createdCategory121, createdCategory1211) = await BuildTestTreeAsync();
 
         var list = await _eavService.GetCategoryTreeViewAsync(createdTree.Id, CancellationToken.None);
-
-        var allResults = await _eavService.QueryInstances(categoryConfiguration.Id,
-            new ProjectionQuery()
-            {
-            });
-        var subcategories12 = await _eavService.QueryInstances(categoryConfiguration.Id,
-            new ProjectionQuery()
-            {
-                Filters = new List<Filter>()
-                {
-                    new Filter("CategoryPaths.TreeId", FilterOperator.Equal, createdTree.Id),
-                    new Filter("CategoryPaths.Path", FilterOperator.StartsWith, $"\\/{createdCategory1.Id}\\/{createdCategory12.Id}")
-                }
-            });
+        
         list.Should().Contain(x => x.Id == createdCategory1.Id);
         var instance1 = list.FirstOrDefault(x => x.Id == createdCategory1.Id);
         instance1.Children.Should().Contain(x => x.Id == createdCategory13.Id);
@@ -225,22 +253,74 @@ public abstract class EntityInstanceQueryingTests
         instance121.Should().NotBeNull();
         var instance1211 = instance121?.Children.FirstOrDefault(x => x.Id == createdCategory1211.Id);
         instance1211.Should().NotBeNull();
-
-
-        subcategories12.Records.Count.Should().Be(2);
         
-        var productConfigurationCreateRequest = EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
+        
+    }
 
-        var (createdConfiguration, _) = await _eavService.CreateEntityConfiguration(
-            productConfigurationCreateRequest,
+    [TestMethod]
+    public async Task GetSubcategories_Success()
+    {
+        if (_projectionStorageType == ProjectionStorageType.InMemory)
+        {
+            return;
+        }
+        var (createdTree, createdCategory1, createdCategory12, createdCategory13, createdCategory121, createdCategory1211) = await BuildTestTreeAsync();
+        
+        var subcategories12 = await _eavService.QueryInstances(createdTree.EntityConfigurationId,
+            new ProjectionQuery()
+            {
+                Filters = new List<Filter>()
+                {
+                    new Filter("CategoryPaths.TreeId", FilterOperator.Equal, createdTree.Id),
+                    new Filter("CategoryPaths.Path", FilterOperator.StartsWith, $"\\/{createdCategory1.Id}\\/{createdCategory12.Id}")
+                }
+            });
+        
+        subcategories12.TotalRecordsFound.Should().Be(2);
+    }
+
+    [TestMethod]
+    public async Task MoveAndGetItemsFromCategory_Success()
+    {
+        var (createdTree, createdCategory1, createdCategory12, createdCategory13, createdCategory121, createdCategory1211) = await BuildTestTreeAsync();
+
+        var itemEntityConfig = EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
+        var (itemEntityConfiguration, _) = await _eavService.CreateEntityConfiguration(
+            itemEntityConfig,
             CancellationToken.None
         );
         
-        var instanceCreateRequest =
-            EntityInstanceFactory.CreateValidBoardGameEntityInstanceCreateRequest(createdConfiguration.Id);
-    
-        var (createdInstance, createProblemDetails) = await _eavService.CreateEntityInstance(instanceCreateRequest);
+        var itemInstanceRequest = EntityInstanceFactory.CreateValidBoardGameEntityInstanceCreateRequest(itemEntityConfiguration.Id);
+        var (createdItemInstance1, _) = await _eavService.CreateEntityInstance(itemInstanceRequest);
         
+        var (createdItemInstance2, _) = await _eavService.CreateEntityInstance(itemInstanceRequest);
+        (createdItemInstance2, _) = await _eavService.MoveItemAsync(createdItemInstance2.Id, createdItemInstance2.PartitionKey, createdTree.Id, createdCategory121.Id, CancellationToken.None);
+        
+        var (createdItemInstance3, _) = await _eavService.CreateEntityInstance(itemInstanceRequest);
+        (createdItemInstance3, _) = await _eavService.MoveItemAsync(createdItemInstance3.Id, createdItemInstance2.PartitionKey, createdTree.Id, createdCategory1211.Id, CancellationToken.None);
+        
+        var itemsFrom121 = await _eavService.QueryInstances(itemEntityConfiguration.Id,
+            new ProjectionQuery()
+            {
+                Filters = new List<Filter>()
+                {
+                    new Filter("CategoryPaths.TreeId", FilterOperator.Equal, createdTree.Id),
+                    new Filter("CategoryPaths.Path", FilterOperator.StartsWith, $"\\/{createdCategory1.Id}\\/{createdCategory12.Id}\\/{createdCategory121.Id}")
+                }
+            });
+        
+        var itemsFrom1211 = await _eavService.QueryInstances(itemEntityConfiguration.Id,
+            new ProjectionQuery()
+            {
+                Filters = new List<Filter>()
+                {
+                    new Filter("CategoryPaths.TreeId", FilterOperator.Equal, createdTree.Id),
+                    new Filter("CategoryPaths.Path", FilterOperator.StartsWith, $"\\/{createdCategory1.Id}\\/{createdCategory12.Id}\\/{createdCategory121.Id}\\/{createdCategory1211}")
+                }
+            });
+
+        itemsFrom121.Records.Count.Should().Be(1);
+        itemsFrom1211.Records.Count.Should().Be(1);
     }
 
     [TestMethod]

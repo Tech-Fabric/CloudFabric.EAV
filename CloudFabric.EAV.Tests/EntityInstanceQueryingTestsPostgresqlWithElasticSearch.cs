@@ -13,6 +13,7 @@ public class EntityInstanceQueryingTestsPostgresqlWithElasticSearch : EntityInst
 {
     private IEventStore _eventStore;
     private ProjectionRepositoryFactory _projectionRepositoryFactory;
+    protected override ProjectionStorageType _projectionStorageType => ProjectionStorageType.PostgresqlWithElasticsearch;
 
     protected override TimeSpan ProjectionsUpdateDelay { get; set; } = TimeSpan.FromMilliseconds(1000);
 

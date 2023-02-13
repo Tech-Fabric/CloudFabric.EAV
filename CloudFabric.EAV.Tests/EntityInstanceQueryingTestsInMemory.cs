@@ -12,11 +12,10 @@ public class EntityInstanceQueryingTestsInMemory : EntityInstanceQueryingTests
 {
     private IEventStore _eventStore;
     private ProjectionRepositoryFactory _projectionRepositoryFactory;
-
+    
     public EntityInstanceQueryingTestsInMemory()
     {
         _eventStore = new InMemoryEventStore(new Dictionary<(Guid, string), List<string>>());
-
         _projectionRepositoryFactory = new InMemoryProjectionRepositoryFactory();
     }
 

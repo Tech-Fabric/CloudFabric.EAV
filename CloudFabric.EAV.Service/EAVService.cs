@@ -361,7 +361,7 @@ public class EAVService : IEAVService
                 var (attributeCreated, attrProblemDetails) = await CreateAttribute(
                     attributeCreateRequest,
                     cancellationToken
-                );
+                );  
                 if (attrProblemDetails != null)
                 {
                     allAttrProblemDetails.Add(attrProblemDetails);
@@ -673,7 +673,7 @@ public class EAVService : IEAVService
             ).ConfigureAwait(false);
 
         
-        var (categoryPath, errors) = await BuildCategoryPathAsync(tree.Id, entityConfiguration.PartitionKey, entity.ParentId, cancellationToken).ConfigureAwait(false);
+        var (categoryPath, errors) = await BuildCategoryPathAsync(tree.Id, entity.ParentId, cancellationToken).ConfigureAwait(false);
         
         if (errors != null)
         {
@@ -985,24 +985,31 @@ public class EAVService : IEAVService
         );
     }
 
-    public async Task<(EntityInstanceViewModel, ProblemDetails)> MoveItemAsync(Guid itemId, string itemPartitionKey, string categoryPartitionKey, Guid treeId, Guid newParentId, CancellationToken cancellationToken)
+    public async Task<(EntityInstanceViewModel, ProblemDetails)> MoveItemAsync(Guid itemId, string itemPartitionKey, Guid treeId, Guid newParentId, CancellationToken cancellationToken)
     {
         var item = await _entityInstanceRepository.LoadAsync(itemId, itemPartitionKey, cancellationToken).ConfigureAwait(false);
         if (item == null)
         {
             return (null, new ValidationErrorResponse(nameof(itemId), "Item not found"))!;
         }
-        var (newCategoryPath, errors) = await BuildCategoryPathAsync(treeId, categoryPartitionKey, newParentId, cancellationToken).ConfigureAwait(false);
+        var (newCategoryPath, errors) = await BuildCategoryPathAsync(treeId, newParentId, cancellationToken).ConfigureAwait(false);
         if (errors != null)
         {
             return (null, errors)!;
         }
-        var itemCategoryPath = item.CategoryPaths.FirstOrDefault(x => x.TreeId == treeId) ?? new CategoryPath()
+        var itemCategoryPath = item.CategoryPaths.FirstOrDefault(x => x.TreeId == treeId);
+        if (itemCategoryPath == null)
         {
-            TreeId = treeId
-        };
-        itemCategoryPath.Path = newCategoryPath!;
-        
+            item.CategoryPaths.Add(new CategoryPath()
+            {
+                TreeId = treeId,
+                Path = newCategoryPath
+            });
+        }
+        else
+        {
+            itemCategoryPath.Path = newCategoryPath!; ;
+        }
         var saved = await _entityInstanceRepository.SaveAsync(_userInfo, item, cancellationToken).ConfigureAwait(false);
         if (!saved)
         {
@@ -1187,10 +1194,16 @@ public class EAVService : IEAVService
         return attributes;
     }
     
-    private async Task<(string?, ProblemDetails?)> BuildCategoryPathAsync(Guid treeId, string categoryPartitionKey, Guid? parentId, CancellationToken cancellationToken)
+    private async Task<(string?, ProblemDetails?)> BuildCategoryPathAsync(Guid treeId, Guid? parentId, CancellationToken cancellationToken)
     {
 
-        Category? parent = parentId == null ? null : _mapper.Map<Category>(await _entityInstanceRepository.LoadAsync(parentId.Value, categoryPartitionKey, cancellationToken).ConfigureAwait(false));
+        var tree = await _categoryTreeRepository.LoadAsync(treeId, treeId.ToString(), cancellationToken).ConfigureAwait(false);
+        if (tree == null)
+        {
+            return (null, new ValidationErrorResponse("TreeId", "Tree not found"))!;
+        }
+
+        Category? parent = parentId == null ? null : _mapper.Map<Category>(await _entityInstanceRepository.LoadAsync(parentId.Value, tree.EntityConfigurationId.ToString(), cancellationToken).ConfigureAwait(false));
         
         if (parent == null && parentId != null)
         {

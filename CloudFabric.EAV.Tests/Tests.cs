@@ -36,6 +36,8 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace CloudFabric.EAV.Tests;
 
+
+
 [TestClass]
 public class Tests
 {
@@ -2332,3 +2334,5 @@ public class Tests
         return new PostgresqlEventStoreEventObserver((PostgresqlEventStore)_eventStore);
     }
 }
+
+
