@@ -1418,14 +1418,18 @@ public class Tests
                 }
             },
             IsRequired = true,
-            StartingNumber = 1,
+            StartingNumber = -1,
             Increment = 0
         };
 
         (AttributeConfigurationViewModel _, ValidationErrorResponse errors) = await _eavService.CreateAttribute(serialAttributeCreateRequest, CancellationToken.None);
-
         errors.Should().BeOfType<ValidationErrorResponse>();
-        errors.Errors.Should().Contain(x => x.Value.Contains("Increment for serial number must not be 0"));
+        errors.Errors.Should().Contain(x => x.Value.Contains("Increment value must not be negative or 0"));
+        errors.Errors.Should().Contain(x => x.Value.Contains("Statring number must not be negative"));
+
+        serialAttributeCreateRequest.Increment = -1;
+        (_, errors) = await _eavService.CreateAttribute(serialAttributeCreateRequest, CancellationToken.None);
+        errors.Errors.Should().Contain(x => x.Value.Contains("Increment value must not be negative or 0"));
     }
 
     [TestMethod]
