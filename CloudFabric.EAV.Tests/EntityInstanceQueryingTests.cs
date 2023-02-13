@@ -305,7 +305,7 @@ public abstract class EntityInstanceQueryingTests
                 Filters = new List<Filter>()
                 {
                     new Filter("CategoryPaths.TreeId", FilterOperator.Equal, createdTree.Id),
-                    new Filter("CategoryPaths.Path", FilterOperator.StartsWith, $"\\/{createdCategory1.Id}\\/{createdCategory12.Id}\\/{createdCategory121.Id}")
+                    new Filter("CategoryPaths.Path", FilterOperator.Equal, $"\\/{createdCategory1.Id}\\/{createdCategory12.Id}\\/{createdCategory121.Id}")
                 }
             });
         
@@ -315,7 +315,7 @@ public abstract class EntityInstanceQueryingTests
                 Filters = new List<Filter>()
                 {
                     new Filter("CategoryPaths.TreeId", FilterOperator.Equal, createdTree.Id),
-                    new Filter("CategoryPaths.Path", FilterOperator.StartsWith, $"\\/{createdCategory1.Id}\\/{createdCategory12.Id}\\/{createdCategory121.Id}\\/{createdCategory1211}")
+                    new Filter("CategoryPaths.Path", FilterOperator.Equal, $"\\/{createdCategory1.Id}\\/{createdCategory12.Id}\\/{createdCategory121.Id}\\/{createdCategory1211.Id}")
                 }
             });
 

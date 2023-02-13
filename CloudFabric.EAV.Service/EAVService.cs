@@ -998,18 +998,7 @@ public class EAVService : IEAVService
             return (null, errors)!;
         }
         var itemCategoryPath = item.CategoryPaths.FirstOrDefault(x => x.TreeId == treeId);
-        if (itemCategoryPath == null)
-        {
-            item.CategoryPaths.Add(new CategoryPath()
-            {
-                TreeId = treeId,
-                Path = newCategoryPath
-            });
-        }
-        else
-        {
-            itemCategoryPath.Path = newCategoryPath!; ;
-        }
+        item.ChangeCategoryPath(treeId, newCategoryPath ?? "");
         var saved = await _entityInstanceRepository.SaveAsync(_userInfo, item, cancellationToken).ConfigureAwait(false);
         if (!saved)
         {
