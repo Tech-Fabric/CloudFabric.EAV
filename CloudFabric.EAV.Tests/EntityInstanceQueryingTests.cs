@@ -265,14 +265,15 @@ public abstract class EntityInstanceQueryingTests
             return;
         }
         var (createdTree, createdCategory1, createdCategory12, createdCategory13, createdCategory121, createdCategory1211) = await BuildTestTreeAsync();
-        
+        await Task.Delay(ProjectionsUpdateDelay);
+
         var subcategories12 = await _eavService.QueryInstances(createdTree.EntityConfigurationId,
             new ProjectionQuery()
             {
                 Filters = new List<Filter>()
                 {
                     new Filter("CategoryPaths.TreeId", FilterOperator.Equal, createdTree.Id),
-                    new Filter("CategoryPaths.Path", FilterOperator.StartsWith, $"\\/{createdCategory1.Id}\\/{createdCategory12.Id}")
+                    new Filter("CategoryPaths.Path", FilterOperator.StartsWithIgnoreCase, $"\\/{createdCategory1.Id}\\/{createdCategory12.Id}")
                 }
             });
         
@@ -299,6 +300,8 @@ public abstract class EntityInstanceQueryingTests
         var (createdItemInstance3, _) = await _eavService.CreateEntityInstance(itemInstanceRequest);
         (createdItemInstance3, _) = await _eavService.MoveItemAsync(createdItemInstance3.Id, createdItemInstance2.PartitionKey, createdTree.Id, createdCategory1211.Id, CancellationToken.None);
         
+        await Task.Delay(ProjectionsUpdateDelay);
+        
         var itemsFrom121 = await _eavService.QueryInstances(itemEntityConfiguration.Id,
             new ProjectionQuery()
             {
@@ -308,6 +311,9 @@ public abstract class EntityInstanceQueryingTests
                     new Filter("CategoryPaths.Path", FilterOperator.Equal, $"\\/{createdCategory1.Id}\\/{createdCategory12.Id}\\/{createdCategory121.Id}")
                 }
             });
+        var pathFilterValue = _projectionStorageType == ProjectionStorageType.PostgresqlWithElasticsearch
+            ? $"\\/{createdCategory1.Id}\\/{createdCategory12.Id}\\/{createdCategory121.Id}\\/{createdCategory1211.Id}"
+            : $"/{createdCategory1.Id}/{createdCategory12.Id}/{createdCategory121.Id}/{createdCategory1211.Id}";
         
         var itemsFrom1211 = await _eavService.QueryInstances(itemEntityConfiguration.Id,
             new ProjectionQuery()
@@ -315,7 +321,7 @@ public abstract class EntityInstanceQueryingTests
                 Filters = new List<Filter>()
                 {
                     new Filter("CategoryPaths.TreeId", FilterOperator.Equal, createdTree.Id),
-                    new Filter("CategoryPaths.Path", FilterOperator.Equal, $"\\/{createdCategory1.Id}\\/{createdCategory12.Id}\\/{createdCategory121.Id}\\/{createdCategory1211.Id}")
+                    new Filter("CategoryPaths.Path", FilterOperator.Equal, pathFilterValue)
                 }
             });
 
