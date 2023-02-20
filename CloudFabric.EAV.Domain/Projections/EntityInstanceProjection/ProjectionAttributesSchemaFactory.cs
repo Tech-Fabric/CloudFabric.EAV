@@ -339,47 +339,6 @@ namespace CloudFabric.EAV.Domain.Projections.EntityInstanceProjection
                 }
             };
         }
-        
-        private static List<ProjectionDocumentPropertySchema> GetValueFromListAttributeNestedProperties()
-        {
-            return new List<ProjectionDocumentPropertySchema>
-            {
-                new ProjectionDocumentPropertySchema
-                {
-                    PropertyName = nameof(ValueFromListAttributeInstance.PreselectedOptionsMachineNames),
-                    PropertyType = Type.GetTypeCode(
-                            typeof(ValueFromListAttributeInstance)
-                                .GetProperty(nameof(ValueFromListAttributeInstance.PreselectedOptionsMachineNames))
-                                ?.PropertyType
-                    ),
-                    IsRetrievable = true,
-                    IsNestedArray = true,
-                    ArrayElementType = Type.GetTypeCode(
-                        typeof(ValueFromListAttributeInstance)
-                            .GetProperty(nameof(ValueFromListAttributeInstance.PreselectedOptionsMachineNames))
-                            ?.PropertyType
-                            .GetGenericArguments()[0]
-                    )
-                },
-                new ProjectionDocumentPropertySchema
-                {
-                    PropertyName = nameof(ValueFromListAttributeInstance.UnavailableOptionsMachineNames),
-                    PropertyType = Type.GetTypeCode(
-                        typeof(ValueFromListAttributeInstance)
-                            .GetProperty(nameof(ValueFromListAttributeInstance.UnavailableOptionsMachineNames))
-                            ?.PropertyType
-                    ),
-                    IsRetrievable = true,
-                    IsNestedArray = true,
-                    ArrayElementType = Type.GetTypeCode(
-                        typeof(ValueFromListAttributeInstance)
-                            .GetProperty(nameof(ValueFromListAttributeInstance.PreselectedOptionsMachineNames))
-                            ?.PropertyType
-                            .GetGenericArguments()[0]
-                    )
-                }
-            };
-        }
 
         private static List<ProjectionDocumentPropertySchema> GetImageAttributeNestedProperties()
         {
