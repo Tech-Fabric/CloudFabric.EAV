@@ -267,16 +267,14 @@ public abstract class EntityInstanceQueryingTests
         var (createdTree, createdCategory1, createdCategory12, createdCategory13, createdCategory121, createdCategory1211) = await BuildTestTreeAsync();
         await Task.Delay(ProjectionsUpdateDelay);
 
-        var categoryPathValue = _projectionStorageType == ProjectionStorageType.PostgresqlWithElasticsearch
-            ? $"\\/{createdCategory1.Id}\\/{createdCategory12.Id}"
-            : $"/{createdCategory1.Id}/{createdCategory12.Id}";
+        var categoryPathValue = $"/{createdCategory1.Id}/{createdCategory12.Id}";
         var subcategories12 = await _eavService.QueryInstances(createdTree.EntityConfigurationId,
             new ProjectionQuery()
             {
                 Filters = new List<Filter>()
                 {
                     new Filter("CategoryPaths.TreeId", FilterOperator.Equal, createdTree.Id),
-                    new Filter("CategoryPaths.Path", FilterOperator.StartsWithIgnoreCase, $"\\/{createdCategory1.Id}\\/{createdCategory12.Id}")
+                    new Filter("CategoryPaths.Path", FilterOperator.StartsWithIgnoreCase, categoryPathValue)
                 }
             });
         
@@ -305,11 +303,11 @@ public abstract class EntityInstanceQueryingTests
         (createdItemInstance2, _) = await _eavService.MoveItemAsync(createdItemInstance2.Id, createdItemInstance2.PartitionKey, createdTree.Id, createdCategory121.Id, CancellationToken.None);
         
         var (createdItemInstance3, _) = await _eavService.CreateEntityInstance(itemInstanceRequest);
-        (createdItemInstance3, _) = await _eavService.MoveItemAsync(createdItemInstance3.Id, createdItemInstance2.PartitionKey, createdTree.Id, createdCategory1211.Id, CancellationToken.None);
+        (_, _) = await _eavService.MoveItemAsync(createdItemInstance3.Id, createdItemInstance2.PartitionKey, createdTree.Id, createdCategory1211.Id, CancellationToken.None);
         
         await Task.Delay(ProjectionsUpdateDelay);
         
-        var pathFilterValue121 = _projectionStorageType == ProjectionStorageType.PostgresqlWithElasticsearch ? $"\\/{createdCategory1.Id}\\/{createdCategory12.Id}\\/{createdCategory121.Id}" : $"/{createdCategory1.Id}/{createdCategory12.Id}/{createdCategory121.Id}";
+        var pathFilterValue121 = $"/{createdCategory1.Id}/{createdCategory12.Id}/{createdCategory121.Id}";
 
         
         var itemsFrom121 = await _eavService.QueryInstances(itemEntityConfiguration.Id,
@@ -322,7 +320,7 @@ public abstract class EntityInstanceQueryingTests
                 }
                     
             });
-        var pathFilterValue1211 = _projectionStorageType == ProjectionStorageType.PostgresqlWithElasticsearch ? $"\\/{createdCategory1.Id}\\/{createdCategory12.Id}\\/{createdCategory121.Id}\\/{createdCategory1211.Id}" : $"/{createdCategory1.Id}/{createdCategory12.Id}/{createdCategory121.Id}/{createdCategory1211.Id}";
+        var pathFilterValue1211 = $"/{createdCategory1.Id}/{createdCategory12.Id}/{createdCategory121.Id}/{createdCategory1211.Id}";
 
         var itemsFrom1211 = await _eavService.QueryInstances(itemEntityConfiguration.Id,
             new ProjectionQuery()
