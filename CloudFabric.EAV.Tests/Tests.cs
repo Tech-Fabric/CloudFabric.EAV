@@ -1065,11 +1065,11 @@ public class Tests
                 }
             },
             IsRequired = true,
-            ValueFromListAttributeType = ValueFromListAttributeType.OneValueFromList,
             ValuesList = new List<ValueFromListOptionCreateUpdateRequest>
             {
-                new ValueFromListOptionCreateUpdateRequest("firstTestOption", "Premium wrap", 30),
-                new ValueFromListOptionCreateUpdateRequest("secondTestOption", "Card with wishes from shop", null)
+                new ValueFromListOptionCreateUpdateRequest("First Option", null),
+                new ValueFromListOptionCreateUpdateRequest("Second 65 : Option! --!", null),
+                new ValueFromListOptionCreateUpdateRequest("Third option", "custom_machine_name")
             }
         };
 
@@ -1106,11 +1106,11 @@ public class Tests
             allAttributes.Records.First().Document!.Id.ToString()!,
             CancellationToken.None
         );
-        valuesAttribute!.ValuesList.Count.Should().Be(2);
+        valuesAttribute!.ValuesList.Count.Should().Be(3);
     }
 
     [TestMethod]
-    public async Task CreateValueFromListAttribute_OptionNamesNotUnique()
+    public async Task CreateValueFromListAttribute_ValidationError()
     {
         var cultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID;
         var valueFromListAttribute = new ValueFromListAttributeConfigurationCreateUpdateRequest()
@@ -1134,11 +1134,10 @@ public class Tests
                 }
             },
             IsRequired = true,
-            ValueFromListAttributeType = ValueFromListAttributeType.OneValueFromList,
             ValuesList = new List<ValueFromListOptionCreateUpdateRequest>
             {
-                new ValueFromListOptionCreateUpdateRequest("repeatedMachineName", "Premium wrap", 30),
-                new ValueFromListOptionCreateUpdateRequest("repeatedMachineName", "Card with wishes from shop", null)
+                new ValueFromListOptionCreateUpdateRequest("Repeated Name", "firstTestOption"),
+                new ValueFromListOptionCreateUpdateRequest("Repeated Name", "secondTestOption")
             }
         };
 
@@ -1159,16 +1158,34 @@ public class Tests
             }
         };
 
-        Func<Task> action = async () => await _eavService.CreateEntityConfiguration(entityConfigurationCreateRequest, CancellationToken.None);
-        await action.Should().ThrowAsync<Exception>();
+        // case check repeated name
+        (EntityConfigurationViewModel entity, ProblemDetails errors) = await _eavService.CreateEntityConfiguration(entityConfigurationCreateRequest, CancellationToken.None);
 
+        entity.Should().BeNull();
+        errors.Should().BeOfType<ValidationErrorResponse>();
+        errors.As<ValidationErrorResponse>().Errors.Should().Contain(x => x.Value.Contains("Identical options not allowed"));
+
+        // case check repeated machine name
         valueFromListAttribute.ValuesList = new List<ValueFromListOptionCreateUpdateRequest>
         {
-                new ValueFromListOptionCreateUpdateRequest(name: "Repeated Name", machineName: "firstTestOption", valueToAppend: 30),
-                new ValueFromListOptionCreateUpdateRequest(name: "Repeated Name", machineName: "secondTestOption", valueToAppend: null)
+            new ValueFromListOptionCreateUpdateRequest("First Option Name", "repeatedMachineName"),
+            new ValueFromListOptionCreateUpdateRequest("Second Oprion Name", "repeatedMachineName")
         };
 
-        await action.Should().ThrowAsync<Exception>();
+        (entity, errors) = await _eavService.CreateEntityConfiguration(entityConfigurationCreateRequest, CancellationToken.None);
+
+        entity.Should().BeNull();
+        errors.Should().BeOfType<ValidationErrorResponse>();
+        errors.As<ValidationErrorResponse>().Errors.Should().Contain(x => x.Value.Contains("Identical options not allowed"));
+
+        // case check empty options list
+        valueFromListAttribute.ValuesList = new List<ValueFromListOptionCreateUpdateRequest>();
+
+        (entity, errors) = await _eavService.CreateEntityConfiguration(entityConfigurationCreateRequest, CancellationToken.None);
+
+        entity.Should().BeNull();
+        errors.Should().BeOfType<ValidationErrorResponse>();
+        errors.As<ValidationErrorResponse>().Errors.Should().Contain(x => x.Value.Contains("Cannot create attribute without options"));
     }
 
     [TestMethod]
@@ -1198,11 +1215,10 @@ public class Tests
                 }
             },
             IsRequired = true,
-            ValueFromListAttributeType = ValueFromListAttributeType.OneValueFromList,
             ValuesList = new List<ValueFromListOptionCreateUpdateRequest>
             {
-                new ValueFromListOptionCreateUpdateRequest("firstTestOption", "Premium wrap", 30),
-                new ValueFromListOptionCreateUpdateRequest("secondTestOption", "Card with wishes from shop", null)
+                new ValueFromListOptionCreateUpdateRequest("Premium wrap", "firstTestOption"),
+                new ValueFromListOptionCreateUpdateRequest("Card with wishes from shop", "secondTestOption")
             }
         };
 
@@ -1210,18 +1226,14 @@ public class Tests
 
         // create request with changed properties and update attribute
         string affectedMachineName = Guid.NewGuid().ToString();
-        valueFromListAttributeCreateRequest.AttributeMachineNameToAffect = affectedMachineName;
         valueFromListAttributeCreateRequest.ValuesList = new()
         {
-            new ValueFromListOptionCreateUpdateRequest("changedAttribute", "Card with wishes from shop", null)
+            new ValueFromListOptionCreateUpdateRequest("Card with wishes from shop", "changedAttribute")
         };
-        valueFromListAttributeCreateRequest.ValueFromListAttributeType = ValueFromListAttributeType.MultipleValuesFromList;
 
         (AttributeConfigurationViewModel? changedAttribute, _) = await _eavService.UpdateAttribute(valueFromListAttribute.Id, valueFromListAttributeCreateRequest!, CancellationToken.None);
 
         var changedValueFromListAttribute = await valueFromListRepository.LoadAsync(changedAttribute!.Id, changedAttribute.Id.ToString(), CancellationToken.None);
-        changedValueFromListAttribute!.AttributeMachineNameToAffect.Should().Be(affectedMachineName);
-        changedValueFromListAttribute.ValueFromListAttributeType.Should().Be(ValueFromListAttributeType.MultipleValuesFromList);
         changedValueFromListAttribute.ValuesList.Count.Should().Be(1);
         changedValueFromListAttribute.ValuesList.FirstOrDefault()!.MachineName.Should().Be("changedAttribute");
     }
@@ -1252,10 +1264,9 @@ public class Tests
                 }
             },
             IsRequired = true,
-            ValueFromListAttributeType = ValueFromListAttributeType.OneValueFromList,
             ValuesList = new List<ValueFromListOptionCreateUpdateRequest>
             {
-                new ValueFromListOptionCreateUpdateRequest("firstTestOption", "Premium wrap", 30)
+                new ValueFromListOptionCreateUpdateRequest("firstTestOption", "Premium wrap")
             }
         };
 
@@ -1296,6 +1307,24 @@ public class Tests
         validationErrors.Should().BeOfType<ValidationErrorResponse>();
         validationErrors.As<ValidationErrorResponse>().Errors["testValueAttr"].First().Should()
             .Be("Cannot validate attribute. Expected attribute type: Value from list");
+
+        (result, validationErrors) = await _eavService.CreateEntityInstance(new EntityInstanceCreateRequest()
+        {
+            EntityConfigurationId = entityConfiguration.Id,
+            Attributes = new List<AttributeInstanceCreateUpdateRequest>()
+            {
+                new ValueFromListAttributeInstanceCreateUpdateRequest()
+                {
+                    ConfigurationAttributeMachineName = "testValueAttr",
+                    Value = "notvalidmachineneme"
+                }
+            }
+        });
+
+        result.Should().BeNull();
+        validationErrors.Should().BeOfType<ValidationErrorResponse>();
+        validationErrors.As<ValidationErrorResponse>().Errors["testValueAttr"].First().Should()
+            .Be("Cannot validate attribute. Wrong option");
     }
 
     [TestMethod]
@@ -1395,14 +1424,18 @@ public class Tests
                 }
             },
             IsRequired = true,
-            StartingNumber = 1,
+            StartingNumber = -1,
             Increment = 0
         };
 
         (AttributeConfigurationViewModel _, ValidationErrorResponse errors) = await _eavService.CreateAttribute(serialAttributeCreateRequest, CancellationToken.None);
-
         errors.Should().BeOfType<ValidationErrorResponse>();
-        errors.Errors.Should().Contain(x => x.Value.Contains("Increment for serial number must not be 0"));
+        errors.Errors.Should().Contain(x => x.Value.Contains("Increment value must not be negative or 0"));
+        errors.Errors.Should().Contain(x => x.Value.Contains("Statring number must not be negative"));
+
+        serialAttributeCreateRequest.Increment = -1;
+        (_, errors) = await _eavService.CreateAttribute(serialAttributeCreateRequest, CancellationToken.None);
+        errors.Errors.Should().Contain(x => x.Value.Contains("Increment value must not be negative or 0"));
     }
 
     [TestMethod]
@@ -2157,8 +2190,10 @@ public class Tests
                 {
                     ""configurationAttributeMachineName"": ""test-date"",
                     ""valueType"": ""DateRange"",
-                    ""from"": ""2023-01-24"",
-                    ""to"": ""2023-01-25""
+                    ""value"": {
+                        ""from"": ""2023-01-24"",
+                        ""to"": ""2023-01-25""
+                    }
                 }
             ]
         }";
@@ -2183,8 +2218,8 @@ public class Tests
         
         deserializedInstance.Attributes[2].ConfigurationAttributeMachineName.Should().Be("test-date");
         deserializedInstance.Attributes[2].ValueType.Should().Be(EavAttributeType.DateRange);
-        deserializedInstance.Attributes[2].As<DateRangeAttributeInstanceCreateUpdateRequest>().From.Should().Be(DateTime.Parse("2023-01-24"));
-        deserializedInstance.Attributes[2].As<DateRangeAttributeInstanceCreateUpdateRequest>().To.Should().Be(DateTime.Parse("2023-01-25"));
+        deserializedInstance.Attributes[2].As<DateRangeAttributeInstanceCreateUpdateRequest>().Value.From.Should().Be(DateTime.Parse("2023-01-24"));
+        deserializedInstance.Attributes[2].As<DateRangeAttributeInstanceCreateUpdateRequest>().Value.To.Should().Be(DateTime.Parse("2023-01-25"));
     }
 
     [TestMethod]

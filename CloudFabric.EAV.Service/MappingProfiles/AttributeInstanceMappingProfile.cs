@@ -24,6 +24,7 @@ public class AttributeInstanceProfile : Profile
         CreateMap<TextAttributeInstanceCreateUpdateRequest, TextAttributeInstance>();
         CreateMap<ValueFromListAttributeInstanceCreateUpdateRequest, ValueFromListAttributeInstance>();
         CreateMap<DateRangeAttributeInstanceCreateUpdateRequest, DateRangeAttributeInstance>();
+        CreateMap<DateRangeAttributeInstanceValueRequest, DateRangeAttributeInstanceValue>();
         CreateMap<BooleanAttributeInstanceCreateUpdateRequest, BooleanAttributeInstance>();
         CreateMap<FileAttributeValueCreateUpdateRequest, FileAttributeValue>();
         CreateMap<FileAttributeInstanceCreateUpdateRequest, FileAttributeInstance>();
@@ -42,6 +43,7 @@ public class AttributeInstanceProfile : Profile
         CreateMap<TextAttributeInstance, TextAttributeInstanceViewModel>();
         CreateMap<ValueFromListAttributeInstance, ValueFromListAttributeInstanceViewModel>();
         CreateMap<DateRangeAttributeInstance, DateRangeAttributeInstanceViewModel>();
+        CreateMap<DateRangeAttributeInstanceValue, DateRangeAttributeInstanceValueViewModel>();
         CreateMap<BooleanAttributeInstance, BooleanAttributeInstanceViewModel>();
         CreateMap<FileAttributeInstance, FileAttributeInstanceViewModel>();
         CreateMap<FileAttributeValue, FileAttributeValueViewModel>();

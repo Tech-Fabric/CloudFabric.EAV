@@ -147,9 +147,7 @@ namespace CloudFabric.EAV.Domain.Projections.EntityInstanceProjection
                 PropertyType = GetPropertyType(attributeConfiguration.ValueType).GetValueOrDefault(),
                 IsRetrievable = true,
                 IsFilterable = true,
-                IsSortable = true,
-                IsNestedObject = true,
-                NestedObjectProperties = GetValueFromListAttributeNestedProperties()
+                IsSortable = true
             };
         }
 
@@ -206,8 +204,8 @@ namespace CloudFabric.EAV.Domain.Projections.EntityInstanceProjection
                 EavAttributeType.Boolean => null,
                 EavAttributeType.HtmlText => null,
                 EavAttributeType.EntityReference => null,
+                EavAttributeType.ValueFromList => null,
                 EavAttributeType.LocalizedText => GetLocalizedTextAttributeNestedProperties(),
-                EavAttributeType.ValueFromList => GetValueFromListAttributeNestedProperties(),
                 EavAttributeType.DateRange => GetDateAttributeNestedProperties(),
                 EavAttributeType.Image => GetImageAttributeNestedProperties(),
                 EavAttributeType.File => GetFileAttributeNestedProperties(),
@@ -257,11 +255,7 @@ namespace CloudFabric.EAV.Domain.Projections.EntityInstanceProjection
                 new ProjectionDocumentPropertySchema
                 {
                     PropertyName = nameof(DateRangeAttributeInstanceValue.From),
-                    PropertyType = Type.GetTypeCode(
-                        typeof(DateRangeAttributeInstanceValue)
-                            .GetProperty(nameof(DateRangeAttributeInstanceValue.From))
-                            ?.GetType()
-                    ),
+                    PropertyType = TypeCode.DateTime,
                     IsRetrievable = true,
                     IsFilterable = true,
                     IsSortable = true,
@@ -270,11 +264,7 @@ namespace CloudFabric.EAV.Domain.Projections.EntityInstanceProjection
                 new ProjectionDocumentPropertySchema
                 {
                     PropertyName = nameof(DateRangeAttributeInstanceValue.To),
-                    PropertyType = Type.GetTypeCode(
-                        typeof(DateRangeAttributeInstanceValue)
-                            .GetProperty(nameof(DateRangeAttributeInstanceValue.To))
-                            ?.GetType()
-                    ),
+                    PropertyType = TypeCode.DateTime,
                     IsRetrievable = true,
                     IsFilterable = true,
                     IsSortable = true
@@ -479,13 +469,13 @@ namespace CloudFabric.EAV.Domain.Projections.EntityInstanceProjection
                 case EavAttributeType.Text:
                 case EavAttributeType.HtmlText:
                 case EavAttributeType.EntityReference:
+                case EavAttributeType.ValueFromList:
                     propertyType = TypeCode.String;
                     break;
                 case EavAttributeType.Boolean:
                     propertyType = TypeCode.Boolean;
                     break;
                 case EavAttributeType.LocalizedText:
-                case EavAttributeType.ValueFromList:
                 case EavAttributeType.DateRange:
                 case EavAttributeType.Image:
                 case EavAttributeType.Array:
