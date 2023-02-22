@@ -147,9 +147,9 @@ public class EAVService : IEAVService
         {
             return (null, new ValidationErrorResponse(attribute.MachineName, validationErrors.ToArray()));
         }
+        await _attributeConfigurationProjectionRepository.EnsureIndex(cancellationToken).ConfigureAwait(false);
         
-        await _attributeConfigurationRepository.SaveAsync(_userInfo, attribute, cancellationToken);
-
+        await _attributeConfigurationRepository.SaveAsync(_userInfo, attribute, cancellationToken).ConfigureAwait(false);
         return (_mapper.Map<AttributeConfigurationViewModel>(attribute), null);
     }
 
@@ -189,8 +189,9 @@ public class EAVService : IEAVService
         {
             return (null, new ValidationErrorResponse(updatedAttribute.MachineName, validationErrors.ToArray()));
         }
+        await _attributeConfigurationProjectionRepository.EnsureIndex(cancellationToken).ConfigureAwait(false);
 
-        await _attributeConfigurationRepository.SaveAsync(_userInfo, attribute, cancellationToken);
+        await _attributeConfigurationRepository.SaveAsync(_userInfo, attribute, cancellationToken).ConfigureAwait(false);
 
         return (_mapper.Map<AttributeConfigurationViewModel>(attribute), null);
     }
@@ -207,7 +208,7 @@ public class EAVService : IEAVService
             );
         }
 
-        if (!await CheckAttributesListMachineNameUnique(entityConfigurationCreateRequest.Attributes, cancellationToken))
+        if (!await CheckAttributesListMachineNameUnique(entityConfigurationCreateRequest.Attributes, cancellationToken).ConfigureAwait(false))
         {
             return (
                 null,
@@ -220,10 +221,10 @@ public class EAVService : IEAVService
             var requestAttribute = (EntityAttributeConfigurationCreateUpdateReferenceRequest)attribute;
 
             var attributeConfiguration = await _attributeConfigurationRepository.LoadAsyncOrThrowNotFound(
-                    requestAttribute.AttributeConfigurationId,
-                    requestAttribute.AttributeConfigurationId.ToString(),
-                    cancellationToken
-                    );
+                requestAttribute.AttributeConfigurationId,
+                requestAttribute.AttributeConfigurationId.ToString(),
+                cancellationToken
+            ).ConfigureAwait(false);
 
             if (attributeConfiguration.IsDeleted)
             {
@@ -244,7 +245,7 @@ public class EAVService : IEAVService
                 var (attrCreated, attrProblemDetails)  = await CreateAttribute(
                     (AttributeConfigurationCreateUpdateRequest)attribute,
                     cancellationToken
-                );
+                ).ConfigureAwait(false);
 
                 if (attrProblemDetails != null)
                 {
@@ -284,11 +285,14 @@ public class EAVService : IEAVService
         {
             return (null, new ValidationErrorResponse(entityConfiguration.MachineName, entityValidationErrors.ToArray()));
         }
+        await _entityConfigurationProjectionRepository.EnsureIndex(cancellationToken).ConfigureAwait(false);
+//        await _attributeConfigurationProjectionRepository.EnsureIndex(cancellationToken).ConfigureAwait(false);
+
         await _entityConfigurationRepository.SaveAsync(
             _userInfo,
             entityConfiguration,
             cancellationToken
-        );
+        ).ConfigureAwait(false);
 
         return (_mapper.Map<EntityConfigurationViewModel>(entityConfiguration), null)!;
     }
@@ -304,7 +308,7 @@ public class EAVService : IEAVService
             );
         }
 
-        if (!await CheckAttributesListMachineNameUnique(entityUpdateRequest.Attributes, cancellationToken))
+        if (!await CheckAttributesListMachineNameUnique(entityUpdateRequest.Attributes, cancellationToken).ConfigureAwait(false))
         {
             return (
                 null,
@@ -316,7 +320,7 @@ public class EAVService : IEAVService
             entityUpdateRequest.Id,
             entityUpdateRequest.Id.ToString(),
             cancellationToken
-        );
+        ).ConfigureAwait(false);
 
         if (entityConfiguration == null)
         {
@@ -345,7 +349,7 @@ public class EAVService : IEAVService
                     attributeReferenceUpdate.AttributeConfigurationId,
                     attributeReferenceUpdate.AttributeConfigurationId.ToString(),
                     cancellationToken
-                    );
+                ).ConfigureAwait(false);
 
                 if (attributeConfiguration != null && !attributeConfiguration.IsDeleted)
                 {
@@ -361,7 +365,7 @@ public class EAVService : IEAVService
                 var (attributeCreated, attrProblemDetails) = await CreateAttribute(
                     attributeCreateRequest,
                     cancellationToken
-                );  
+                ).ConfigureAwait(false);  
                 if (attrProblemDetails != null)
                 {
                     allAttrProblemDetails.Add(attrProblemDetails);
@@ -399,8 +403,8 @@ public class EAVService : IEAVService
         {
             return (null, new ValidationErrorResponse(entityConfiguration.MachineName, entityValidationErrors.ToArray()));
         }
-
-        await _entityConfigurationRepository.SaveAsync(_userInfo, entityConfiguration, cancellationToken);
+        await _entityConfigurationProjectionRepository.EnsureIndex(cancellationToken).ConfigureAwait(false);
+        await _entityConfigurationRepository.SaveAsync(_userInfo, entityConfiguration, cancellationToken).ConfigureAwait(false);
 
         return (_mapper.Map<EntityConfigurationViewModel>(entityConfiguration), null)!;
     }
@@ -415,7 +419,7 @@ public class EAVService : IEAVService
             attributeId,
             attributeId.ToString(),
             cancellationToken
-        );
+        ).ConfigureAwait(false);
 
         if (attributeConfiguration.IsDeleted)
         {
@@ -426,7 +430,7 @@ public class EAVService : IEAVService
             entityConfigurationId,
             entityConfigurationId.ToString(),
             cancellationToken
-        );
+        ).ConfigureAwait(false);
 
         if (entityConfiguration.Attributes.Any(x => x.AttributeConfigurationId == attributeConfiguration.Id))
         {
@@ -437,14 +441,16 @@ public class EAVService : IEAVService
                 attributeConfiguration.MachineName,
                 entityConfiguration,
                 cancellationToken
-            )
+            ).ConfigureAwait(false)
         )
         {
             return (null, new ValidationErrorResponse(nameof(attributeId), "Attributes machine name must be unique"));
         }
 
         entityConfiguration.AddAttribute(attributeId);
-        await _entityConfigurationRepository.SaveAsync(_userInfo, entityConfiguration, cancellationToken);
+        await _entityConfigurationProjectionRepository.EnsureIndex(cancellationToken).ConfigureAwait(false);
+
+        await _entityConfigurationRepository.SaveAsync(_userInfo, entityConfiguration, cancellationToken).ConfigureAwait(false);
 
         return (_mapper.Map<EntityConfigurationViewModel>(entityConfiguration), null)!;
     }
@@ -461,7 +467,7 @@ public class EAVService : IEAVService
             entityConfigurationId,
             entityConfigurationId.ToString(),
             cancellationToken
-        );
+        ).ConfigureAwait(false);
 
         if (!await IsAttributeMachineNameUniqueForEntityConfiguration(
                 attributeConfigurationCreateUpdateRequest.MachineName,
@@ -482,6 +488,8 @@ public class EAVService : IEAVService
             return (null, attrProblemDetails);
         }
         entityConfiguration.AddAttribute(createdAttribute.Id);
+        await _attributeConfigurationProjectionRepository.EnsureIndex(cancellationToken).ConfigureAwait(false);
+
         await _entityConfigurationRepository.SaveAsync(_userInfo, entityConfiguration, cancellationToken);
 
         return (createdAttribute, null)!;
@@ -504,8 +512,10 @@ public class EAVService : IEAVService
                 entityConfiguration.RemoveAttribute(attributeId);
             }
         }
+        await _entityConfigurationProjectionRepository.EnsureIndex(cancellationToken).ConfigureAwait(false);
 
         await _entityConfigurationRepository.SaveAsync(_userInfo, entityConfiguration, cancellationToken);
+
     }
 
     public async Task DeleteAttributes(List<Guid> attributesIds, CancellationToken cancellationToken = default)
@@ -522,7 +532,7 @@ public class EAVService : IEAVService
             {
                 attributeConfiguration.Delete();
 
-                await _attributeConfigurationRepository.SaveAsync(_userInfo, attributeConfiguration, cancellationToken);
+                await _attributeConfigurationRepository.SaveAsync(_userInfo, attributeConfiguration, cancellationToken).ConfigureAwait(false);
             }
         }
 
@@ -784,7 +794,7 @@ public class EAVService : IEAVService
             entity.EntityConfigurationId,
             entity.EntityConfigurationId.ToString(),
             cancellationToken
-        );
+        ).ConfigureAwait(false);
 
         if (entityConfiguration == null)
         {
@@ -795,7 +805,7 @@ public class EAVService : IEAVService
             await GetAttributeConfigurationsForEntityConfiguration(
                 entityConfiguration,
                 cancellationToken
-            );
+            ).ConfigureAwait(false);
 
         //TODO: add check for categoryPath
         var entityInstance = new EntityInstance(
@@ -824,14 +834,21 @@ public class EAVService : IEAVService
         {
             return (null, new ValidationErrorResponse(validationErrors))!;
         }
-
-        var entityConfigurationSaved = await _entityConfigurationRepository.SaveAsync(_userInfo, entityConfiguration, cancellationToken);
+        
+        //TODO: Why we need to save configuration here?
+        var entityConfigurationSaved = await _entityConfigurationRepository.SaveAsync(_userInfo, entityConfiguration, cancellationToken).ConfigureAwait(false);
 
         if (!entityConfigurationSaved)
         {
             throw new Exception("Entity was not saved");
         }
+        
+        var schema = CloudFabric.EAV.Domain.Projections.EntityInstanceProjection.ProjectionDocumentSchemaFactory
+            .FromEntityConfiguration(entityConfiguration, attributeConfigurations);
 
+        var projectionRepository = _projectionRepositoryFactory.GetProjectionRepository(schema);
+        await projectionRepository.EnsureIndex(cancellationToken).ConfigureAwait(false);
+        
         var entityInstanceSaved = await _entityInstanceRepository.SaveAsync(_userInfo, entityInstance, cancellationToken);
 
         if (!entityInstanceSaved)
