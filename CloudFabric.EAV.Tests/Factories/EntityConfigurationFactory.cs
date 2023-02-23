@@ -117,6 +117,7 @@ public static class EntityConfigurationFactory
                     },
                     TenantId = tenantId
                 },
+                
                 new TextAttributeConfigurationCreateUpdateRequest()
                 {
                     MachineName = "brand",

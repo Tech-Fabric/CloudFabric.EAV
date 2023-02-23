@@ -718,6 +718,13 @@ public class EAVService : IEAVService
         }
 
         var mappedInstance = _mapper.Map<EntityInstance>(entityInstance);
+        
+        var schema = CloudFabric.EAV.Domain.Projections.EntityInstanceProjection.ProjectionDocumentSchemaFactory
+            .FromEntityConfiguration(entityConfiguration, attributeConfigurations);
+
+        var projectionRepository = _projectionRepositoryFactory.GetProjectionRepository(schema);
+        await projectionRepository.EnsureIndex(cancellationToken).ConfigureAwait(false);
+        
         var saved = await _entityInstanceRepository.SaveAsync(_userInfo, mappedInstance, cancellationToken).ConfigureAwait(false);
         if (!saved)
         {
