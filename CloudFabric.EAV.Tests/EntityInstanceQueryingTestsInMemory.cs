@@ -34,5 +34,21 @@ public class EntityInstanceQueryingTestsInMemory : EntityInstanceQueryingTests
         return _projectionRepositoryFactory;
     }
     
+    [Ignore]
+    public new async Task GetTreeViewAsync()
+    {
+        await Task.CompletedTask;
+    }
+
+    [Ignore]
+    public new async Task GetSubcategories_Success()
+    {
+        await Task.CompletedTask;
+    }
     
+    [Ignore]
+    public new async Task MoveAndGetItemsFromCategory_Success()
+    {
+        await Task.CompletedTask;
+    }
 }

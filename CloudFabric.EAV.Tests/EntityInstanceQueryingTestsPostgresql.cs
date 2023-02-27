@@ -12,9 +12,7 @@ public class EntityInstanceQueryingTestsPostgresql : EntityInstanceQueryingTests
 {
     private IEventStore _eventStore;
     private ProjectionRepositoryFactory _projectionRepositoryFactory;
-
-    protected override ProjectionStorageType _projectionStorageType => ProjectionStorageType.Postgresql;
-
+    
     public EntityInstanceQueryingTestsPostgresql()
     {
         var connectionString = "Host=localhost;"

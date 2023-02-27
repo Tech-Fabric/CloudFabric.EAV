@@ -26,12 +26,6 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace CloudFabric.EAV.Tests;
 
-public enum ProjectionStorageType
-{
-    InMemory,
-    Postgresql,
-    PostgresqlWithElasticsearch
-}
 
 public abstract class EntityInstanceQueryingTests
 {
@@ -39,8 +33,6 @@ public abstract class EntityInstanceQueryingTests
     private IEventStore _eventStore;
     private ILogger<EAVService> _logger;
     
-    protected virtual ProjectionStorageType _projectionStorageType { get; set; } = ProjectionStorageType.InMemory;
-
     /// <summary>
     /// Some projection engines take time to catch events and update projection records
     /// (like cosmosdb with change feed event observer).
@@ -234,10 +226,7 @@ public abstract class EntityInstanceQueryingTests
     [TestMethod]
     public async Task GetTreeViewAsync()
     {
-        if (_projectionStorageType == ProjectionStorageType.InMemory)
-        {
-            return;
-        }
+
         var (createdTree, createdCategory1, createdCategory12, createdCategory13, createdCategory121, createdCategory1211) = await BuildTestTreeAsync();
 
         var list = await _eavService.GetCategoryTreeViewAsync(createdTree.Id, CancellationToken.None);
@@ -260,10 +249,7 @@ public abstract class EntityInstanceQueryingTests
     [TestMethod]
     public async Task GetSubcategories_Success()
     {
-        if (_projectionStorageType == ProjectionStorageType.InMemory)
-        {
-            return;
-        }
+
         var (createdTree, createdCategory1, createdCategory12, createdCategory13, createdCategory121, createdCategory1211) = await BuildTestTreeAsync();
         await Task.Delay(ProjectionsUpdateDelay);
 
@@ -284,10 +270,7 @@ public abstract class EntityInstanceQueryingTests
     [TestMethod]
     public async Task MoveAndGetItemsFromCategory_Success()
     {
-        if (_projectionStorageType == ProjectionStorageType.InMemory)
-        {
-            return;
-        }
+
         var (createdTree, createdCategory1, createdCategory12, createdCategory13, createdCategory121, createdCategory1211) = await BuildTestTreeAsync();
 
         var itemEntityConfig = EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
