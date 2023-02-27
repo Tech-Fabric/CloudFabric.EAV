@@ -1009,7 +1009,7 @@ public class EAVService : IEAVService
         );
     }
 
-    public async Task<(EntityInstanceViewModel, ProblemDetails)> MoveItemAsync(Guid itemId, string itemPartitionKey, Guid treeId, Guid newParentId, CancellationToken cancellationToken)
+    public async Task<(EntityInstanceViewModel, ProblemDetails)> UpdateCategoryPathAsync(Guid itemId, string itemPartitionKey, Guid treeId, Guid newParentId, CancellationToken cancellationToken)
     {
         var item = await _entityInstanceRepository.LoadAsync(itemId, itemPartitionKey, cancellationToken).ConfigureAwait(false);
         if (item == null)

@@ -280,10 +280,10 @@ public abstract class EntityInstanceQueryingTests
         var (createdItemInstance1, _) = await _eavService.CreateEntityInstance(itemInstanceRequest);
         
         var (createdItemInstance2, _) = await _eavService.CreateEntityInstance(itemInstanceRequest);
-        (createdItemInstance2, _) = await _eavService.MoveItemAsync(createdItemInstance2.Id, createdItemInstance2.PartitionKey, createdTree.Id, asusGamingLaptops.Id, CancellationToken.None);
+        (createdItemInstance2, _) = await _eavService.UpdateCategoryPathAsync(createdItemInstance2.Id, createdItemInstance2.PartitionKey, createdTree.Id, asusGamingLaptops.Id, CancellationToken.None);
         
         var (createdItemInstance3, _) = await _eavService.CreateEntityInstance(itemInstanceRequest);
-        (_, _) = await _eavService.MoveItemAsync(createdItemInstance3.Id, createdItemInstance2.PartitionKey, createdTree.Id, rogAsusGamingLaptops.Id, CancellationToken.None);
+        (_, _) = await _eavService.UpdateCategoryPathAsync(createdItemInstance3.Id, createdItemInstance2.PartitionKey, createdTree.Id, rogAsusGamingLaptops.Id, CancellationToken.None);
         
         await Task.Delay(ProjectionsUpdateDelay);
         
