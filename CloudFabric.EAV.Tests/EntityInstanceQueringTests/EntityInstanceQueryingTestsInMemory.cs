@@ -10,8 +10,7 @@ namespace CloudFabric.EAV.Tests;
 [TestClass]
 public class EntityInstanceQueryingTestsInMemory : EntityInstanceQueryingTests
 {
-    private IEventStore _eventStore;
-    private ProjectionRepositoryFactory _projectionRepositoryFactory;
+    private readonly ProjectionRepositoryFactory _projectionRepositoryFactory;
     
     public EntityInstanceQueryingTestsInMemory()
     {
@@ -34,21 +33,4 @@ public class EntityInstanceQueryingTestsInMemory : EntityInstanceQueryingTests
         return _projectionRepositoryFactory;
     }
     
-    [Ignore]
-    public new async Task GetTreeViewAsync()
-    {
-        await Task.CompletedTask;
-    }
-
-    [Ignore]
-    public new async Task GetSubcategories_Success()
-    {
-        await Task.CompletedTask;
-    }
-    
-    [Ignore]
-    public new async Task MoveAndGetItemsFromCategory_Success()
-    {
-        await Task.CompletedTask;
-    }
 }

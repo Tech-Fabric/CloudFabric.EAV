@@ -1,0 +1,171 @@
+using System.Diagnostics;
+using System.Globalization;
+
+using CloudFabric.EAV.Models.RequestModels;
+using CloudFabric.EAV.Models.RequestModels.Attributes;
+using CloudFabric.EAV.Tests.Factories;
+using CloudFabric.Projections.Queries;
+
+using FluentAssertions;
+
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+// ReSharper disable AsyncConverter.ConfigureAwaitHighlighting
+
+namespace CloudFabric.EAV.Tests;
+
+public abstract class EntityInstanceQueryingTests: BaseQueryTests
+{
+
+    [TestMethod]
+    public async Task TestCreateInstanceAndQuery()
+    {
+        var configurationCreateRequest = EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
+
+        var (createdConfiguration, _) = await _eavService.CreateEntityConfiguration(
+            configurationCreateRequest,
+            CancellationToken.None
+        );
+
+        var configuration = await _eavService.GetEntityConfiguration(
+            createdConfiguration.Id,
+            createdConfiguration.PartitionKey
+        );
+
+        configuration.Should().BeEquivalentTo(createdConfiguration);
+
+        var instanceCreateRequest =
+            EntityInstanceFactory.CreateValidBoardGameEntityInstanceCreateRequest(createdConfiguration.Id);
+
+        var (createdInstance, createProblemDetails) = await _eavService.CreateEntityInstance(instanceCreateRequest);
+
+        createdInstance.EntityConfigurationId.Should().Be(instanceCreateRequest.EntityConfigurationId);
+        createdInstance.TenantId.Should().Be(instanceCreateRequest.TenantId);
+        createdInstance.Attributes.Should().BeEquivalentTo(instanceCreateRequest.Attributes, x => x.Excluding(w => w.ValueType));
+
+
+        var query = new ProjectionQuery()
+        {
+            Filters = new List<Filter>() { { new Filter("Id", FilterOperator.Equal, createdInstance.Id) } }
+        };
+
+        await Task.Delay(ProjectionsUpdateDelay);
+
+        var results = await _eavService
+            .QueryInstances(createdConfiguration.Id, query);
+
+        results?.TotalRecordsFound.Should().BeGreaterThan(0);
+
+        results?.Records.Select(r => r.Document).First().Should().BeEquivalentTo(createdInstance);
+    }
+
+
+
+    [TestMethod]
+    public async Task TestCreateInstanceUpdateAndQuery()
+    {
+        var configurationCreateRequest = EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
+
+        var (createdConfiguration, _) = await _eavService.CreateEntityConfiguration(
+            configurationCreateRequest,
+            CancellationToken.None
+        );
+
+        var configuration = await _eavService.GetEntityConfiguration(
+            createdConfiguration.Id,
+            createdConfiguration.PartitionKey
+        );
+
+        configuration.Should().BeEquivalentTo(createdConfiguration);
+
+        var instanceCreateRequest =
+            EntityInstanceFactory.CreateValidBoardGameEntityInstanceCreateRequest(createdConfiguration.Id);
+
+        var (createdInstance, createProblemDetails) = await _eavService.CreateEntityInstance(instanceCreateRequest);
+
+        createdInstance.EntityConfigurationId.Should().Be(instanceCreateRequest.EntityConfigurationId);
+        createdInstance.TenantId.Should().Be(instanceCreateRequest.TenantId);
+        createdInstance.Attributes.Should().BeEquivalentTo(instanceCreateRequest.Attributes, x => x.Excluding(w => w.ValueType));
+
+
+        var query = new ProjectionQuery()
+        {
+            Filters = new List<Filter>() { { new Filter("Id", FilterOperator.Equal, createdInstance.Id) } }
+        };
+
+        await Task.Delay(ProjectionsUpdateDelay);
+
+        var results = await _eavService
+            .QueryInstances(createdConfiguration.Id, query);
+
+        results?.TotalRecordsFound.Should().BeGreaterThan(0);
+
+        results?.Records.Select(r => r.Document).First().Should().BeEquivalentTo(createdInstance);
+
+        var updatedAttributes = new List<AttributeInstanceCreateUpdateRequest>(instanceCreateRequest.Attributes);
+        var nameAttributeValue = (LocalizedTextAttributeInstanceCreateUpdateRequest)updatedAttributes
+            .First(a => a.ConfigurationAttributeMachineName == "name");
+        nameAttributeValue.Value = new List<LocalizedStringCreateRequest>()
+        {
+            new LocalizedStringCreateRequest()
+            {
+                CultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID, String = "Azul 2"
+            },
+            new LocalizedStringCreateRequest()
+            {
+                CultureInfoId = CultureInfo.GetCultureInfo("RU-ru").LCID, String = "Азул 2"
+            }
+        };
+
+        var (updateResult, updateErrors) = await _eavService.UpdateEntityInstance(createdConfiguration.Id.ToString(),
+            new EntityInstanceUpdateRequest()
+            {
+                Id = createdInstance.Id,
+                EntityConfigurationId = createdInstance.EntityConfigurationId,
+                Attributes = updatedAttributes
+            },
+            CancellationToken.None
+        );
+
+        updateErrors.Should().BeNull();
+
+        await Task.Delay(ProjectionsUpdateDelay);
+
+        var searchResultsAfterUpdate = await _eavService
+            .QueryInstances(createdConfiguration.Id, query);
+
+        searchResultsAfterUpdate?.TotalRecordsFound.Should().BeGreaterThan(0);
+
+        var nameAttributeAfterUpdate = (LocalizedTextAttributeInstanceViewModel)searchResultsAfterUpdate?.Records
+            .Select(r => r.Document).First()
+            ?.Attributes.First(a => a.ConfigurationAttributeMachineName == "name")!;
+
+        nameAttributeAfterUpdate.Value.First(v => v.CultureInfoId == CultureInfo.GetCultureInfo("EN-us").LCID).String.Should()
+            .Be("Azul 2");
+
+        nameAttributeAfterUpdate.Value.First(v => v.CultureInfoId == CultureInfo.GetCultureInfo("RU-ru").LCID).String.Should()
+            .Be("Азул 2");
+    }
+    
+    //[TestMethod]
+    public async Task LoadTest()
+    {
+        var watch = Stopwatch.StartNew();
+
+        var tasks = new List<Task>();
+
+        for (var i = 0; i < 100; i++)
+        {
+            for (var j = 0; j < 10; j++)
+            {
+                tasks.Add(TestCreateInstanceAndQuery());
+            }
+
+            await Task.WhenAll(tasks);
+            tasks.Clear();
+        }
+
+        watch.Stop();
+
+        Console.WriteLine($"It took {watch.Elapsed}!");
+    }
+}
