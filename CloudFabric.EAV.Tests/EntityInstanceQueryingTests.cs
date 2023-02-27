@@ -162,86 +162,83 @@ public abstract class EntityInstanceQueryingTests
     }
 
     private async Task<(HierarchyViewModel tree,
-        CategoryViewModel category1,
-        CategoryViewModel category12,
-        CategoryViewModel category13,
-        CategoryViewModel category121,
-        CategoryViewModel category1211)> BuildTestTreeAsync()
+        CategoryViewModel laptopsCategory,
+        CategoryViewModel gamingLaptopsCategory,
+        CategoryViewModel officeLaptopsCategory,
+        CategoryViewModel asusGamingLaptopsCategory,
+        CategoryViewModel rogAsusGamingLaptopsCategory)> BuildTestTreeAsync()
     {
-        var configurationCreateRequest = EntityConfigurationFactory.CreateBoardGameCategoryConfigurationCreateRequest(0, 9);
+        // Create config for categories
+        var categoryConfigurationCreateRequest = EntityConfigurationFactory.CreateBoardGameCategoryConfigurationCreateRequest(0, 9);
         (EntityConfigurationViewModel? categoryConfiguration, _) = await _eavService.CreateEntityConfiguration(
-            configurationCreateRequest,
+            categoryConfigurationCreateRequest,
             CancellationToken.None
         );
 
+        // Create a tree
         var treeRequest = new CategoryTreeCreateRequest()
         {
             MachineName = "Main",
             EntityConfigurationId = categoryConfiguration!.Id,
         };
         
-        var (createdTree, _) = await _eavService.CreateCategoryTreeAsync(treeRequest, configurationCreateRequest.TenantId, CancellationToken.None);
+        var (createdTree, _) = await _eavService.CreateCategoryTreeAsync(treeRequest, categoryConfigurationCreateRequest.TenantId, CancellationToken.None);
         
         var categoryInstanceRequest =
-            EntityInstanceFactory.CreateCategoryInstanceRequest(categoryConfiguration.Id, createdTree.Id, null, configurationCreateRequest.TenantId, 0, 9);
+            EntityInstanceFactory.CreateCategoryInstanceRequest(categoryConfiguration.Id, createdTree.Id, null, categoryConfigurationCreateRequest.TenantId, 0, 9);
         
-        var (createdCategory1, validationErrors) =
+        var (laptopsCategory, validationErrors) =
             await _eavService.CreateCategoryInstanceAsync(categoryInstanceRequest);
 
-        categoryInstanceRequest.ParentId = createdCategory1.Id;
-        var (createdCategory12, _) =
+        categoryInstanceRequest.ParentId = laptopsCategory.Id;
+        var (gamingLaptopsCategory, _) =
             await _eavService.CreateCategoryInstanceAsync(categoryInstanceRequest);
 
-        categoryInstanceRequest.ParentId = createdCategory1.Id;
-        var (createdCategory13, _) =
+        categoryInstanceRequest.ParentId = laptopsCategory.Id;
+        var (officeLaptopsCategory, _) =
             await _eavService.CreateCategoryInstanceAsync(categoryInstanceRequest);
         
-        categoryInstanceRequest.ParentId = createdCategory12.Id;
-        var (createdCategory121, _) =
+        categoryInstanceRequest.ParentId = gamingLaptopsCategory.Id;
+        var (asusGamingLaptopsCategory, _) =
             await _eavService.CreateCategoryInstanceAsync(categoryInstanceRequest);
         
-        categoryInstanceRequest.ParentId = createdCategory121.Id;
-        var ( createdCategory1211, _) =
+        categoryInstanceRequest.ParentId = asusGamingLaptopsCategory.Id;
+        var ( rogAsusGamingLaptopsCategory, _) =
             await _eavService.CreateCategoryInstanceAsync(categoryInstanceRequest);
-        return (createdTree, createdCategory1, createdCategory12, createdCategory13, createdCategory121, createdCategory1211);
+        return (createdTree, laptopsCategory, gamingLaptopsCategory, officeLaptopsCategory, asusGamingLaptopsCategory, rogAsusGamingLaptopsCategory);
     }
     
     
     [TestMethod]
     public async Task CreateCategory_Success()
     {
-        var (createdTree, createdCategory1, createdCategory12, createdCategory13, createdCategory121, createdCategory1211) = await BuildTestTreeAsync();
-        //Skip unimplemented for InMemory test
-        // if (_projectionStorageType == ProjectionStorageType.InMemory)
-        // {
-        //     return;
-        // }
+        var (_, laptopsCategory, gamingLaptopsCategory, _, _, _) = await BuildTestTreeAsync();
         
-        createdCategory1.Id.Should().NotBeEmpty();
-        createdCategory1.Attributes.Count.Should().Be(9);
-        createdCategory1.TenantId.Should().NotBeNull();
-        createdCategory12.CategoryPaths.Should().Contain(x => x.Path.Contains(createdCategory1.Id.ToString()));
+        laptopsCategory.Id.Should().NotBeEmpty();
+        laptopsCategory.Attributes.Count.Should().Be(9);
+        laptopsCategory.TenantId.Should().NotBeNull();
+        gamingLaptopsCategory.CategoryPaths.Should().Contain(x => x.Path.Contains(laptopsCategory.Id.ToString()));
     }
 
     [TestMethod]
     public async Task GetTreeViewAsync()
     {
 
-        var (createdTree, createdCategory1, createdCategory12, createdCategory13, createdCategory121, createdCategory1211) = await BuildTestTreeAsync();
+        var (createdTree, laptopsCategory, gamingLaptopsCategory, officeLaptopsCategory, asusGamingLaptopsCategory, rogAsusGamingLaptopsCategory)= await BuildTestTreeAsync();
 
         var list = await _eavService.GetCategoryTreeViewAsync(createdTree.Id, CancellationToken.None);
         
-        list.Should().Contain(x => x.Id == createdCategory1.Id);
-        var instance1 = list.FirstOrDefault(x => x.Id == createdCategory1.Id);
-        instance1.Children.Should().Contain(x => x.Id == createdCategory13.Id);
-        var instance12 = instance1.Children.FirstOrDefault(x => x.Id == createdCategory12.Id);
-        var instance13 = instance1.Children.FirstOrDefault(x => x.Id == createdCategory13.Id);
-        instance12.Should().NotBeNull();
-        instance13.Should().NotBeNull();
-        var instance121 = instance12?.Children.FirstOrDefault(x => x.Id == createdCategory121.Id);
-        instance121.Should().NotBeNull();
-        var instance1211 = instance121?.Children.FirstOrDefault(x => x.Id == createdCategory1211.Id);
-        instance1211.Should().NotBeNull();
+        var laptops = list.FirstOrDefault(x => x.Id == laptopsCategory.Id);
+        laptops.Should().NotBeNull();
+        laptops.Children.Should().Contain(x => x.Id == officeLaptopsCategory.Id);
+        var gamingLaptops = laptops.Children.FirstOrDefault(x => x.Id == gamingLaptopsCategory.Id);
+        var officeLaptops = laptops.Children.FirstOrDefault(x => x.Id == officeLaptopsCategory.Id);
+        gamingLaptops.Should().NotBeNull();
+        officeLaptops.Should().NotBeNull();
+        var asusGamingLaptops = gamingLaptops?.Children.FirstOrDefault(x => x.Id == asusGamingLaptopsCategory.Id);
+        asusGamingLaptops.Should().NotBeNull();
+        var rogAsusGamingLaptops = asusGamingLaptops?.Children.FirstOrDefault(x => x.Id == rogAsusGamingLaptopsCategory.Id);
+        rogAsusGamingLaptops.Should().NotBeNull();
         
         
     }
@@ -250,10 +247,10 @@ public abstract class EntityInstanceQueryingTests
     public async Task GetSubcategories_Success()
     {
 
-        var (createdTree, createdCategory1, createdCategory12, createdCategory13, createdCategory121, createdCategory1211) = await BuildTestTreeAsync();
+        var (createdTree, laptopsCategory, gamingLaptopsCategory, officeLaptopsCategory, asusGamingLaptopsCategory, rogAsusGamingLaptopsCategory) = await BuildTestTreeAsync();
         await Task.Delay(ProjectionsUpdateDelay);
 
-        var categoryPathValue = $"/{createdCategory1.Id}/{createdCategory12.Id}";
+        var categoryPathValue = $"/{laptopsCategory.Id}/{gamingLaptopsCategory.Id}";
         var subcategories12 = await _eavService.QueryInstances(createdTree.EntityConfigurationId,
             new ProjectionQuery()
             {
@@ -271,7 +268,7 @@ public abstract class EntityInstanceQueryingTests
     public async Task MoveAndGetItemsFromCategory_Success()
     {
 
-        var (createdTree, createdCategory1, createdCategory12, createdCategory13, createdCategory121, createdCategory1211) = await BuildTestTreeAsync();
+        var (createdTree, laptopsCategory, gamingLaptopsCategory, officeLaptops, asusGamingLaptops, rogAsusGamingLaptops) = await BuildTestTreeAsync();
 
         var itemEntityConfig = EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
         var (itemEntityConfiguration, _) = await _eavService.CreateEntityConfiguration(
@@ -283,14 +280,14 @@ public abstract class EntityInstanceQueryingTests
         var (createdItemInstance1, _) = await _eavService.CreateEntityInstance(itemInstanceRequest);
         
         var (createdItemInstance2, _) = await _eavService.CreateEntityInstance(itemInstanceRequest);
-        (createdItemInstance2, _) = await _eavService.MoveItemAsync(createdItemInstance2.Id, createdItemInstance2.PartitionKey, createdTree.Id, createdCategory121.Id, CancellationToken.None);
+        (createdItemInstance2, _) = await _eavService.MoveItemAsync(createdItemInstance2.Id, createdItemInstance2.PartitionKey, createdTree.Id, asusGamingLaptops.Id, CancellationToken.None);
         
         var (createdItemInstance3, _) = await _eavService.CreateEntityInstance(itemInstanceRequest);
-        (_, _) = await _eavService.MoveItemAsync(createdItemInstance3.Id, createdItemInstance2.PartitionKey, createdTree.Id, createdCategory1211.Id, CancellationToken.None);
+        (_, _) = await _eavService.MoveItemAsync(createdItemInstance3.Id, createdItemInstance2.PartitionKey, createdTree.Id, rogAsusGamingLaptops.Id, CancellationToken.None);
         
         await Task.Delay(ProjectionsUpdateDelay);
         
-        var pathFilterValue121 = $"/{createdCategory1.Id}/{createdCategory12.Id}/{createdCategory121.Id}";
+        var pathFilterValue121 = $"/{laptopsCategory.Id}/{gamingLaptopsCategory.Id}/{asusGamingLaptops.Id}";
 
         
         var itemsFrom121 = await _eavService.QueryInstances(itemEntityConfiguration.Id,
@@ -303,7 +300,7 @@ public abstract class EntityInstanceQueryingTests
                 }
                     
             });
-        var pathFilterValue1211 = $"/{createdCategory1.Id}/{createdCategory12.Id}/{createdCategory121.Id}/{createdCategory1211.Id}";
+        var pathFilterValue1211 = $"/{laptopsCategory.Id}/{gamingLaptopsCategory.Id}/{asusGamingLaptops.Id}/{rogAsusGamingLaptops.Id}";
 
         var itemsFrom1211 = await _eavService.QueryInstances(itemEntityConfiguration.Id,
             new ProjectionQuery()
