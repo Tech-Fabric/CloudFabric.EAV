@@ -672,7 +672,7 @@ public class Tests
     public async Task EntityConfigurationProjectionCreated()
     {
         var configurationItemsStart = await _eavService.ListEntityConfigurations(
-            ProjectionQuery.Where<EntityConfigurationProjectionDocument>(x => x.MachineName == "BoardGame"),
+            ProjectionQueryExpressionExtensions.Where<EntityConfigurationProjectionDocument>(x => x.MachineName == "BoardGame"),
             null,
             CancellationToken.None
         );
@@ -688,7 +688,7 @@ public class Tests
 
         // verify projection is created
         var configurationItems = await _eavService.ListEntityConfigurations(
-            ProjectionQuery.Where<EntityConfigurationProjectionDocument>(x => x.MachineName == "BoardGame")
+            ProjectionQueryExpressionExtensions.Where<EntityConfigurationProjectionDocument>(x => x.MachineName == "BoardGame")
         );
 
         configurationItems.Records.Count.Should().Be(1);
@@ -712,7 +712,7 @@ public class Tests
 
         // verify projection is created
         var configurationItems = await _eavService.ListEntityConfigurations(
-            ProjectionQuery.Where<EntityConfigurationProjectionDocument>(x => x.TenantId == createdConfiguration2.TenantId)
+            ProjectionQueryExpressionExtensions.Where<EntityConfigurationProjectionDocument>(x => x.TenantId == createdConfiguration2.TenantId)
         );
 
         configurationItems.Records.Count.Should().Be(1);
