@@ -752,13 +752,12 @@ public class EAVService : IEAVService
             {
                 new Filter("CategoryPaths.TreeId", FilterOperator.Equal, treeId)
             },
-        },cancellationToken).ConfigureAwait(false);
+        }, cancellationToken).ConfigureAwait(false);
         var response = new List<EntityTreeInstanceViewModel>();
         
         // Go through each instance once
         foreach (var instance in resultInstances.Records.Select(x => x.Document!).OrderBy(x => x.CategoryPaths.FirstOrDefault(cp => cp.TreeId == treeId)?.Path.Length))
         {
-
             var treeInstance = _mapper.Map<EntityTreeInstanceViewModel>(instance);
             var categoryPath = instance.CategoryPaths.FirstOrDefault(cp => cp.TreeId == treeId)?.Path;
             if (string.IsNullOrEmpty(categoryPath))
@@ -772,7 +771,6 @@ public class EAVService : IEAVService
                 categoryPathElements.Aggregate(response,
                     (acc, pathComponent) =>
                     {
-
                         var parent = acc.FirstOrDefault(y => y.Id.ToString() == pathComponent);
                         if (parent == null)
                         {

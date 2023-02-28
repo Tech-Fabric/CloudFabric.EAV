@@ -26,8 +26,6 @@ namespace CloudFabric.EAV.Tests
 {
     public abstract class CategoryTests: BaseQueryTests
     {
-    
-
         private async Task<(HierarchyViewModel tree,
             CategoryViewModel laptopsCategory,
             CategoryViewModel gamingLaptopsCategory,
@@ -72,9 +70,11 @@ namespace CloudFabric.EAV.Tests
             categoryInstanceRequest.ParentId = asusGamingLaptopsCategory.Id;
             var (rogAsusGamingLaptopsCategory, _) =
                 await _eavService.CreateCategoryInstanceAsync(categoryInstanceRequest);
+
+            await Task.Delay(ProjectionsUpdateDelay);
+            
             return (createdTree, laptopsCategory, gamingLaptopsCategory, officeLaptopsCategory, asusGamingLaptopsCategory, rogAsusGamingLaptopsCategory);
         }
-
 
         [TestMethod]
         public async Task CreateCategory_Success()
@@ -90,7 +90,6 @@ namespace CloudFabric.EAV.Tests
         [TestMethod]
         public async Task GetTreeViewAsync()
         {
-
             var (createdTree, laptopsCategory, gamingLaptopsCategory, officeLaptopsCategory, asusGamingLaptopsCategory, rogAsusGamingLaptopsCategory) = await BuildTestTreeAsync();
 
             var list = await _eavService.GetCategoryTreeViewAsync(createdTree.Id, CancellationToken.None);
@@ -106,14 +105,11 @@ namespace CloudFabric.EAV.Tests
             asusGamingLaptops.Should().NotBeNull();
             var rogAsusGamingLaptops = asusGamingLaptops?.Children.FirstOrDefault(x => x.Id == rogAsusGamingLaptopsCategory.Id);
             rogAsusGamingLaptops.Should().NotBeNull();
-
-
         }
 
         [TestMethod]
         public async Task GetSubcategories_Success()
         {
-
             var (createdTree, laptopsCategory, gamingLaptopsCategory, officeLaptopsCategory, asusGamingLaptopsCategory, rogAsusGamingLaptopsCategory) = await BuildTestTreeAsync();
             await Task.Delay(ProjectionsUpdateDelay);
 
@@ -134,7 +130,6 @@ namespace CloudFabric.EAV.Tests
         [TestMethod]
         public async Task MoveAndGetItemsFromCategory_Success()
         {
-
             var (createdTree, laptopsCategory, gamingLaptopsCategory, officeLaptops, asusGamingLaptops, rogAsusGamingLaptops) = await BuildTestTreeAsync();
 
             var itemEntityConfig = EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
@@ -181,25 +176,5 @@ namespace CloudFabric.EAV.Tests
             itemsFrom121.Records.Count.Should().Be(1);
             itemsFrom1211.Records.Count.Should().Be(1);
         }
-
-        [TestCleanup]
-        public async Task Cleanup()
-        {
-            await _eventStore.DeleteAll();
-
-            try
-            {
-                //await _entityConfigurationProjectionRepository.DeleteAll();
-                //await _attributeConfigurationProjectionRepository.DeleteAll();
-
-                //var rebuildStateRepository = GetProjectionRebuildStateRepository();
-                //await rebuildStateRepository.DeleteAll();
-            }
-            catch
-            {
-            }
-        }
     }
-
-
 }

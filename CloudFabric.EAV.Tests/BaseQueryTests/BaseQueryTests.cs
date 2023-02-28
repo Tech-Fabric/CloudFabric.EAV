@@ -45,13 +45,7 @@ namespace CloudFabric.EAV.Tests
             await _eventStore.Initialize();
 
             var aggregateRepositoryFactory = new AggregateRepositoryFactory(_eventStore);
-            var attributeConfigurationRepository = aggregateRepositoryFactory
-                .GetAggregateRepository<AttributeConfiguration>();
-            var entityConfigurationRepository = aggregateRepositoryFactory
-                .GetAggregateRepository<EntityConfiguration>();
-            var entityInstanceRepository = aggregateRepositoryFactory
-                .GetAggregateRepository<EntityInstance>();
-
+            
             var projectionRepositoryFactory = GetProjectionRepositoryFactory();
 
             // Projections engine - takes events from events observer and passes them to multiple projection builders
