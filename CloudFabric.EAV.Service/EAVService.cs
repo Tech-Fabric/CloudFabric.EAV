@@ -739,7 +739,7 @@ public class EAVService : IEAVService
     [SuppressMessage("Performance", "CA1806:Do not ignore method results")]
     public async Task<List<EntityTreeInstanceViewModel>> GetCategoryTreeViewAsync(
         Guid treeId,
-        CancellationToken cancellationToken = default(CancellationToken)
+        CancellationToken cancellationToken = default
     )
     {
         var tree = await _categoryTreeRepository.LoadAsync(treeId, treeId.ToString(), cancellationToken).ConfigureAwait(false);
@@ -748,46 +748,50 @@ public class EAVService : IEAVService
             throw new NotFoundException("Category tree not found");
         }
 
-        var resultInstances = await QueryInstances(tree.EntityConfigurationId, new ProjectionQuery()
+        var treeElements = await QueryInstances(tree.EntityConfigurationId, new ProjectionQuery()
         {                
             Filters = new List<Filter>()
             {
                 new Filter("CategoryPaths.TreeId", FilterOperator.Equal, treeId)
             },
         }, cancellationToken).ConfigureAwait(false);
-        var response = new List<EntityTreeInstanceViewModel>();
+        
+        var treeViewModel = new List<EntityTreeInstanceViewModel>();
         
         // Go through each instance once
-        foreach (var instance in resultInstances.Records.Select(x => x.Document!).OrderBy(x => x.CategoryPaths.FirstOrDefault(cp => cp.TreeId == treeId)?.Path.Length))
+        foreach (var treeElement in treeElements.Records
+                     .Select(x => x.Document!)
+                     .OrderBy(x => x.CategoryPaths.FirstOrDefault(cp => cp.TreeId == treeId)?.Path.Length))
         {
-            var treeInstance = _mapper.Map<EntityTreeInstanceViewModel>(instance);
-            var categoryPath = instance.CategoryPaths.FirstOrDefault(cp => cp.TreeId == treeId)?.Path;
+            var treeElementViewModel = _mapper.Map<EntityTreeInstanceViewModel>(treeElement);
+            var categoryPath = treeElement.CategoryPaths.FirstOrDefault(cp => cp.TreeId == treeId)?.Path;
+
             if (string.IsNullOrEmpty(categoryPath))
             {
-                response.Add(treeInstance);
+                treeViewModel.Add(treeElementViewModel);
             }
             else
             {
                 var categoryPathElements = categoryPath.Split('/').Where(x => !string.IsNullOrEmpty(x));
                 EntityTreeInstanceViewModel? currentLevel = null;
-                categoryPathElements.Aggregate(response,
+                categoryPathElements.Aggregate(treeViewModel,
                     (acc, pathComponent) =>
                     {
                         var parent = acc.FirstOrDefault(y => y.Id.ToString() == pathComponent);
                         if (parent == null)
                         {
-                            var parentInstance = resultInstances.Records.Select(x => x.Document).FirstOrDefault(x => x.Id.ToString() == pathComponent);
+                            var parentInstance = treeElements.Records.Select(x => x.Document).FirstOrDefault(x => x.Id.ToString() == pathComponent);
                             parent = _mapper.Map<EntityTreeInstanceViewModel>(parentInstance);
                             acc.Add(parent);
                         }
                         currentLevel = parent;
                         return parent.Children;
                     });
-                currentLevel?.Children.Add(treeInstance);
+                currentLevel?.Children.Add(treeElementViewModel);
 
             }
         }
-        return response;
+        return treeViewModel;
     }
     
     #endregion
