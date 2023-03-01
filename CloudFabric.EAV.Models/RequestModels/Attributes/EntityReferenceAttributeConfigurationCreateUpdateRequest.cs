@@ -1,14 +1,12 @@
-using System;
 using CloudFabric.EAV.Domain.Enums;
 
-namespace CloudFabric.EAV.Models.RequestModels.Attributes
+namespace CloudFabric.EAV.Models.RequestModels.Attributes;
+
+public class EntityReferenceAttributeConfigurationCreateUpdateRequest : AttributeConfigurationCreateUpdateRequest
 {
-    public class EntityReferenceAttributeConfigurationCreateUpdateRequest : AttributeConfigurationCreateUpdateRequest
-    {
-        public override EavAttributeType ValueType { get; } = EavAttributeType.EntityReference;
-        
-        public Guid ReferenceEntityConfiguration { get; set; }
-        
-        public Guid DefaultValue { get; set; }
-    }
+    public override EavAttributeType ValueType { get; } = EavAttributeType.EntityReference;
+
+    public Guid ReferenceEntityConfiguration { get; set; }
+
+    public Guid DefaultValue { get; set; }
 }

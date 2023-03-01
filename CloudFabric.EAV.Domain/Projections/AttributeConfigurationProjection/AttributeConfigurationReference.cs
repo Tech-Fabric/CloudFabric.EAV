@@ -4,6 +4,5 @@ namespace CloudFabric.EAV.Domain.Projections.AttributeConfigurationProjection;
 
 public class AttributeConfigurationReference
 {
-    [ProjectionDocumentProperty]
-    public Guid AttributeConfigurationId { get; set; }
+    [ProjectionDocumentProperty] public Guid AttributeConfigurationId { get; set; }
 }

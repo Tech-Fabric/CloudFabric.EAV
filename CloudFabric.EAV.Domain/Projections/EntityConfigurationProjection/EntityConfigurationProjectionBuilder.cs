@@ -19,53 +19,9 @@ public class EntityConfigurationProjectionBuilder : ProjectionBuilder<EntityConf
     {
     }
 
-    public async Task On(EntityConfigurationCreated @event)
+    public async Task On(AggregateUpdatedEvent<EntityConfiguration> @event)
     {
-        List<AttributeConfigurationReference> attributes = new();
-
-        foreach (var eventAttribute in @event.Attributes)
-        {
-            attributes.Add(new AttributeConfigurationReference
-            {
-                AttributeConfigurationId = eventAttribute.AttributeConfigurationId
-            });
-        }
-
-        await UpsertDocument(new EntityConfigurationProjectionDocument
-        {
-            Id = @event.AggregateId,
-            Name = @event.Name,
-            MachineName = @event.MachineName,
-            TenantId = @event.TenantId,
-            Attributes = attributes
-        },
-        @event.PartitionKey,
-        @event.Timestamp);
-    }
-
-    public async Task On(EntityConfigurationNameUpdated @event)
-    {
-        await UpdateDocument(@event.AggregateId,
-            @event.PartitionKey,
-            @event.Timestamp,
-            (document) =>
-            {
-                var name = document.Name?.FirstOrDefault(n => n.CultureInfoId == @event.CultureInfoId);
-
-                if (name == null)
-                {
-                    document.Name.Add(new LocalizedString
-                    {
-                        CultureInfoId = @event.CultureInfoId,
-                        String = @event.NewName
-                    });
-                }
-                else
-                {
-                    name.String = @event.NewName;
-                }
-            }
-        );
+        await SetDocumentUpdatedAt(@event.AggregateId, @event.PartitionKey, @event.UpdatedAt);
     }
 
     public async Task On(EntityConfigurationAttributeAdded @event)
@@ -73,12 +29,13 @@ public class EntityConfigurationProjectionBuilder : ProjectionBuilder<EntityConf
         await UpdateDocument(@event.AggregateId,
             @event.PartitionKey,
             @event.Timestamp,
-            (document) =>
+            document =>
             {
                 document.Attributes.Add(new AttributeConfigurationReference
-                {
-                    AttributeConfigurationId = @event.AttributeReference.AttributeConfigurationId
-                });
+                    {
+                        AttributeConfigurationId = @event.AttributeReference.AttributeConfigurationId
+                    }
+                );
             }
         );
     }
@@ -88,9 +45,12 @@ public class EntityConfigurationProjectionBuilder : ProjectionBuilder<EntityConf
         await UpdateDocument(@event.AggregateId,
             @event.PartitionKey,
             @event.Timestamp,
-            (document) =>
+            document =>
             {
-                var attributeToRemove = document.Attributes.FirstOrDefault(a => a.AttributeConfigurationId == @event.AttributeConfigurationId);
+                AttributeConfigurationReference? attributeToRemove =
+                    document.Attributes.FirstOrDefault(a =>
+                        a.AttributeConfigurationId == @event.AttributeConfigurationId
+                    );
 
                 if (attributeToRemove != null)
                 {
@@ -100,8 +60,54 @@ public class EntityConfigurationProjectionBuilder : ProjectionBuilder<EntityConf
         );
     }
 
-    public async Task On(AggregateUpdatedEvent<EntityConfiguration> @event)
+    public async Task On(EntityConfigurationCreated @event)
     {
-        await SetDocumentUpdatedAt(@event.AggregateId, @event.PartitionKey, @event.UpdatedAt);
+        List<AttributeConfigurationReference> attributes = new();
+
+        foreach (EntityConfigurationAttributeReference eventAttribute in @event.Attributes)
+        {
+            attributes.Add(new AttributeConfigurationReference
+                {
+                    AttributeConfigurationId = eventAttribute.AttributeConfigurationId
+                }
+            );
+        }
+
+        await UpsertDocument(new EntityConfigurationProjectionDocument
+            {
+                Id = @event.AggregateId,
+                Name = @event.Name,
+                MachineName = @event.MachineName,
+                TenantId = @event.TenantId,
+                Attributes = attributes
+            },
+            @event.PartitionKey,
+            @event.Timestamp
+        );
+    }
+
+    public async Task On(EntityConfigurationNameUpdated @event)
+    {
+        await UpdateDocument(@event.AggregateId,
+            @event.PartitionKey,
+            @event.Timestamp,
+            document =>
+            {
+                LocalizedString? name = document.Name?.FirstOrDefault(n => n.CultureInfoId == @event.CultureInfoId);
+
+                if (name == null)
+                {
+                    document.Name.Add(new LocalizedString
+                        {
+                            CultureInfoId = @event.CultureInfoId, String = @event.NewName
+                        }
+                    );
+                }
+                else
+                {
+                    name.String = @event.NewName;
+                }
+            }
+        );
     }
 }

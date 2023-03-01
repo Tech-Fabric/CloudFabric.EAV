@@ -1,7 +1,6 @@
-namespace CloudFabric.EAV.Models.RequestModels.Attributes
+namespace CloudFabric.EAV.Models.RequestModels.Attributes;
+
+public class ValueFromListAttributeInstanceCreateUpdateRequest : AttributeInstanceCreateUpdateRequest
 {
-    public class ValueFromListAttributeInstanceCreateUpdateRequest : AttributeInstanceCreateUpdateRequest
-    {
-        public string Value { get; set; }
-    }
+    public string Value { get; set; }
 }

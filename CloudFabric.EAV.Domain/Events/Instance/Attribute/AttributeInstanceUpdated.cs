@@ -1,14 +1,10 @@
 using CloudFabric.EAV.Domain.Models;
 using CloudFabric.EventSourcing.EventStore;
 
-namespace CloudFabric.EAV.Domain.Events.Instance.Entity;
+namespace CloudFabric.EAV.Domain.Events.Instance.Attribute;
 
 public record AttributeInstanceUpdated : Event
 {
-    public AttributeInstanceUpdated()
-    {
-    }
-
     public AttributeInstanceUpdated(
         Guid entityInstanceId,
         Guid entityConfigurationId,

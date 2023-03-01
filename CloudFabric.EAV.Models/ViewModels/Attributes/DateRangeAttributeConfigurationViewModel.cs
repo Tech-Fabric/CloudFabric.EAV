@@ -1,9 +1,8 @@
 using CloudFabric.EAV.Domain.Enums;
 
-namespace CloudFabric.EAV.Models.ViewModels.Attributes
+namespace CloudFabric.EAV.Models.ViewModels.Attributes;
+
+public class DateRangeAttributeConfigurationViewModel : AttributeConfigurationViewModel
 {
-    public class DateRangeAttributeConfigurationViewModel : AttributeConfigurationViewModel
-    {
-        public DateRangeAttributeType DateRangeAttributeType { get; set; }
-    }
+    public DateRangeAttributeType DateRangeAttributeType { get; set; }
 }

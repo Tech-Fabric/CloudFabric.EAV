@@ -19,4 +19,3 @@ public record AttributeInstanceRemoved : Event
 
     public string AttributeMachineName { get; set; }
 }
-

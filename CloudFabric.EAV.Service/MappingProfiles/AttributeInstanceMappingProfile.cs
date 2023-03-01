@@ -1,7 +1,8 @@
-﻿using AutoMapper;
+using AutoMapper;
 
 using CloudFabric.EAV.Domain.Models;
 using CloudFabric.EAV.Domain.Models.Attributes;
+using CloudFabric.EAV.Models.RequestModels;
 using CloudFabric.EAV.Models.RequestModels.Attributes;
 using CloudFabric.EAV.Models.ViewModels.Attributes;
 

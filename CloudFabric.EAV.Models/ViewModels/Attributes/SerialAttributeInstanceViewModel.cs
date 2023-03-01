@@ -1,7 +1,6 @@
-﻿namespace CloudFabric.EAV.Models.ViewModels.Attributes
+﻿namespace CloudFabric.EAV.Models.ViewModels.Attributes;
+
+public class SerialAttributeInstanceViewModel : AttributeInstanceViewModel
 {
-    public class SerialAttributeInstanceViewModel : AttributeInstanceViewModel
-    {
-        public long Value { get; set; }
-    }
+    public long Value { get; set; }
 }

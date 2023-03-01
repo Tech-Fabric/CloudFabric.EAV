@@ -1,4 +1,5 @@
 using AutoMapper;
+
 using CloudFabric.EAV.Domain.Models;
 using CloudFabric.EAV.Domain.Projections.AttributeConfigurationProjection;
 using CloudFabric.EAV.Domain.Projections.EntityConfigurationProjection;
@@ -8,7 +9,7 @@ using CloudFabric.Projections;
 
 namespace CloudFabric.EAV.Service.MappingProfiles;
 
-public class EntityConfigurationMappingProfile: Profile
+public class EntityConfigurationMappingProfile : Profile
 {
     public EntityConfigurationMappingProfile()
     {
@@ -19,7 +20,9 @@ public class EntityConfigurationMappingProfile: Profile
 
         CreateMap<EntityConfigurationProjectionDocument, EntityConfigurationViewModel>();
         CreateMap<AttributeConfigurationReference, EntityConfigurationAttributeReferenceViewModel>();
-        CreateMap<ProjectionQueryResult<EntityConfigurationProjectionDocument>, ProjectionQueryResult<EntityConfigurationViewModel>>();
-        CreateMap<QueryResultDocument<EntityConfigurationProjectionDocument>, QueryResultDocument<EntityConfigurationViewModel>>();
+        CreateMap<ProjectionQueryResult<EntityConfigurationProjectionDocument>,
+            ProjectionQueryResult<EntityConfigurationViewModel>>();
+        CreateMap<QueryResultDocument<EntityConfigurationProjectionDocument>,
+            QueryResultDocument<EntityConfigurationViewModel>>();
     }
 }

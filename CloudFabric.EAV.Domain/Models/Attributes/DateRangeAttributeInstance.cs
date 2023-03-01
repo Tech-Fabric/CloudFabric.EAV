@@ -1,18 +1,17 @@
-namespace CloudFabric.EAV.Domain.Models.Attributes
+namespace CloudFabric.EAV.Domain.Models.Attributes;
+
+public class DateRangeAttributeInstanceValue
 {
-    public class DateRangeAttributeInstanceValue
-    {
-        public DateTime From { get; set; }
-        public DateTime? To { get; set; }
-    }
+    public DateTime From { get; set; }
+    public DateTime? To { get; set; }
+}
 
-    public class DateRangeAttributeInstance : AttributeInstance
-    {
-        public DateRangeAttributeInstanceValue Value { get; set; }
+public class DateRangeAttributeInstance : AttributeInstance
+{
+    public DateRangeAttributeInstanceValue Value { get; set; }
 
-        public override object? GetValue()
-        {
-            return Value;
-        }
+    public override object? GetValue()
+    {
+        return Value;
     }
 }

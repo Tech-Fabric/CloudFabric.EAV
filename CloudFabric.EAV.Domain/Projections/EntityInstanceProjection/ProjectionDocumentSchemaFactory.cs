@@ -11,14 +11,13 @@ public static class ProjectionDocumentSchemaFactory
         List<AttributeConfiguration> attributeConfigurations
     )
     {
-        var schema = new ProjectionDocumentSchema()
+        var schema = new ProjectionDocumentSchema
         {
-            SchemaName = entityConfiguration.MachineName,
-            Properties = new List<ProjectionDocumentPropertySchema>()
+            SchemaName = entityConfiguration.MachineName, Properties = new List<ProjectionDocumentPropertySchema>()
         };
 
         schema.Properties.Add(
-            new ProjectionDocumentPropertySchema()
+            new ProjectionDocumentPropertySchema
             {
                 PropertyName = "Id",
                 PropertyType = TypeCode.Object,
@@ -32,7 +31,7 @@ public static class ProjectionDocumentSchemaFactory
         );
 
         schema.Properties.Add(
-            new ProjectionDocumentPropertySchema()
+            new ProjectionDocumentPropertySchema
             {
                 PropertyName = "EntityConfigurationId",
                 PropertyType = TypeCode.Object,
@@ -44,13 +43,13 @@ public static class ProjectionDocumentSchemaFactory
                 IsFacetable = false
             }
         );
-        
+
         schema.Properties.Add(
             ProjectionAttributesSchemaFactory.GetCategoryPathsAttributeSchema()
         );
 
         schema.Properties.Add(
-            new ProjectionDocumentPropertySchema()
+            new ProjectionDocumentPropertySchema
             {
                 PropertyName = "TenantId",
                 PropertyType = TypeCode.Object,

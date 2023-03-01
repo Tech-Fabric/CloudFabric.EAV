@@ -25,19 +25,20 @@ public class AttributeConfigurationProjectionBuilder : ProjectionBuilder<Attribu
     {
     }
 
+    public async Task On(AggregateUpdatedEvent<AttributeConfiguration> @event)
+    {
+        await SetDocumentUpdatedAt(@event.AggregateId, @event.PartitionKey, @event.UpdatedAt);
+    }
+
     public async Task On(AttributeConfigurationCreated @event)
     {
         await UpsertDocument(
-            new AttributeConfigurationProjectionDocument()
+            new AttributeConfigurationProjectionDocument
             {
                 Id = @event.AggregateId,
                 IsRequired = @event.IsRequired,
                 Name = @event.Name.Select(x =>
-                    new SearchableLocalizedString
-                    {
-                        String = x.String,
-                        CultureInfoId = x.CultureInfoId
-                    }
+                    new SearchableLocalizedString { String = x.String, CultureInfoId = x.CultureInfoId }
                 ).ToList(),
                 MachineName = @event.MachineName,
                 PartitionKey = @event.PartitionKey,
@@ -52,31 +53,9 @@ public class AttributeConfigurationProjectionBuilder : ProjectionBuilder<Attribu
         );
     }
 
-    public async Task On(AttributeConfigurationNameUpdated @event)
+    public async Task On(AttributeConfigurationDeleted @event)
     {
-        await UpdateDocument(@event.AggregateId,
-            @event.PartitionKey,
-            @event.Timestamp,
-            (document) =>
-            {
-                SearchableLocalizedString? name = document.Name.FirstOrDefault(n => n.CultureInfoId == @event.CultureInfoId);
-
-                if (name == null)
-                {
-                    document.Name.Add(
-                        new SearchableLocalizedString
-                        {
-                            CultureInfoId = @event.CultureInfoId,
-                            String = @event.NewName
-                        }
-                    );
-                }
-                else
-                {
-                    name.String = @event.NewName;
-                }
-            }
-        );
+        await DeleteDocument(@event.AggregateId, @event.PartitionKey);
     }
 
     public async Task On(AttributeConfigurationDescriptionUpdated @event)
@@ -84,18 +63,15 @@ public class AttributeConfigurationProjectionBuilder : ProjectionBuilder<Attribu
         await UpdateDocument(@event.AggregateId,
             @event.PartitionKey,
             @event.Timestamp,
-            (document) =>
+            document =>
             {
-                LocalizedString? description = document.Description.FirstOrDefault(n => n.CultureInfoId == @event.CultureInfoId);
+                LocalizedString? description =
+                    document.Description.FirstOrDefault(n => n.CultureInfoId == @event.CultureInfoId);
 
                 if (description == null)
                 {
                     document.Description.Add(
-                        new LocalizedString
-                        {
-                            CultureInfoId = @event.CultureInfoId,
-                            String = @event.NewDescription
-                        }
+                        new LocalizedString { CultureInfoId = @event.CultureInfoId, String = @event.NewDescription }
                     );
                 }
                 else
@@ -111,9 +87,33 @@ public class AttributeConfigurationProjectionBuilder : ProjectionBuilder<Attribu
         await UpdateDocument(@event.AggregateId,
             @event.PartitionKey,
             @event.Timestamp,
-            (document) =>
+            document =>
             {
                 document.IsRequired = @event.NewIsRequired;
+            }
+        );
+    }
+
+    public async Task On(AttributeConfigurationNameUpdated @event)
+    {
+        await UpdateDocument(@event.AggregateId,
+            @event.PartitionKey,
+            @event.Timestamp,
+            document =>
+            {
+                SearchableLocalizedString? name =
+                    document.Name.FirstOrDefault(n => n.CultureInfoId == @event.CultureInfoId);
+
+                if (name == null)
+                {
+                    document.Name.Add(
+                        new SearchableLocalizedString { CultureInfoId = @event.CultureInfoId, String = @event.NewName }
+                    );
+                }
+                else
+                {
+                    name.String = @event.NewName;
+                }
             }
         );
     }
@@ -123,14 +123,10 @@ public class AttributeConfigurationProjectionBuilder : ProjectionBuilder<Attribu
         await UpdateDocument(@event.AggregateId,
             @event.PartitionKey,
             @event.Timestamp,
-            (document) =>
+            document =>
             {
                 document.Name = @event.Name.ConvertAll(x =>
-                    new SearchableLocalizedString
-                    {
-                        CultureInfoId = x.CultureInfoId,
-                        String = x.String
-                    }
+                    new SearchableLocalizedString { CultureInfoId = x.CultureInfoId, String = x.String }
                 );
 
                 document.Description = @event.Description;
@@ -141,71 +137,28 @@ public class AttributeConfigurationProjectionBuilder : ProjectionBuilder<Attribu
         );
     }
 
-    public async Task On(AttributeConfigurationDeleted @event)
+    public async Task On(AttributeInstanceAdded @event)
     {
-        await DeleteDocument(@event.AggregateId, @event.PartitionKey);
-    }
-
-    public async Task On(EntityInstanceCreated @event)
-    {
-        var attributesMachineNames = @event.Attributes.Select(x => x.ConfigurationAttributeMachineName);
-
-        foreach (var machineName in attributesMachineNames)
-        {
-            var attributeConfig = (await ProjectionRepositoryFactory.GetProjectionRepository<AttributeConfigurationProjectionDocument>().Query(
-                new ProjectionQuery
-                {
-                    Filters = new List<Filter>
+        AttributeConfigurationProjectionDocument? attributeConfig = (await ProjectionRepositoryFactory
+                .GetProjectionRepository<AttributeConfigurationProjectionDocument>().Query(
+                    new ProjectionQuery
                     {
-                        new()
+                        Filters = new List<Filter>
                         {
-                            PropertyName = nameof(AttributeConfigurationProjectionDocument.MachineName),
-                            Operator = FilterOperator.Equal,
-                            Value = machineName
-                        }
-                    },
-                    Limit = 1
-                }
-            ))
+                            new()
+                            {
+                                PropertyName =
+                                    nameof(AttributeConfigurationProjectionDocument.MachineName),
+                                Operator = FilterOperator.Equal,
+                                Value = @event.AttributeInstance.ConfigurationAttributeMachineName
+                            }
+                        },
+                        Limit = 1
+                    }
+                ))
             .Records
             .FirstOrDefault()
             ?.Document;
-
-            if (attributeConfig != null)
-            {
-                await UpdateDocument(
-                    attributeConfig.Id!.Value,
-                    attributeConfig.PartitionKey!,
-                    @event.Timestamp,
-                    (document) =>
-                    {
-                        document.NumberOfEntityInstancesWithAttribute++;
-                    }
-                );
-            }
-        }
-    }
-
-    public async Task On(AttributeInstanceAdded @event)
-    {
-        var attributeConfig = (await ProjectionRepositoryFactory.GetProjectionRepository<AttributeConfigurationProjectionDocument>().Query(
-            new ProjectionQuery
-            {
-                Filters = new List<Filter>
-                {
-                    new()
-                    {
-                        PropertyName = nameof(AttributeConfigurationProjectionDocument.MachineName),
-                        Operator = FilterOperator.Equal,
-                        Value = @event.AttributeInstance.ConfigurationAttributeMachineName
-                    }
-                },
-                Limit = 1
-            }
-        ))
-        .Records
-        .FirstOrDefault()
-        ?.Document;
 
         if (attributeConfig != null)
         {
@@ -213,7 +166,7 @@ public class AttributeConfigurationProjectionBuilder : ProjectionBuilder<Attribu
                 attributeConfig.Id!.Value,
                 attributeConfig.PartitionKey!,
                 @event.Timestamp,
-                (document) =>
+                document =>
                 {
                     document.NumberOfEntityInstancesWithAttribute++;
                 }
@@ -223,24 +176,26 @@ public class AttributeConfigurationProjectionBuilder : ProjectionBuilder<Attribu
 
     public async Task On(AttributeInstanceRemoved @event)
     {
-        var attributeConfig = (await ProjectionRepositoryFactory.GetProjectionRepository<AttributeConfigurationProjectionDocument>().Query(
-            new ProjectionQuery
-            {
-                Filters = new List<Filter>
-                {
-                    new()
+        AttributeConfigurationProjectionDocument? attributeConfig = (await ProjectionRepositoryFactory
+                .GetProjectionRepository<AttributeConfigurationProjectionDocument>().Query(
+                    new ProjectionQuery
                     {
-                        PropertyName = nameof(AttributeConfigurationProjectionDocument.MachineName),
-                        Operator = FilterOperator.Equal,
-                        Value = @event.AttributeMachineName
+                        Filters = new List<Filter>
+                        {
+                            new()
+                            {
+                                PropertyName =
+                                    nameof(AttributeConfigurationProjectionDocument.MachineName),
+                                Operator = FilterOperator.Equal,
+                                Value = @event.AttributeMachineName
+                            }
+                        },
+                        Limit = 1
                     }
-                },
-                Limit = 1
-            }
-        ))
-        .Records
-        .FirstOrDefault()
-        ?.Document;
+                ))
+            .Records
+            .FirstOrDefault()
+            ?.Document;
 
         if (attributeConfig != null)
         {
@@ -248,7 +203,7 @@ public class AttributeConfigurationProjectionBuilder : ProjectionBuilder<Attribu
                 attributeConfig.Id!.Value,
                 attributeConfig.PartitionKey!,
                 @event.Timestamp,
-                (document) =>
+                document =>
                 {
                     document.NumberOfEntityInstancesWithAttribute--;
                 }
@@ -256,8 +211,46 @@ public class AttributeConfigurationProjectionBuilder : ProjectionBuilder<Attribu
         }
     }
 
-    public async Task On(AggregateUpdatedEvent<AttributeConfiguration> @event)
+    public async Task On(EntityInstanceCreated @event)
     {
-        await SetDocumentUpdatedAt(@event.AggregateId, @event.PartitionKey, @event.UpdatedAt);
+        IEnumerable<string> attributesMachineNames =
+            @event.Attributes.Select(x => x.ConfigurationAttributeMachineName);
+
+        foreach (var machineName in attributesMachineNames)
+        {
+            AttributeConfigurationProjectionDocument? attributeConfig = (await ProjectionRepositoryFactory
+                    .GetProjectionRepository<AttributeConfigurationProjectionDocument>().Query(
+                        new ProjectionQuery
+                        {
+                            Filters = new List<Filter>
+                            {
+                                new()
+                                {
+                                    PropertyName =
+                                        nameof(AttributeConfigurationProjectionDocument.MachineName),
+                                    Operator = FilterOperator.Equal,
+                                    Value = machineName
+                                }
+                            },
+                            Limit = 1
+                        }
+                    ))
+                .Records
+                .FirstOrDefault()
+                ?.Document;
+
+            if (attributeConfig != null)
+            {
+                await UpdateDocument(
+                    attributeConfig.Id!.Value,
+                    attributeConfig.PartitionKey!,
+                    @event.Timestamp,
+                    document =>
+                    {
+                        document.NumberOfEntityInstancesWithAttribute++;
+                    }
+                );
+            }
+        }
     }
 }

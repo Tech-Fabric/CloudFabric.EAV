@@ -1,12 +1,10 @@
 using CloudFabric.EAV.Domain.Enums;
 
-namespace CloudFabric.EAV.Models.RequestModels.Attributes
+namespace CloudFabric.EAV.Models.RequestModels.Attributes;
+
+public class ValueFromListAttributeConfigurationCreateUpdateRequest : AttributeConfigurationCreateUpdateRequest
 {
-    public class ValueFromListAttributeConfigurationCreateUpdateRequest : AttributeConfigurationCreateUpdateRequest
-    {
+    public override EavAttributeType ValueType => EavAttributeType.ValueFromList;
 
-        public override EavAttributeType ValueType => EavAttributeType.ValueFromList;
-
-        public List<ValueFromListOptionCreateUpdateRequest> ValuesList { get; set; }
-    }
+    public List<ValueFromListOptionCreateUpdateRequest> ValuesList { get; set; }
 }

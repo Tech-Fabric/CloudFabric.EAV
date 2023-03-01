@@ -1,10 +1,6 @@
-﻿
-using System.Collections.Generic;
+namespace CloudFabric.EAV.Models.RequestModels.Attributes;
 
-namespace CloudFabric.EAV.Models.RequestModels.Attributes
+public class LocalizedTextAttributeInstanceCreateUpdateRequest : AttributeInstanceCreateUpdateRequest
 {
-    public class LocalizedTextAttributeInstanceCreateUpdateRequest : AttributeInstanceCreateUpdateRequest
-    {
-        public List<LocalizedStringCreateRequest> Value { get; set; }
-    }
+    public List<LocalizedStringCreateRequest> Value { get; set; }
 }

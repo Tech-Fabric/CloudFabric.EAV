@@ -17,4 +17,3 @@ public record AttributeInstanceAdded : Event
 
     public AttributeInstance AttributeInstance { get; set; }
 }
-

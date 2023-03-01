@@ -11,7 +11,8 @@ public abstract class EntityAttributeConfigurationCreateUpdateRequest
 }
 
 [JsonConverter(typeof(AttributeRequestJsonConverter<AttributeConfigurationCreateUpdateRequest>))]
-public class EntityAttributeConfigurationCreateUpdateReferenceRequest : EntityAttributeConfigurationCreateUpdateRequest
+public class
+    EntityAttributeConfigurationCreateUpdateReferenceRequest : EntityAttributeConfigurationCreateUpdateRequest
 {
     public Guid AttributeConfigurationId { get; set; }
 }

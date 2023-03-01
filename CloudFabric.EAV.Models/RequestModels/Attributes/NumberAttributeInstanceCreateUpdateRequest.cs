@@ -1,7 +1,6 @@
-﻿namespace CloudFabric.EAV.Models.RequestModels.Attributes
+﻿namespace CloudFabric.EAV.Models.RequestModels.Attributes;
+
+public class NumberAttributeInstanceCreateUpdateRequest : AttributeInstanceCreateUpdateRequest
 {
-    public class NumberAttributeInstanceCreateUpdateRequest : AttributeInstanceCreateUpdateRequest
-    {
-        public decimal Value { get; set; }
-    }
+    public decimal Value { get; set; }
 }

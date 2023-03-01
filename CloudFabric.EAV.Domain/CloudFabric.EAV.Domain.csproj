@@ -1,26 +1,26 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-    <PackageId>CloudFabric.EAV.Domain</PackageId>
-    <Version>0.0.1</Version>
-    <Authors>CloudFabric Developers</Authors>
-    <Company>CloudFabric</Company>
-  </PropertyGroup>
+    <PropertyGroup>
+        <TargetFramework>net6.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <PackageId>CloudFabric.EAV.Domain</PackageId>
+        <Version>0.0.1</Version>
+        <Authors>CloudFabric Developers</Authors>
+        <Company>CloudFabric</Company>
+    </PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="CloudFabric.EventSourcing.Domain" Version="0.0.32" />
-    <PackageReference Include="CloudFabric.Projections" Version="0.0.32" />
-    <PackageReference Include="Microsoft.AspNetCore.Mvc.Core" Version="2.2.5" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="6.0.0" />
-    <PackageReference Include="System.ComponentModel.Annotations" Version="5.0.0" />
-    <PackageReference Include="System.Text.Json" Version="6.0.2" />
-  </ItemGroup>
+    <ItemGroup>
+        <PackageReference Include="CloudFabric.EventSourcing.Domain" Version="0.0.32"/>
+        <PackageReference Include="CloudFabric.Projections" Version="0.0.32"/>
+        <PackageReference Include="Microsoft.AspNetCore.Mvc.Core" Version="2.2.5"/>
+        <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="6.0.0"/>
+        <PackageReference Include="System.ComponentModel.Annotations" Version="5.0.0"/>
+        <PackageReference Include="System.Text.Json" Version="6.0.2"/>
+    </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\CloudFabric.EAV.Json\CloudFabric.EAV.Json.csproj" />
-  </ItemGroup>
+    <ItemGroup>
+        <ProjectReference Include="..\CloudFabric.EAV.Json\CloudFabric.EAV.Json.csproj"/>
+    </ItemGroup>
 
 </Project>

@@ -17,4 +17,3 @@ public record EntityConfigurationAttributeUpdated : Event
 
     public AttributeConfiguration Attribute { get; set; }
 }
-

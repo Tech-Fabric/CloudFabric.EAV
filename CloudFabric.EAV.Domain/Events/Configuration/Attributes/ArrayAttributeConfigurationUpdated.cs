@@ -9,7 +9,8 @@ public record ArrayAttributeConfigurationUpdated : Event
     {
     }
 
-    public ArrayAttributeConfigurationUpdated(Guid id, EavAttributeType itemsType, Guid itemsAttributeConfigurationId)
+    public ArrayAttributeConfigurationUpdated(Guid id, EavAttributeType itemsType,
+        Guid itemsAttributeConfigurationId)
     {
         AggregateId = id;
         ItemsAttributeConfigurationId = itemsAttributeConfigurationId;

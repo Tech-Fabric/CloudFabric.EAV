@@ -9,7 +9,8 @@ public record AttributeConfigurationUpdated : Event
     {
     }
 
-    public AttributeConfigurationUpdated(Guid id, List<LocalizedString> name, List<LocalizedString> description, bool isRequired, Guid? tenantId, string? metadata)
+    public AttributeConfigurationUpdated(Guid id, List<LocalizedString> name, List<LocalizedString> description,
+        bool isRequired, Guid? tenantId, string? metadata)
     {
         AggregateId = id;
         Name = name;

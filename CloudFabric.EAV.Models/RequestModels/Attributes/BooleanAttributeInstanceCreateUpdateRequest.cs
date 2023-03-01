@@ -1,7 +1,6 @@
-﻿namespace CloudFabric.EAV.Models.RequestModels.Attributes
+﻿namespace CloudFabric.EAV.Models.RequestModels.Attributes;
+
+public class BooleanAttributeInstanceCreateUpdateRequest : AttributeInstanceCreateUpdateRequest
 {
-    public class BooleanAttributeInstanceCreateUpdateRequest : AttributeInstanceCreateUpdateRequest
-    {
-        public bool Value { get; set; }
-    }
+    public bool Value { get; set; }
 }

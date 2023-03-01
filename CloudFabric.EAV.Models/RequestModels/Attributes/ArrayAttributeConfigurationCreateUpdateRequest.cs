@@ -1,13 +1,12 @@
-﻿using CloudFabric.EAV.Domain.Enums;
+using CloudFabric.EAV.Domain.Enums;
 
-namespace CloudFabric.EAV.Models.RequestModels.Attributes
+namespace CloudFabric.EAV.Models.RequestModels.Attributes;
+
+public class ArrayAttributeConfigurationCreateUpdateRequest : AttributeConfigurationCreateUpdateRequest
 {
-    public class ArrayAttributeConfigurationCreateUpdateRequest : AttributeConfigurationCreateUpdateRequest
-    {
-        public override EavAttributeType ValueType { get; } = EavAttributeType.Array;
+    public override EavAttributeType ValueType { get; } = EavAttributeType.Array;
 
-        public EavAttributeType ItemsType { get; set; }
+    public EavAttributeType ItemsType { get; set; }
 
-        public AttributeConfigurationCreateUpdateRequest ItemsAttributeConfiguration { get; set; }
-    }
+    public AttributeConfigurationCreateUpdateRequest ItemsAttributeConfiguration { get; set; }
 }
