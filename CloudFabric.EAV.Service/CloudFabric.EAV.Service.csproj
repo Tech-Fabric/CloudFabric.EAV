@@ -12,7 +12,7 @@
 
   <ItemGroup>
     <PackageReference Include="AutoMapper" Version="11.0.1" />
-    <PackageReference Include="CloudFabric.EventSourcing.Domain" Version="0.0.29" />
+    <PackageReference Include="CloudFabric.EventSourcing.Domain" Version="0.0.32" />
   </ItemGroup>
 
   <ItemGroup>
