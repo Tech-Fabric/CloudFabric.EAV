@@ -37,11 +37,42 @@ public class EntityInstanceFromDictionaryDeserializer
                 .Select(attributeConfig =>
                     DeserializeAttribute(attributeConfig, record[attributeConfig.MachineName])
                 )
-                .ToList()
+                .ToList(),
+            CategoryPaths = record.ContainsKey("CategoryPaths") ? ParseCategoryPaths(record["CategoryPaths"]) : new List<CategoryPath>()
         };
         return entityInstance;
     }
 
+    private List<CategoryPath> ParseCategoryPaths(object? paths)
+    {
+        var categoryPaths = new List<CategoryPath>();
+        if (paths is List<object> pathsList)
+        {
+            foreach (var path in pathsList)
+            {
+                if (path is Dictionary<string, object> pathDictionary)
+                {
+                    var categoryPath = new CategoryPath();
+                    foreach (var pathItem in pathDictionary)
+                    {
+                        if (pathItem.Key == "Path")
+                        {
+                            categoryPath.Path = (string)pathItem.Value;
+                        }
+                        else if (pathItem.Key == "TreeId")
+                        {
+                            categoryPath.TreeId = (Guid)pathItem.Value;
+                        }
+                    }
+                    categoryPaths.Add(categoryPath);
+                }
+            }
+        } else if (paths is List<CategoryPath> pathsListOriginal)
+        {
+            categoryPaths = pathsListOriginal;
+        }
+        return categoryPaths;
+    }
     private AttributeInstanceViewModel DeserializeAttribute(
         AttributeConfiguration attributeConfiguration,
         object? attributeValue

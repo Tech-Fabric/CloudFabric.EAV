@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Text.RegularExpressions;
 
@@ -35,6 +36,7 @@ public class EAVService : IEAVService
     private readonly AggregateRepository<AttributeConfiguration> _attributeConfigurationRepository;
     private readonly AggregateRepository<EntityConfiguration> _entityConfigurationRepository;
     private readonly AggregateRepository<EntityInstance> _entityInstanceRepository;
+    private readonly AggregateRepository<CategoryTree> _categoryTreeRepository;
 
     private readonly IProjectionRepository<AttributeConfigurationProjectionDocument>
         _attributeConfigurationProjectionRepository;
@@ -69,6 +71,8 @@ public class EAVService : IEAVService
             .GetAggregateRepository<EntityConfiguration>();
         _entityInstanceRepository = _aggregateRepositoryFactory
             .GetAggregateRepository<EntityInstance>();
+        _categoryTreeRepository = _aggregateRepositoryFactory
+            .GetAggregateRepository<CategoryTree>();
 
         _attributeConfigurationProjectionRepository = _projectionRepositoryFactory
             .GetProjectionRepository<AttributeConfigurationProjectionDocument>();
@@ -362,7 +366,7 @@ public class EAVService : IEAVService
                 var (attributeCreated, attrProblemDetails) = await CreateAttribute(
                     attributeCreateRequest,
                     cancellationToken
-                ).ConfigureAwait(false);
+                ).ConfigureAwait(false);  
                 if (attrProblemDetails != null)
                 {
                     allAttrProblemDetails.Add(attrProblemDetails);
@@ -611,6 +615,187 @@ public class EAVService : IEAVService
     //     return _mapper.Map<List<EntityInstanceViewModel>>(records);
     // }
 
+    #region Categories
+
+    public async Task<(HierarchyViewModel, ProblemDetails)> CreateCategoryTreeAsync(
+        CategoryTreeCreateRequest entity,
+        Guid? tenantId,
+        CancellationToken cancellationToken = default
+    )
+    {
+        EntityConfiguration? entityConfiguration = await _entityConfigurationRepository.LoadAsync(
+            entity.EntityConfigurationId,
+            entity.EntityConfigurationId.ToString(),
+            cancellationToken
+        ).ConfigureAwait(false);
+
+        if (entityConfiguration == null)
+        {
+            return (null, new ValidationErrorResponse("EntityConfigurationId", "Configuration not found"))!;
+        }
+        var tree = new CategoryTree(
+            Guid.NewGuid(),
+            entity.EntityConfigurationId,
+            entity.MachineName,
+            tenantId
+        );
+        
+        var saved = await _categoryTreeRepository.SaveAsync(_userInfo, tree, cancellationToken).ConfigureAwait(false);
+        return (_mapper.Map<HierarchyViewModel>(tree), null)!;
+    }
+    
+    public async Task<(CategoryViewModel, ProblemDetails)> CreateCategoryInstanceAsync(
+        CategoryInstanceCreateRequest entity,
+        CancellationToken cancellationToken = default
+    )
+    {
+        CategoryTree? tree = await _categoryTreeRepository.LoadAsync(
+            entity.CategoryTreeId,
+            entity.CategoryTreeId.ToString(),
+            cancellationToken
+        ).ConfigureAwait(false);
+        
+        if (tree == null)
+        {
+            return (null, new ValidationErrorResponse("CategoryTreeId", "Category tree not found"))!;
+        }
+
+        if (tree.EntityConfigurationId != entity.CategoryConfigurationId)
+        {
+            return (null, new ValidationErrorResponse("CategoryConfigurationId", "Category tree uses another configuration for categories"))!;
+        }
+
+        EntityConfiguration? entityConfiguration = await _entityConfigurationRepository.LoadAsync(
+            entity.CategoryConfigurationId,
+            entity.CategoryConfigurationId.ToString(),
+            cancellationToken
+        ).ConfigureAwait(false);
+        
+        
+        if (entityConfiguration == null)
+        {
+            return (null, new ValidationErrorResponse("CategoryConfigurationId", "Configuration not found"))!;
+        }
+        
+        List<AttributeConfiguration> attributeConfigurations =
+            await GetAttributeConfigurationsForEntityConfiguration(
+                entityConfiguration,
+                cancellationToken
+            ).ConfigureAwait(false);
+
+        
+        var (categoryPath, errors) = await BuildCategoryPathAsync(tree.Id, entity.ParentId, cancellationToken).ConfigureAwait(false);
+        
+        if (errors != null)
+        {
+            return (null, errors)!;
+        }
+        
+        var entityInstance = new Category(
+            Guid.NewGuid(),
+            entity.CategoryConfigurationId,
+            _mapper.Map<List<AttributeInstance>>(entity.Attributes),
+            entity.TenantId,
+            categoryPath,
+            entity.CategoryTreeId
+        );
+
+        var validationErrors = new Dictionary<string, string[]>();
+        foreach (var a in attributeConfigurations)
+        {
+            var attributeValue = entityInstance.Attributes
+                .FirstOrDefault(attr => a.MachineName == attr.ConfigurationAttributeMachineName);
+
+            var attrValidationErrors = a.ValidateInstance(attributeValue);
+            if (attrValidationErrors is { Count: > 0 })
+            {
+                validationErrors.Add(a.MachineName, attrValidationErrors.ToArray());
+            }
+        }
+
+        if (validationErrors.Count > 0)
+        {
+            return (null, new ValidationErrorResponse(validationErrors))!;
+        }
+
+        var mappedInstance = _mapper.Map<EntityInstance>(entityInstance);
+        
+        var schema = CloudFabric.EAV.Domain.Projections.EntityInstanceProjection.ProjectionDocumentSchemaFactory
+            .FromEntityConfiguration(entityConfiguration, attributeConfigurations);
+
+        var projectionRepository = _projectionRepositoryFactory.GetProjectionRepository(schema);
+        await projectionRepository.EnsureIndex(cancellationToken).ConfigureAwait(false);
+        
+        var saved = await _entityInstanceRepository.SaveAsync(_userInfo, mappedInstance, cancellationToken).ConfigureAwait(false);
+        if (!saved)
+        {
+            //TODO: What do we want to do with internal exceptions and unsuccessful flow?
+            throw new Exception("Entity was not saved");
+        }
+
+        return (_mapper.Map<CategoryViewModel>(entityInstance), null)!;    
+    }
+    
+    [SuppressMessage("Performance", "CA1806:Do not ignore method results")]
+    public async Task<List<EntityTreeInstanceViewModel>> GetCategoryTreeViewAsync(
+        Guid treeId,
+        CancellationToken cancellationToken = default
+    )
+    {
+        var tree = await _categoryTreeRepository.LoadAsync(treeId, treeId.ToString(), cancellationToken).ConfigureAwait(false);
+        if (tree == null)
+        {
+            throw new NotFoundException("Category tree not found");
+        }
+
+        var treeElements = await QueryInstances(tree.EntityConfigurationId, new ProjectionQuery()
+        {                
+            Filters = new List<Filter>()
+            {
+                new Filter("CategoryPaths.TreeId", FilterOperator.Equal, treeId)
+            },
+        }, cancellationToken).ConfigureAwait(false);
+        
+        var treeViewModel = new List<EntityTreeInstanceViewModel>();
+        
+        // Go through each instance once
+        foreach (var treeElement in treeElements.Records
+                     .Select(x => x.Document!)
+                     .OrderBy(x => x.CategoryPaths.FirstOrDefault(cp => cp.TreeId == treeId)?.Path.Length))
+        {
+            var treeElementViewModel = _mapper.Map<EntityTreeInstanceViewModel>(treeElement);
+            var categoryPath = treeElement.CategoryPaths.FirstOrDefault(cp => cp.TreeId == treeId)?.Path;
+
+            if (string.IsNullOrEmpty(categoryPath))
+            {
+                treeViewModel.Add(treeElementViewModel);
+            }
+            else
+            {
+                var categoryPathElements = categoryPath.Split('/').Where(x => !string.IsNullOrEmpty(x));
+                EntityTreeInstanceViewModel? currentLevel = null;
+                categoryPathElements.Aggregate(treeViewModel,
+                    (acc, pathComponent) =>
+                    {
+                        var parent = acc.FirstOrDefault(y => y.Id.ToString() == pathComponent);
+                        if (parent == null)
+                        {
+                            var parentInstance = treeElements.Records.Select(x => x.Document).FirstOrDefault(x => x.Id.ToString() == pathComponent);
+                            parent = _mapper.Map<EntityTreeInstanceViewModel>(parentInstance);
+                            acc.Add(parent);
+                        }
+                        currentLevel = parent;
+                        return parent.Children;
+                    });
+                currentLevel?.Children.Add(treeElementViewModel);
+
+            }
+        }
+        return treeViewModel;
+    }
+    
+    #endregion
+    
     #region EntityInstance
 
     public async Task<(EntityInstanceViewModel, ProblemDetails)> CreateEntityInstance(
@@ -633,6 +818,7 @@ public class EAVService : IEAVService
                 cancellationToken
             ).ConfigureAwait(false);
 
+        //TODO: add check for categoryPath
         var entityInstance = new EntityInstance(
             Guid.NewGuid(),
             entity.EntityConfigurationId,
@@ -807,25 +993,48 @@ public class EAVService : IEAVService
             entityConfigurationId,
             entityConfigurationId.ToString(),
             cancellationToken
-        );
+        ).ConfigureAwait(false);
 
         var attributes = await GetAttributeConfigurationsForEntityConfiguration(
             entityConfiguration,
             cancellationToken
-        );
+        ).ConfigureAwait(false);
 
         var schema = CloudFabric.EAV.Domain.Projections.EntityInstanceProjection.ProjectionDocumentSchemaFactory
             .FromEntityConfiguration(entityConfiguration, attributes);
 
         var projectionRepository = _projectionRepositoryFactory.GetProjectionRepository(schema);
 
-        var results = await projectionRepository.Query(query, entityConfigurationId.ToString(), cancellationToken);
+        var results = await projectionRepository.Query(query, entityConfigurationId.ToString(), cancellationToken)
+            .ConfigureAwait(false);
 
         return results.TransformResultDocuments(
             r => _entityInstanceFromDictionaryDeserializer.Deserialize(entityConfiguration, attributes, r)
         );
     }
 
+    public async Task<(EntityInstanceViewModel, ProblemDetails)> UpdateCategoryPathAsync(Guid itemId, string itemPartitionKey, Guid treeId, Guid newParentId, CancellationToken cancellationToken)
+    {
+        var item = await _entityInstanceRepository.LoadAsync(itemId, itemPartitionKey, cancellationToken).ConfigureAwait(false);
+        if (item == null)
+        {
+            return (null, new ValidationErrorResponse(nameof(itemId), "Item not found"))!;
+        }
+        var (newCategoryPath, errors) = await BuildCategoryPathAsync(treeId, newParentId, cancellationToken).ConfigureAwait(false);
+        if (errors != null)
+        {
+            return (null, errors)!;
+        }
+        var itemCategoryPath = item.CategoryPaths.FirstOrDefault(x => x.TreeId == treeId);
+        item.ChangeCategoryPath(treeId, newCategoryPath ?? "");
+        var saved = await _entityInstanceRepository.SaveAsync(_userInfo, item, cancellationToken).ConfigureAwait(false);
+        if (!saved)
+        {
+            //TODO: What do we want to do with internal exceptions and unsuccessful flow?
+            throw new Exception("Entity was not saved");
+        }
+        return (_mapper.Map<EntityInstanceViewModel>(item), null)!;
+    }
     private async Task<List<AttributeConfiguration>> GetAttributeConfigurationsForEntityConfiguration(
         EntityConfiguration entityConfiguration, CancellationToken cancellationToken = default
     )
@@ -1001,4 +1210,26 @@ public class EAVService : IEAVService
 
         return attributes;
     }
+    
+    private async Task<(string?, ProblemDetails?)> BuildCategoryPathAsync(Guid treeId, Guid? parentId, CancellationToken cancellationToken)
+    {
+
+        var tree = await _categoryTreeRepository.LoadAsync(treeId, treeId.ToString(), cancellationToken).ConfigureAwait(false);
+        if (tree == null)
+        {
+            return (null, new ValidationErrorResponse("TreeId", "Tree not found"))!;
+        }
+
+        Category? parent = parentId == null ? null : _mapper.Map<Category>(await _entityInstanceRepository.LoadAsync(parentId.Value, tree.EntityConfigurationId.ToString(), cancellationToken).ConfigureAwait(false));
+        
+        if (parent == null && parentId != null)
+        {
+            return (null, new ValidationErrorResponse("ParentId", "Parent category not found"))!;
+        }
+
+        var parentPath = parent?.CategoryPaths.FirstOrDefault(x => x.TreeId == treeId);
+        var categoryPath = parentPath == null ? "" : $"{parentPath.Path}/{parent?.Id}";
+        return (categoryPath, null)!;
+    }
+
 }

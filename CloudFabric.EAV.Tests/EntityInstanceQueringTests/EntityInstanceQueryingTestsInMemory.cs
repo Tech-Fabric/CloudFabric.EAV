@@ -10,13 +10,11 @@ namespace CloudFabric.EAV.Tests;
 [TestClass]
 public class EntityInstanceQueryingTestsInMemory : EntityInstanceQueryingTests
 {
-    private IEventStore _eventStore;
-    private ProjectionRepositoryFactory _projectionRepositoryFactory;
-
+    private readonly ProjectionRepositoryFactory _projectionRepositoryFactory;
+    
     public EntityInstanceQueryingTestsInMemory()
     {
         _eventStore = new InMemoryEventStore(new Dictionary<(Guid, string), List<string>>());
-
         _projectionRepositoryFactory = new InMemoryProjectionRepositoryFactory();
     }
 
@@ -34,4 +32,5 @@ public class EntityInstanceQueryingTestsInMemory : EntityInstanceQueryingTests
     {
         return _projectionRepositoryFactory;
     }
+    
 }

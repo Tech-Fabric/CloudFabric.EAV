@@ -303,6 +303,43 @@ namespace CloudFabric.EAV.Domain.Projections.EntityInstanceProjection
             };
         }
 
+        public static ProjectionDocumentPropertySchema GetCategoryPathsAttributeSchema()
+        {
+            return new ProjectionDocumentPropertySchema
+            {
+                PropertyName = "CategoryPaths",
+                PropertyType = TypeCode.Object,
+                IsRetrievable = true,
+                IsFilterable = true,
+                IsSortable = true,
+                IsNestedArray = true,
+                ArrayElementType = Type.GetTypeCode(typeof(CategoryPath)),
+                NestedObjectProperties = GetCategoryPathsNestedProperties()
+            };
+        }
+        private static List<ProjectionDocumentPropertySchema> GetCategoryPathsNestedProperties()
+        {
+            return new List<ProjectionDocumentPropertySchema>
+            {
+                new ProjectionDocumentPropertySchema
+                {
+                    PropertyName = "TreeId",
+                    PropertyType = TypeCode.Object,
+                    IsRetrievable = true,
+                    IsFilterable = true,
+                    IsSortable = false,
+                },
+                new ProjectionDocumentPropertySchema
+                {
+                    PropertyName = "Path",
+                    PropertyType = TypeCode.String,
+                    IsRetrievable = true,
+                    IsFilterable = true,
+                    IsSortable = true
+                }
+            };
+        }
+
         private static List<ProjectionDocumentPropertySchema> GetImageAttributeNestedProperties()
         {
             return new List<ProjectionDocumentPropertySchema>

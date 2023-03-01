@@ -27,11 +27,16 @@ using CloudFabric.Projections.Queries;
 
 using FluentAssertions;
 
+using IdentityModel;
+
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+// ReSharper disable AsyncConverter.ConfigureAwaitHighlighting
 
 namespace CloudFabric.EAV.Tests;
+
+
 
 [TestClass]
 public class Tests
@@ -124,8 +129,9 @@ public class Tests
         }
     }
 
+    
     [TestMethod]
-    public async Task CreateInstance_Success()
+    public async Task CreateInstance_Success()  
     {
         var configurationCreateRequest = EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
 
@@ -2363,3 +2369,5 @@ public class Tests
         return new PostgresqlEventStoreEventObserver((PostgresqlEventStore)_eventStore);
     }
 }
+
+
