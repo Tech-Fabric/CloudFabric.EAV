@@ -6,6 +6,8 @@ using CloudFabric.EAV.Domain.Models;
 using CloudFabric.EAV.Domain.Projections.AttributeConfigurationProjection;
 using CloudFabric.EAV.Domain.Projections.EntityInstanceProjection;
 using CloudFabric.EAV.Models.RequestModels;
+using CloudFabric.EAV.Models.ViewModels;
+using CloudFabric.EAV.Models.ViewModels.EAV;
 using CloudFabric.EAV.Service;
 using CloudFabric.EAV.Tests.Factories;
 using CloudFabric.EventSourcing.Domain;

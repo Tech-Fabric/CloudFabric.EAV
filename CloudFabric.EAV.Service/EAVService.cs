@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Text.RegularExpressions;
 
@@ -735,6 +736,7 @@ public class EAVService : IEAVService
         return (_mapper.Map<CategoryViewModel>(entityInstance), null)!;    
     }
     
+    [SuppressMessage("Performance", "CA1806:Do not ignore method results")]
     public async Task<List<EntityTreeInstanceViewModel>> GetCategoryTreeViewAsync(
         Guid treeId,
         CancellationToken cancellationToken = default(CancellationToken)

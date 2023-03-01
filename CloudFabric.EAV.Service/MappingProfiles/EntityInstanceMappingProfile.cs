@@ -3,6 +3,7 @@
 using AutoMapper;
 using CloudFabric.EAV.Domain.Models;
 using CloudFabric.EAV.Models.RequestModels;
+using CloudFabric.EAV.Models.ViewModels;
 using CloudFabric.EAV.Models.ViewModels.EAV;
 
 namespace CloudFabric.EAV.Service.MappingProfiles;

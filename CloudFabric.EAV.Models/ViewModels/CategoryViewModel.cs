@@ -1,6 +1,8 @@
 using CloudFabric.EAV.Domain.Models;
 using CloudFabric.EAV.Models.ViewModels.Attributes;
 
+namespace CloudFabric.EAV.Models.ViewModels;
+
 public class CategoryViewModel
 {
     public Guid Id { get; set; }
