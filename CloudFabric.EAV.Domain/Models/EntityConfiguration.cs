@@ -1,8 +1,6 @@
-using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Globalization;
-using System.Linq;
+
 using CloudFabric.EAV.Domain.Events.Configuration.Entity;
 using CloudFabric.EAV.Domain.Models.Base;
 using CloudFabric.EventSourcing.Domain;
@@ -19,7 +17,7 @@ namespace CloudFabric.EAV.Domain.Models
         public ReadOnlyCollection<EntityConfigurationAttributeReference> Attributes { get; protected set; }
 
         public override string PartitionKey => Id.ToString();
-        
+
         public Guid? TenantId { get; protected set; }
 
         public EntityConfiguration(List<IEvent> events) : base(events)
@@ -28,16 +26,17 @@ namespace CloudFabric.EAV.Domain.Models
         }
 
         public EntityConfiguration(
-            Guid id, 
+            Guid id,
             List<LocalizedString> name,
-            string machineName, 
+            string machineName,
             List<EntityConfigurationAttributeReference> attributes,
             Guid? tenantId
-        ) {
+        )
+        {
             Apply(new EntityConfigurationCreated(
-                id, 
-                name, 
-                machineName, 
+                id,
+                name,
+                machineName,
                 attributes,
                 tenantId
             ));
@@ -60,7 +59,7 @@ namespace CloudFabric.EAV.Domain.Models
         {
             Apply(new EntityConfigurationNameUpdated(Id, newName, CultureInfo.GetCultureInfo("EN-us").LCID));
         }
-        
+
         public void UpdateName(string newName, int cultureInfoId)
         {
             Apply(new EntityConfigurationNameUpdated(Id, newName, cultureInfoId));
@@ -69,8 +68,8 @@ namespace CloudFabric.EAV.Domain.Models
         public void AddAttribute(Guid attributeConfigurationId)
         {
             Apply(new EntityConfigurationAttributeAdded(
-                Id, 
-                new EntityConfigurationAttributeReference() {AttributeConfigurationId = attributeConfigurationId }
+                Id,
+                new EntityConfigurationAttributeReference() { AttributeConfigurationId = attributeConfigurationId }
             ));
         }
 
@@ -100,7 +99,7 @@ namespace CloudFabric.EAV.Domain.Models
             Attributes = new List<EntityConfigurationAttributeReference>(@event.Attributes).AsReadOnly();
             TenantId = @event.TenantId;
         }
-        
+
         public void On(EntityConfigurationNameUpdated @event)
         {
             var newCollection = new List<LocalizedString>(Name);

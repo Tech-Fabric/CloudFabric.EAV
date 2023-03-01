@@ -1,4 +1,4 @@
-﻿using CloudFabric.EAV.Domain.Enums;
+using CloudFabric.EAV.Domain.Enums;
 using CloudFabric.EAV.Domain.Events.Configuration.Attributes;
 using CloudFabric.EAV.Domain.Models.Base;
 
@@ -22,6 +22,11 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
                 && Height == other.Height
                 && Name == other.Name;
         }
+
+        public override int GetHashCode()
+        {
+            throw new NotImplementedException();
+        }
     }
 
     public class ImageAttributeValue
@@ -41,6 +46,11 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
                    && Title == other.Title
                    && Alt == other.Alt;
         }
+
+        public override int GetHashCode()
+        {
+            throw new NotImplementedException();
+        }
     }
 
     public class ImageAttributeConfiguration : AttributeConfiguration
@@ -50,11 +60,11 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
         public override EavAttributeType ValueType => EavAttributeType.Image;
 
         public ImageAttributeConfiguration(
-            Guid id, 
-            string machineName, 
+            Guid id,
+            string machineName,
             List<LocalizedString> name,
             List<ImageThumbnailDefinition> thumbnailsConfiguration = null,
-            List<LocalizedString> description = null, 
+            List<LocalizedString> description = null,
             bool isRequired = false,
             Guid? tenantId = null,
             string? metadata = null
@@ -84,7 +94,7 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
         public override List<string> Validate()
         {
             var errors = base.Validate();
-            if (ThumbnailsConfiguration.Any(t => t.Height > ImageThumbnailDefinition.MaxThumbnailSize 
+            if (ThumbnailsConfiguration.Any(t => t.Height > ImageThumbnailDefinition.MaxThumbnailSize
                                                  || t.Width > ImageThumbnailDefinition.MaxThumbnailSize))
             {
                 errors.Add($"Thumbnail width or height cannot be greater than {ImageThumbnailDefinition.MaxThumbnailSize}");
@@ -123,7 +133,7 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
             {
                 errors.Add("Image Title cannot be empty");
             }
-            
+
             return errors;
         }
 
@@ -139,11 +149,16 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
                    && ValueType == other.ValueType;
         }
 
-        
+
         #region EventHandlers
         public void On(ImageAttributeConfigurationUpdated @event)
         {
             ThumbnailsConfiguration = @event.ThumbnailsConfiguration;
+        }
+
+        public override int GetHashCode()
+        {
+            throw new NotImplementedException();
         }
         #endregion
     }

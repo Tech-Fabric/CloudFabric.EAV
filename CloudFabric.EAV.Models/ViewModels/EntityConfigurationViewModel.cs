@@ -1,9 +1,4 @@
-using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-
-using CloudFabric.EAV.Models.ViewModels;
-using CloudFabric.EAV.Models.ViewModels.Attributes;
+namespace CloudFabric.EAV.Models.ViewModels;
 
 public class EntityConfigurationViewModel
 {
@@ -16,6 +11,6 @@ public class EntityConfigurationViewModel
     public string MachineName { get; set; }
 
     public List<EntityConfigurationAttributeReferenceViewModel> Attributes { get; set; }
-    
+
     public Guid? TenantId { get; set; }
 }

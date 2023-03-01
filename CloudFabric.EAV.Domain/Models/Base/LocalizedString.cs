@@ -4,7 +4,7 @@ using CloudFabric.Projections.Attributes;
 
 namespace CloudFabric.EAV.Domain.Models.Base;
 
-public class LocalizedString: IEquatable<LocalizedString>
+public class LocalizedString : IEquatable<LocalizedString>
 {
     [ProjectionDocumentProperty(IsFilterable = true)]
     public int CultureInfoId { get; set; }

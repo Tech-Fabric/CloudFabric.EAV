@@ -2,7 +2,6 @@ using System.Reflection;
 
 using AutoMapper;
 
-using CloudFabric.EAV.Domain.Models;
 using CloudFabric.EAV.Domain.Projections.AttributeConfigurationProjection;
 using CloudFabric.EAV.Domain.Projections.EntityInstanceProjection;
 using CloudFabric.EAV.Service;
@@ -14,20 +13,20 @@ using CloudFabric.Projections;
 using Microsoft.Extensions.Logging;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-namespace CloudFabric.EAV.Tests
+namespace CloudFabric.EAV.Tests.BaseQueryTests
 {
     public abstract class BaseQueryTests
     {
         protected EAVService _eavService;
         protected IEventStore _eventStore;
         protected ILogger<EAVService> _logger;
-        
+
         protected virtual TimeSpan ProjectionsUpdateDelay { get; set; } = TimeSpan.FromMilliseconds(0);
 
         protected abstract IEventStore GetEventStore();
         protected abstract ProjectionRepositoryFactory GetProjectionRepositoryFactory();
         protected abstract IEventsObserver GetEventStoreEventsObserver();
-        
+
         [TestInitialize]
         public async Task SetUp()
         {
@@ -45,7 +44,7 @@ namespace CloudFabric.EAV.Tests
             await _eventStore.Initialize();
 
             var aggregateRepositoryFactory = new AggregateRepositoryFactory(_eventStore);
-            
+
             var projectionRepositoryFactory = GetProjectionRepositoryFactory();
 
             // Projections engine - takes events from events observer and passes them to multiple projection builders

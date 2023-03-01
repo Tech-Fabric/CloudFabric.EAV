@@ -1,7 +1,4 @@
-﻿using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations.Schema;
 using CloudFabric.EAV.Domain.Models.Base;
-using CloudFabric.EventSourcing.EventStore;
 
 namespace CloudFabric.EAV.Domain.Models.Attributes
 {

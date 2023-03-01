@@ -3,10 +3,8 @@ using AutoMapper;
 using CloudFabric.EAV.Domain.Enums;
 using CloudFabric.EAV.Domain.Models;
 using CloudFabric.EAV.Domain.Models.Attributes;
-using CloudFabric.EAV.Models.RequestModels.Attributes;
 using CloudFabric.EAV.Models.ViewModels;
 using CloudFabric.EAV.Models.ViewModels.Attributes;
-using CloudFabric.EAV.Models.ViewModels.EAV;
 
 namespace CloudFabric.EAV.Service;
 
@@ -20,7 +18,6 @@ public class EntityInstanceFromDictionaryDeserializer
     }
 
     public EntityInstanceViewModel Deserialize(
-        EntityConfiguration entityConfiguration,
         List<AttributeConfiguration> attributesConfigurations,
         Dictionary<string, object?> record
     )
@@ -67,7 +64,8 @@ public class EntityInstanceFromDictionaryDeserializer
                     categoryPaths.Add(categoryPath);
                 }
             }
-        } else if (paths is List<CategoryPath> pathsListOriginal)
+        }
+        else if (paths is List<CategoryPath> pathsListOriginal)
         {
             categoryPaths = pathsListOriginal;
         }
@@ -118,8 +116,7 @@ public class EntityInstanceFromDictionaryDeserializer
         object? attributeValue
     )
     {
-        AttributeInstanceViewModel? attributeInstance = null;
-
+        AttributeInstanceViewModel? attributeInstance;
         switch (attributeType)
         {
             case EavAttributeType.Array:

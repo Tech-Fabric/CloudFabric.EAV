@@ -4,7 +4,6 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
 {
     public class ValueFromListOptionConfiguration
     {
-
         public ValueFromListOptionConfiguration(string name, string? machineName)
         {
             Name = name;

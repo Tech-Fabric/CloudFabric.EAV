@@ -5,8 +5,8 @@ namespace CloudFabric.EAV.Json.Utilities
 {
     public class PolymorphicJsonConverter<T> : JsonConverter<T>
     {
-        public static readonly string TYPE_NAME_JSON_PROPERTY_NAME = "typeName";
-        public static readonly string TYPE_VALUE_JSON_PROPERTY_NAME = "typeValue";
+        public const string TYPE_NAME_JSON_PROPERTY_NAME = "typeName";
+        public const string TYPE_VALUE_JSON_PROPERTY_NAME = "typeValue";
 
         public override bool CanConvert(Type type)
         {

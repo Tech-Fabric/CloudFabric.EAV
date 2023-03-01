@@ -1,5 +1,3 @@
-using System.Collections.Generic;
-
 using CloudFabric.EAV.Domain.Enums;
 
 using Microsoft.AspNetCore.Mvc;
@@ -12,7 +10,7 @@ public class ValidationErrorResponse : ValidationProblemDetails
 
     public ValidationErrorResponse(IDictionary<string, string[]> errors)
     {
-        Type = CommonErrorTypes.ValidationError;
+        Type = CommonErrorTypes.VALIDATION_ERROR;
         Title = "Validation errors occured";
         Errors = errors;
     }
@@ -30,7 +28,7 @@ public class ValidationErrorResponse : ValidationProblemDetails
     private static IDictionary<string, string[]> GetDictionary(string fieldName, string[] errorMessages)
     {
         fieldName = string.IsNullOrEmpty(fieldName) ? "unknownError" : fieldName;
-        
+
         return new Dictionary<string, string[]>
         {
             { fieldName, errorMessages }

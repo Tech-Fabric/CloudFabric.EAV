@@ -5,13 +5,13 @@ using CloudFabric.Projections.Postgresql;
 
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-namespace CloudFabric.EAV.Tests
+namespace CloudFabric.EAV.Tests.CategoryTests
 {
     [TestClass]
-    public class CategoryTestsPostgresql: CategoryTests
+    public class CategoryTestsPostgresql : CategoryTests
     {
         private readonly ProjectionRepositoryFactory _projectionRepositoryFactory;
-    
+
         public CategoryTestsPostgresql()
         {
             var connectionString = "Host=localhost;"

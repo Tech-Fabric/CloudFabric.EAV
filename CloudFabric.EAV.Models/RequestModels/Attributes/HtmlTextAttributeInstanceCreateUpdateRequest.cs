@@ -1,4 +1,4 @@
-﻿namespace CloudFabric.EAV.Models.RequestModels.Attributes
+namespace CloudFabric.EAV.Models.RequestModels.Attributes
 {
     public class HtmlTextAttributeInstanceCreateUpdateRequest : AttributeInstanceCreateUpdateRequest
     {

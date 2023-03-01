@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using AutoMapper;
 
 using CloudFabric.EAV.Domain.Models;
 using CloudFabric.EAV.Domain.Models.Attributes;

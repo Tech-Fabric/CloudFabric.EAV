@@ -20,8 +20,11 @@ indent_size = 4
 tab_width = 4
 
 # New line preferences
-end_of_line = crlf
-insert_final_newline = false
+end_of_line = lf
+charset = utf-8
+insert_final_newline = true
+trim_trailing_whitespace = true
+max_line_length = 120
 
 #################################
 #### .NET Coding Conventions ####
@@ -33,6 +36,7 @@ insert_final_newline = false
 dotnet_separate_import_directive_groups = true
 dotnet_sort_system_directives_first = true
 file_header_template = unset
+dotnet_diagnostic.IDE0005.severity = error
 
 # this. and Me. preferences
 dotnet_style_qualification_for_event = false:silent
@@ -262,17 +266,17 @@ dotnet_naming_rule.private_static_fields_should_be_s_camelcase.severity = warnin
 dotnet_naming_rule.private_static_fields_should_be_s_camelcase.symbols = private_static_fields
 dotnet_naming_rule.private_static_fields_should_be_s_camelcase.style = s_camelcase
 
-dotnet_naming_rule.public_constant_fields_should_be_pascalcase.severity = warning
-dotnet_naming_rule.public_constant_fields_should_be_pascalcase.symbols = public_constant_fields
-dotnet_naming_rule.public_constant_fields_should_be_pascalcase.style = pascalcase
+dotnet_naming_rule.public_constant_fields_should_be_all_upper.severity = warning
+dotnet_naming_rule.public_constant_fields_should_be_all_upper.symbols = public_constant_fields
+dotnet_naming_rule.public_constant_fields_should_be_all_upper.style = all_upper
 
 dotnet_naming_rule.private_constant_fields_should_be__camelcase.severity = warning
 dotnet_naming_rule.private_constant_fields_should_be__camelcase.symbols = private_constant_fields
 dotnet_naming_rule.private_constant_fields_should_be__camelcase.style = _camelcase
 
-dotnet_naming_rule.public_static_readonly_fields_should_be_pascalcase.severity = warning
-dotnet_naming_rule.public_static_readonly_fields_should_be_pascalcase.symbols = public_static_readonly_fields
-dotnet_naming_rule.public_static_readonly_fields_should_be_pascalcase.style = pascalcase
+dotnet_naming_rule.public_static_readonly_fields_should_be_all_upper.severity = warning
+dotnet_naming_rule.public_static_readonly_fields_should_be_all_upper.symbols = public_static_readonly_fields
+dotnet_naming_rule.public_static_readonly_fields_should_be_all_upper.style = all_upper
 
 dotnet_naming_rule.private_static_readonly_fields_should_be_s_camelcase.severity = warning
 dotnet_naming_rule.private_static_readonly_fields_should_be_s_camelcase.symbols = private_static_readonly_fields
@@ -370,6 +374,12 @@ dotnet_naming_symbols.local_functions.required_modifiers =
 
 # Naming styles
 
+
+dotnet_naming_style.all_upper.required_prefix =
+dotnet_naming_style.all_upper.required_suffix =
+dotnet_naming_style.all_upper.word_separator =
+dotnet_naming_style.all_upper.capitalization = all_upper
+
 dotnet_naming_style.pascalcase.required_prefix =
 dotnet_naming_style.pascalcase.required_suffix =
 dotnet_naming_style.pascalcase.word_separator =
@@ -401,7 +411,7 @@ dotnet_naming_style.s_camelcase.word_separator =
 dotnet_naming_style.s_camelcase.capitalization = camel_case
 tab_width = 4
 indent_size = 4
-end_of_line = crlf
+end_of_line = lf
 dotnet_style_namespace_match_folder = true:suggestion
 dotnet_style_allow_multiple_blank_lines_experimental = true:silent
 dotnet_style_allow_statement_immediately_after_block_experimental = true:silent

@@ -6,7 +6,6 @@ namespace CloudFabric.EAV.Domain.Models
 {
     public class CategoryTree : AggregateBase
     {
-    
         public string MachineName { get; protected set; }
         public Guid EntityConfigurationId { get; protected set; }
         public override string PartitionKey => Id.ToString();
@@ -21,7 +20,7 @@ namespace CloudFabric.EAV.Domain.Models
         {
             Apply(new CategoryTreeCreated(id, entityConfigurationId, machineName, tenantId));
         }
-        
+
         public void On(CategoryTreeCreated @event)
         {
             Id = @event.AggregateId;
@@ -29,7 +28,5 @@ namespace CloudFabric.EAV.Domain.Models
             EntityConfigurationId = @event.EntityConfigurationId;
             TenantId = @event.TenantId;
         }
-
     }
-
 }

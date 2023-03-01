@@ -10,7 +10,7 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
         public decimal DefaultValue { get; set; }
         public decimal? MinimumValue { get; set; }
         public decimal? MaximumValue { get; set; }
-        
+
         public NumberAttributeType NumberType { get; set; } = NumberAttributeType.Integer;
 
         public override EavAttributeType ValueType { get; } = EavAttributeType.Number;
@@ -56,7 +56,7 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
             {
                 errors.Add("Value is not an integer value");
             }
-            
+
             if (floatValue < MinimumValue)
             {
                 errors.Add($"Value should be greater or equal than {MinimumValue}");
@@ -71,16 +71,16 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
 
         public NumberAttributeConfiguration(IEnumerable<IEvent> events) : base(events)
         {
-            
+
         }
-        
+
         public NumberAttributeConfiguration(
-            Guid id, 
-            string machineName, 
+            Guid id,
+            string machineName,
             List<LocalizedString> name,
             decimal defaultValue,
             NumberAttributeType numberType,
-            List<LocalizedString> description = null, 
+            List<LocalizedString> description = null,
             bool isRequired = false,
             decimal? minimumValue = null,
             decimal? maximumValue = null,
@@ -133,7 +133,7 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
         {
             return HashCode.Combine(DefaultValue, MinimumValue, MaximumValue, NumberType, (int)ValueType);
         }
-        
+
         #region EventHandlers
 
         public void On(NumberAttributeConfigurationUpdated @event)

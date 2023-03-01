@@ -3,6 +3,7 @@ using System.Globalization;
 
 using CloudFabric.EAV.Models.RequestModels;
 using CloudFabric.EAV.Models.RequestModels.Attributes;
+using CloudFabric.EAV.Models.ViewModels.Attributes;
 using CloudFabric.EAV.Tests.Factories;
 using CloudFabric.Projections.Queries;
 
@@ -11,9 +12,9 @@ using FluentAssertions;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 // ReSharper disable AsyncConverter.ConfigureAwaitHighlighting
 
-namespace CloudFabric.EAV.Tests;
+namespace CloudFabric.EAV.Tests.EntityInstanceQueryingTests;
 
-public abstract class EntityInstanceQueryingTests: BaseQueryTests
+public abstract class EntityInstanceQueryingTests : BaseQueryTests.BaseQueryTests
 {
 
     [TestMethod]
@@ -145,7 +146,7 @@ public abstract class EntityInstanceQueryingTests: BaseQueryTests
         nameAttributeAfterUpdate.Value.First(v => v.CultureInfoId == CultureInfo.GetCultureInfo("RU-ru").LCID).String.Should()
             .Be("Азул 2");
     }
-    
+
     //[TestMethod]
     public async Task LoadTest()
     {

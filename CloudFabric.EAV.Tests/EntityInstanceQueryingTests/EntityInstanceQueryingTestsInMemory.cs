@@ -5,13 +5,13 @@ using CloudFabric.Projections.InMemory;
 
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-namespace CloudFabric.EAV.Tests;
+namespace CloudFabric.EAV.Tests.EntityInstanceQueryingTests;
 
 [TestClass]
 public class EntityInstanceQueryingTestsInMemory : EntityInstanceQueryingTests
 {
     private readonly ProjectionRepositoryFactory _projectionRepositoryFactory;
-    
+
     public EntityInstanceQueryingTestsInMemory()
     {
         _eventStore = new InMemoryEventStore(new Dictionary<(Guid, string), List<string>>());
@@ -32,5 +32,4 @@ public class EntityInstanceQueryingTestsInMemory : EntityInstanceQueryingTests
     {
         return _projectionRepositoryFactory;
     }
-    
 }

@@ -6,6 +6,8 @@ namespace CloudFabric.EAV.Domain.Events.Configuration.Attribute;
 
 public record AttributeConfigurationCreated : Event
 {
+    // ReSharper disable once UnusedMember.Global
+    // This constructor is required for Event Store to properly deserialize from json
     public AttributeConfigurationCreated()
     {
     }
@@ -22,7 +24,7 @@ public record AttributeConfigurationCreated : Event
         Metadata = metadata;
     }
 
-    public string MachineName { get; set;}
+    public string MachineName { get; set; }
 
     public List<LocalizedString> Name { get; set; }
 

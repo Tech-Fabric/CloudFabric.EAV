@@ -13,7 +13,6 @@ using CloudFabric.EAV.Models.RequestModels;
 using CloudFabric.EAV.Models.RequestModels.Attributes;
 using CloudFabric.EAV.Models.ViewModels;
 using CloudFabric.EAV.Models.ViewModels.Attributes;
-using CloudFabric.EAV.Models.ViewModels.EAV;
 using CloudFabric.EAV.Service;
 using CloudFabric.EAV.Tests.Factories;
 using CloudFabric.EventSourcing.Domain;
@@ -27,16 +26,12 @@ using CloudFabric.Projections.Queries;
 
 using FluentAssertions;
 
-using IdentityModel;
-
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 // ReSharper disable AsyncConverter.ConfigureAwaitHighlighting
 
 namespace CloudFabric.EAV.Tests;
-
-
 
 [TestClass]
 public class Tests
@@ -129,9 +124,9 @@ public class Tests
         }
     }
 
-    
+
     [TestMethod]
-    public async Task CreateInstance_Success()  
+    public async Task CreateInstance_Success()
     {
         var configurationCreateRequest = EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
 
@@ -214,7 +209,7 @@ public class Tests
         createdConfiguration.MachineName.Should().Be(configurationCreateRequest.MachineName);
         createdConfiguration.Attributes.Count.Should().Be(configurationCreateRequest.Attributes.Count);
     }
-    
+
     [TestMethod]
     public async Task CreateEntityConfiguration_ValidationError()
     {
@@ -420,7 +415,7 @@ public class Tests
         errors.As<ValidationErrorResponse>().Errors[numberAttribute.MachineName].Should().Contain("Name cannot be empty");
 
     }
-    
+
     [TestMethod]
     public async Task DeleteAttribute_Success()
     {
@@ -477,11 +472,11 @@ public class Tests
     //      var cultureId = CultureInfo.GetCultureInfo("EN-us").LCID;
     //      const string newName = "newName";
     //      var configRequest = EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
-    //      
+    //
     //      var createdConfig = await _eavService.CreateEntityConfiguration(configRequest, CancellationToken.None);
     //
     //      var allAttributes = await _eavService.ListAttributes(100);
-    //      
+    //
     //      var nameAttrIndex = configRequest.Attributes.FindIndex(a => a.MachineName == "name");
     //      configRequest.Attributes[nameAttrIndex] = new LocalizedTextAttributeConfigurationCreateUpdateRequest()
     //      {
@@ -606,18 +601,19 @@ public class Tests
             Id = createdConfig.Id,
             Name = configRequest.Name
         };
-        var updatedConfig = await _eavService.UpdateEntityConfiguration(updateRequest, CancellationToken.None);
+
+        _ = await _eavService.UpdateEntityConfiguration(updateRequest, CancellationToken.None);
         //var newAttrIndex = updatedConfig.Attributes.FindIndex(a => a.MachineName == newAttributeMachineName);
         //newAttrIndex.Should().BePositive();
         //var newAttribute = updatedConfig.Attributes[newAttrIndex];
         //newAttribute.Should().NotBeNull();
         //newAttribute.Should().BeEquivalentTo(newAttributeRequest, opt => opt.ComparingRecordsByValue());
     }
-    
+
     [TestMethod]
     public async Task UpdateEntityConfiguration_AddedNewAttribute_ValidationError()
     {
-        var cultureId = CultureInfo.GetCultureInfo("EN-us").LCID;
+        _ = CultureInfo.GetCultureInfo("EN-us").LCID;
 
         var configRequest = EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
         (EntityConfigurationViewModel? createdConfig, _) = await _eavService.CreateEntityConfiguration(configRequest, CancellationToken.None);
@@ -640,7 +636,8 @@ public class Tests
             Id = createdConfig.Id,
             Name = configRequest.Name
         };
-        var (updatedConfig, errors) = await _eavService.UpdateEntityConfiguration(updateRequest, CancellationToken.None);
+
+        var (_, errors) = await _eavService.UpdateEntityConfiguration(updateRequest, CancellationToken.None);
         errors.Should().NotBeNull();
         errors.As<ValidationErrorResponse>().Errors.Should().ContainKey(newAttributeMachineName);
         errors.As<ValidationErrorResponse>().Errors[newAttributeMachineName].Should().Contain("Name cannot be empty");
@@ -798,7 +795,7 @@ public class Tests
         errors.As<ValidationErrorResponse>().Errors.Should().ContainKey(request.MachineName);
         errors.As<ValidationErrorResponse>().Errors[request.MachineName].Should().Contain("Name cannot be empty");
     }
-    
+
     [TestMethod]
     public async Task CreateFileAttribute_Success()
     {
@@ -1224,8 +1221,9 @@ public class Tests
 
         var (valueFromListAttribute, _) = await _eavService.CreateAttribute(valueFromListAttributeCreateRequest, CancellationToken.None);
 
+
         // create request with changed properties and update attribute
-        string affectedMachineName = Guid.NewGuid().ToString();
+        _ = Guid.NewGuid().ToString();
         valueFromListAttributeCreateRequest.ValuesList = new()
         {
             new ValueFromListOptionCreateUpdateRequest("Card with wishes from shop", "changedAttribute")
@@ -2063,7 +2061,8 @@ public class Tests
             MinimumValue = 1
         };
 
-        var (priceAttributeCreated,  errors) = await _eavService.CreateAttribute(priceAttribute, CancellationToken.None);
+
+        var (priceAttributeCreated, _) = await _eavService.CreateAttribute(priceAttribute, CancellationToken.None);
 
         var entityConfigurationCreateRequest = new EntityConfigurationCreateRequest()
         {
@@ -2099,7 +2098,7 @@ public class Tests
             }
         };
 
-        var entityConfigurationCreated = await _eavService.CreateEntityConfiguration(
+        _ = await _eavService.CreateEntityConfiguration(
             entityConfigurationCreateRequest,
             CancellationToken.None
         );
@@ -2211,11 +2210,11 @@ public class Tests
         deserializedInstance.Attributes[0].ConfigurationAttributeMachineName.Should().Be("test-number");
         deserializedInstance.Attributes[0].ValueType.Should().Be(EavAttributeType.Number);
         deserializedInstance.Attributes[0].As<NumberAttributeInstanceCreateUpdateRequest>().Value.Should().Be(5);
-        
+
         deserializedInstance.Attributes[1].ConfigurationAttributeMachineName.Should().Be("test-text");
         deserializedInstance.Attributes[1].ValueType.Should().Be(EavAttributeType.Text);
         deserializedInstance.Attributes[1].As<TextAttributeInstanceCreateUpdateRequest>().Value.Should().Be("Json deserialization test");
-        
+
         deserializedInstance.Attributes[2].ConfigurationAttributeMachineName.Should().Be("test-date");
         deserializedInstance.Attributes[2].ValueType.Should().Be(EavAttributeType.DateRange);
         deserializedInstance.Attributes[2].As<DateRangeAttributeInstanceCreateUpdateRequest>().Value.From.Should().Be(DateTime.Parse("2023-01-24"));
@@ -2266,7 +2265,8 @@ public class Tests
             Attributes = new List<EntityAttributeConfigurationCreateUpdateRequest> { priceAttribute }
         };
 
-        (EntityConfigurationViewModel? createdConfig, ProblemDetails? error) = await _eavService.CreateEntityConfiguration(entityConfigurationCreateRequest, CancellationToken.None);
+
+        (EntityConfigurationViewModel? createdConfig, _) = await _eavService.CreateEntityConfiguration(entityConfigurationCreateRequest, CancellationToken.None);
         createdConfig.Should().NotBeNull();
 
         AttributeConfigurationViewModel attribute = await _eavService.GetAttribute(
@@ -2328,12 +2328,13 @@ public class Tests
             Attributes = new List<EntityAttributeConfigurationCreateUpdateRequest> { priceAttribute }
         };
 
-        (EntityConfigurationViewModel? createdConfig, ProblemDetails? error) = await _eavService.CreateEntityConfiguration(entityConfigurationCreateRequest, CancellationToken.None);
+
+        (EntityConfigurationViewModel? createdConfig, _) = await _eavService.CreateEntityConfiguration(entityConfigurationCreateRequest, CancellationToken.None);
         createdConfig.Should().NotBeNull();
 
         // update attribute metadata
         priceAttribute.Metadata = "updated metadata";
-        (AttributeConfigurationViewModel? updatedAttribute, error) = await _eavService.UpdateAttribute(
+        (AttributeConfigurationViewModel? updatedAttribute, _) = await _eavService.UpdateAttribute(
             createdConfig.Attributes[0].AttributeConfigurationId,
             priceAttribute,
             CancellationToken.None
@@ -2352,11 +2353,6 @@ public class Tests
         // check projections
         var attributesList = await _eavService.ListAttributes(new ProjectionQuery());
         attributesList.Records.First().Document!.Metadata.Should().Be(priceAttribute.Metadata);
-    }
-
-    private IProjectionRepository GetProjectionRepository(ProjectionDocumentSchema schema)
-    {
-        return new InMemoryProjectionRepository(schema);
     }
 
     private IProjectionRepository<ProjectionRebuildState> GetProjectionRebuildStateRepository()

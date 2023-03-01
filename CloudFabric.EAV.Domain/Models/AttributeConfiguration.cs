@@ -49,7 +49,7 @@ namespace CloudFabric.EAV.Domain.Models
             }
             return errors;
         }
-        
+
         public virtual List<string> ValidateInstance(AttributeInstance? instance)
         {
             if (IsRequired && instance == null)

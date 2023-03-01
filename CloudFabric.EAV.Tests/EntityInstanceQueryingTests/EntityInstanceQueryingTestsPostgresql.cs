@@ -1,21 +1,18 @@
 using CloudFabric.EventSourcing.EventStore;
 using CloudFabric.EventSourcing.EventStore.Postgresql;
 using CloudFabric.Projections;
-using CloudFabric.Projections.ElasticSearch;
+using CloudFabric.Projections.Postgresql;
 
-using Microsoft.Extensions.Logging;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-namespace CloudFabric.EAV.Tests;
+namespace CloudFabric.EAV.Tests.EntityInstanceQueryingTests;
 
 [TestClass]
-public class EntityInstanceQueryingTestsPostgresqlWithElasticSearch : EntityInstanceQueryingTests
+public class EntityInstanceQueryingTestsPostgresql : EntityInstanceQueryingTests
 {
     private readonly ProjectionRepositoryFactory _projectionRepositoryFactory;
 
-    protected override TimeSpan ProjectionsUpdateDelay { get; set; } = TimeSpan.FromMilliseconds(1000);
-
-    public EntityInstanceQueryingTestsPostgresqlWithElasticSearch()
+    public EntityInstanceQueryingTestsPostgresql()
     {
         var connectionString = "Host=localhost;"
                                + "Username=cloudfabric_eventsourcing_test;"
@@ -27,14 +24,7 @@ public class EntityInstanceQueryingTestsPostgresqlWithElasticSearch : EntityInst
             connectionString,
             "eav_tests_event_store"
         );
-
-        _projectionRepositoryFactory = new ElasticSearchProjectionRepositoryFactory(
-            "http://127.0.0.1:9200",
-            "",
-            "",
-            "",
-            new LoggerFactory()
-        );
+        _projectionRepositoryFactory = new PostgresqlProjectionRepositoryFactory(connectionString);
     }
 
     protected override IEventStore GetEventStore()
@@ -51,5 +41,4 @@ public class EntityInstanceQueryingTestsPostgresqlWithElasticSearch : EntityInst
     {
         return _projectionRepositoryFactory;
     }
-    
 }

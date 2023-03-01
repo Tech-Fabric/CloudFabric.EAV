@@ -1,5 +1,3 @@
-using System;
-
 namespace CloudFabric.EAV.Domain.Models;
 
 /// <summary>

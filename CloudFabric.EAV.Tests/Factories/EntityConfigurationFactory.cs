@@ -11,7 +11,9 @@ namespace CloudFabric.EAV.Tests.Factories;
 public static class EntityConfigurationFactory
 {
 
-    public static EntityConfigurationCreateRequest CreateBoardGameCategoryConfigurationCreateRequest(int attributeIndexFrom = 0, int attributeIndexTo = 1)
+    public static EntityConfigurationCreateRequest CreateBoardGameCategoryConfigurationCreateRequest(
+        int attributeIndexFrom = 0, int attributeIndexTo = 1
+    )
     {
         var tenantId = Guid.NewGuid();
         var attributes = new List<EntityAttributeConfigurationCreateUpdateRequest>();
@@ -117,7 +119,7 @@ public static class EntityConfigurationFactory
                     },
                     TenantId = tenantId
                 },
-                
+
                 new TextAttributeConfigurationCreateUpdateRequest()
                 {
                     MachineName = "brand",

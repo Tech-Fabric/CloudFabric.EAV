@@ -44,7 +44,7 @@ public static class ProjectionDocumentSchemaFactory
                 IsFacetable = false
             }
         );
-        
+
         schema.Properties.Add(
             ProjectionAttributesSchemaFactory.GetCategoryPathsAttributeSchema()
         );

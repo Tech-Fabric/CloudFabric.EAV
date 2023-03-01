@@ -6,10 +6,10 @@ using CloudFabric.Projections.ElasticSearch;
 using Microsoft.Extensions.Logging;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-namespace CloudFabric.EAV.Tests
+namespace CloudFabric.EAV.Tests.CategoryTests
 {
     [TestClass]
-    public class CategoryTestsPostgresqlWithElasticSearch: CategoryTests
+    public class CategoryTestsPostgresqlWithElasticSearch : CategoryTests
     {
         private readonly ProjectionRepositoryFactory _projectionRepositoryFactory;
 

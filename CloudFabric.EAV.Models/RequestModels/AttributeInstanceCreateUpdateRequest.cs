@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 using CloudFabric.EAV.Domain.Enums;
 using CloudFabric.EAV.Models.JsonConverters;
 
-namespace CloudFabric.EAV.Models.RequestModels.Attributes
+namespace CloudFabric.EAV.Models.RequestModels
 {
     [JsonConverter(typeof(AttributeInstanceRequestJsonConverter<AttributeInstanceCreateUpdateRequest>))]
     public abstract class AttributeInstanceCreateUpdateRequest

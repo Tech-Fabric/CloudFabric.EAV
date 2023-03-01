@@ -1,7 +1,4 @@
-﻿using System.Collections.Generic;
-using CloudFabric.EventSourcing.EventStore;
-
-namespace CloudFabric.EAV.Domain.Models.Attributes
+﻿namespace CloudFabric.EAV.Domain.Models.Attributes
 {
     public class ImageAttributeInstance : AttributeInstance
     {
@@ -10,7 +7,5 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
         {
             return Value;
         }
-        
-        
     }
 }

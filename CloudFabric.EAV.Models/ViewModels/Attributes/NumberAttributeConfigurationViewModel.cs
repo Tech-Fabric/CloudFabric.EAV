@@ -1,7 +1,6 @@
 using CloudFabric.EAV.Domain.Enums;
-using CloudFabric.EAV.Models.ViewModels.Attributes;
 
-namespace CloudFabric.EAV.Models.RequestModels.Attributes
+namespace CloudFabric.EAV.Models.ViewModels.Attributes
 {
     public class NumberAttributeConfigurationViewModel : AttributeConfigurationViewModel
     {

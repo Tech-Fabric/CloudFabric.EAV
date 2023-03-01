@@ -1,5 +1,3 @@
-using System;
-
 namespace CloudFabric.EAV.Domain.Models.Attributes
 {
     public class EntityReferenceAttributeInstance : AttributeInstance

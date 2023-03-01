@@ -1,10 +1,8 @@
-﻿using System.Security.AccessControl;
+﻿using AutoMapper;
 
-using AutoMapper;
 using CloudFabric.EAV.Domain.Models;
 using CloudFabric.EAV.Models.RequestModels;
 using CloudFabric.EAV.Models.ViewModels;
-using CloudFabric.EAV.Models.ViewModels.EAV;
 
 namespace CloudFabric.EAV.Service.MappingProfiles;
 
@@ -18,10 +16,10 @@ public class EntityInstanceProfile : Profile
         CreateMap<EntityInstance, EntityInstanceViewModel>();
         CreateMap<EntityInstanceViewModel, EntityInstance>();
         CreateMap<EntityInstanceViewModel, EntityTreeInstanceViewModel>().ForMember(o => o.Children, opt => opt.MapFrom(_ => new List<EntityTreeInstanceViewModel>()));
-        
+
         CreateMap<CategoryTreeCreateRequest, CategoryTree>();
         CreateMap<CategoryTree, HierarchyViewModel>();
-        
+
         CreateMap<CategoryInstanceCreateRequest, Category>();
         CreateMap<Category, CategoryViewModel>();
 

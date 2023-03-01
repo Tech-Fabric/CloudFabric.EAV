@@ -1,4 +1,4 @@
-﻿using CloudFabric.EAV.Domain.Enums;
+using CloudFabric.EAV.Domain.Enums;
 using CloudFabric.EAV.Domain.Models.Base;
 
 namespace CloudFabric.EAV.Domain.Models.Attributes
@@ -10,12 +10,12 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
         public List<string> AllowedTags { get; set; }
 
         public override EavAttributeType ValueType { get; } = EavAttributeType.HtmlText;
-        
+
         public HtmlTextAttributeConfiguration(
-            Guid id, 
-            string machineName, 
+            Guid id,
+            string machineName,
             List<LocalizedString> name,
-            List<LocalizedString> description = null, 
+            List<LocalizedString> description = null,
             bool isRequired = false,
             Guid? tenantId = null,
             string? metadata = null

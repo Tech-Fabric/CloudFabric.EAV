@@ -2,8 +2,10 @@
 
 namespace CloudFabric.EAV.Domain.Events.Configuration.Attributes
 {
-    public record SerialAttributeConfigurationCreated :Event
+    public record SerialAttributeConfigurationCreated : Event
     {
+        // ReSharper disable once UnusedMember.Global
+        // This constructor is required for Event Store to properly deserialize from json
         public SerialAttributeConfigurationCreated()
         {
 

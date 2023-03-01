@@ -1,7 +1,4 @@
-﻿using System;
-using CloudFabric.EAV.Models.ViewModels.Attributes;
-
-namespace CloudFabric.EAV.Models.RequestModels.Attributes
+﻿namespace CloudFabric.EAV.Models.ViewModels.Attributes
 {
     public class EntityReferenceAttributeInstanceViewModel : AttributeInstanceViewModel
     {

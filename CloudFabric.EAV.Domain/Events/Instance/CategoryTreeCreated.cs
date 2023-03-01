@@ -4,7 +4,8 @@ namespace CloudFabric.EAV.Domain.Events.Instance
 {
     public record CategoryTreeCreated : Event
     {
-
+        // ReSharper disable once UnusedMember.Global
+        // This constructor is required for Event Store to properly deserialize from json
         public CategoryTreeCreated()
         {
         }

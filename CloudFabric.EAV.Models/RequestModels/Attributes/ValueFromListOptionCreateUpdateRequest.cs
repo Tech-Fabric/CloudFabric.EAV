@@ -2,7 +2,6 @@ namespace CloudFabric.EAV.Models.RequestModels.Attributes
 {
     public class ValueFromListOptionCreateUpdateRequest
     {
-
         public ValueFromListOptionCreateUpdateRequest(string name, string? machineName)
         {
             MachineName = machineName;

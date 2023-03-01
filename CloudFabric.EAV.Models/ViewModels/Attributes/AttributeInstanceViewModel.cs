@@ -1,4 +1,5 @@
-﻿using System.Text.Json.Serialization;
+using System.Text.Json.Serialization;
+
 using CloudFabric.EAV.Models.JsonConverters;
 
 namespace CloudFabric.EAV.Models.ViewModels.Attributes

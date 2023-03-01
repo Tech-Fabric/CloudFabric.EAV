@@ -4,10 +4,6 @@ namespace CloudFabric.EAV.Domain.Events.Configuration.Attributes
 {
     public record BooleanAttributeConfigurationUpdated : Event
     {
-        public BooleanAttributeConfigurationUpdated()
-        {
-        }
-
         public BooleanAttributeConfigurationUpdated(Guid id, string trueDisplayValue, string falseDisplayValue)
         {
             AggregateId = id;

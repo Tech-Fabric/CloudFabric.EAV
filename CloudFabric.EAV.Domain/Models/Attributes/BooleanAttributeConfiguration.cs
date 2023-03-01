@@ -37,21 +37,21 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
                 errors.Add("Cannot validate attribute. Expected attribute type: Boolean");
                 return errors;
             }
-            
+
             return errors;
         }
 
         public BooleanAttributeConfiguration(IEnumerable<IEvent> events) : base(events)
         {
         }
-        
+
         public BooleanAttributeConfiguration(
-            Guid id, 
-            string machineName, 
+            Guid id,
+            string machineName,
             List<LocalizedString> name,
             string trueDisplayValue,
             string falseDisplayValue,
-            List<LocalizedString> description = null, 
+            List<LocalizedString> description = null,
             bool isRequired = false,
             Guid? tenantId = null,
             string? metadata = null

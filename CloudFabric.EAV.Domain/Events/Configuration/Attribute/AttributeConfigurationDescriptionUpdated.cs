@@ -4,10 +4,6 @@ namespace CloudFabric.EAV.Domain.Events.Configuration.Attribute;
 
 public record AttributeConfigurationDescriptionUpdated : Event
 {
-    public AttributeConfigurationDescriptionUpdated()
-    {
-    }
-
     public AttributeConfigurationDescriptionUpdated(Guid id, string newDescription, int cultureInfoId)
     {
         AggregateId = id;

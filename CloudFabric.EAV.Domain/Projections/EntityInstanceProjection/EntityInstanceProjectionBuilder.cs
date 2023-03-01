@@ -1,3 +1,4 @@
+using CloudFabric.EAV.Domain.Events.Instance.Attribute;
 using CloudFabric.EAV.Domain.Events.Instance.Entity;
 using CloudFabric.EAV.Domain.Models;
 using CloudFabric.EventSourcing.Domain;
@@ -11,7 +12,7 @@ public class EntityInstanceProjectionBuilder : ProjectionBuilder,
     IHandleEvent<AttributeInstanceUpdated>,
     // IHandleEvent<AttributeInstanceRemoved>,
     IHandleEvent<EntityCategoryPathChanged>,
-IHandleEvent<AggregateUpdatedEvent<EntityInstance>>
+    IHandleEvent<AggregateUpdatedEvent<EntityInstance>>
 {
     private readonly AggregateRepositoryFactory _aggregateRepositoryFactory;
 
@@ -155,23 +156,22 @@ IHandleEvent<AggregateUpdatedEvent<EntityInstance>>
             @event.Timestamp,
             (document) =>
             {
-
-                    document.TryGetValue("CategoryPaths", out var categoryPathsObj);
-                    List<CategoryPath> categoryPaths = categoryPathsObj as List<CategoryPath> ?? new List<CategoryPath>();
-                    var categoryPath = categoryPaths.FirstOrDefault(x => x.TreeId == @event.CategoryTreeId);
-                    if (categoryPath == null)
+                document.TryGetValue("CategoryPaths", out var categoryPathsObj);
+                List<CategoryPath> categoryPaths = categoryPathsObj as List<CategoryPath> ?? new List<CategoryPath>();
+                var categoryPath = categoryPaths.FirstOrDefault(x => x.TreeId == @event.CategoryTreeId);
+                if (categoryPath == null)
+                {
+                    categoryPaths.Add(new CategoryPath()
                     {
-                        categoryPaths.Add(new CategoryPath()
-                        {
-                            Path = @event.CategoryPath,
-                            TreeId = @event.CategoryTreeId
-                        });
-                    }
-                    else
-                    {
-                        categoryPath.Path = @event.CategoryPath;
-                    }
-                    document["CategoryPaths"] = categoryPaths;
+                        Path = @event.CategoryPath,
+                        TreeId = @event.CategoryTreeId
+                    });
+                }
+                else
+                {
+                    categoryPath.Path = @event.CategoryPath;
+                }
+                document["CategoryPaths"] = categoryPaths;
             }
         ).ConfigureAwait(false);
     }

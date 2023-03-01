@@ -1,4 +1,4 @@
-﻿using CloudFabric.EAV.Domain.Enums;
+using CloudFabric.EAV.Domain.Enums;
 using CloudFabric.EAV.Domain.Events.Configuration.Attributes;
 using CloudFabric.EAV.Domain.Models.Base;
 using CloudFabric.EventSourcing.EventStore;
@@ -10,24 +10,24 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
         public string DefaultValue { get; set; }
 
         public bool IsSearchable { get; set; }
-        
+
         public int? MaxLength { get; set; }
-        
+
         public override EavAttributeType ValueType { get; } = EavAttributeType.Text;
-        
+
         public TextAttributeConfiguration(IEnumerable<IEvent> events) : base(events)
         {
-            
+
         }
-        
+
         public TextAttributeConfiguration(
-            Guid id, 
-            string machineName, 
+            Guid id,
+            string machineName,
             List<LocalizedString> name,
             string defaultValue,
             int? maxLength,
             bool isSearchable,
-            List<LocalizedString> description = null, 
+            List<LocalizedString> description = null,
             bool isRequired = false,
             Guid? tenantId = null,
             string? metadata = null
@@ -71,7 +71,7 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
             {
                 errors.Add($"Text length can't be greater than {MaxLength}");
             }
-            
+
             return errors;
         }
 
@@ -94,7 +94,7 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
                 Apply(new TextAttributeConfigurationUpdated(Id, updated.DefaultValue, updated.MaxLength, updated.IsSearchable));
             }
         }
-        
+
         public override bool Equals(object obj)
         {
             return this.Equals(obj as TextAttributeConfiguration);
@@ -113,7 +113,7 @@ namespace CloudFabric.EAV.Domain.Models.Attributes
         {
             return HashCode.Combine(DefaultValue, MaxLength, IsSearchable, (int)ValueType);
         }
-        
+
         #region EventHandlers
 
         public void On(TextAttributeConfigurationUpdated @event)

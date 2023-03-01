@@ -1,4 +1,4 @@
-﻿namespace CloudFabric.EAV.Domain.Models.Attributes
+namespace CloudFabric.EAV.Domain.Models.Attributes
 {
     public class SerialAttributeInstance : AttributeInstance
     {

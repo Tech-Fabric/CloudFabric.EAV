@@ -27,9 +27,11 @@ namespace CloudFabric.EAV.Models.JsonConverters
                 var newOptions = new JsonSerializerOptions(options);
                 newOptions.Converters.Add(new PolymorphicJsonConverter<T>());
                 var newJson = obj.ToString();
-                return (T)JsonSerializer.Deserialize(newJson, typeToConvert, newOptions)! ?? throw new InvalidOperationException();
+                return (T)JsonSerializer.Deserialize(newJson, typeToConvert, newOptions)!
+                       ?? throw new InvalidOperationException();
             }
-            var attributeTypeName = Enum.Parse<EavAttributeType>(obj["valueType"]?.ToString() ?? throw new InvalidOperationException());
+            var attributeTypeName = Enum.Parse<EavAttributeType>(obj["valueType"]?.ToString()
+                                                                 ?? throw new InvalidOperationException());
             Type type = GetRequestTypeFromAttributeType(attributeTypeName);
 
             var attributeRequestModel = JsonSerializer.Deserialize(obj.ToString(), type, options);

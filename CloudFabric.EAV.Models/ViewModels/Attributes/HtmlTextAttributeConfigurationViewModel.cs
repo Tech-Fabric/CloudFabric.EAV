@@ -1,7 +1,4 @@
-﻿using System.Collections.Generic;
-using CloudFabric.EAV.Models.ViewModels.Attributes;
-
-namespace CloudFabric.EAV.Models.RequestModels.Attributes
+﻿namespace CloudFabric.EAV.Models.ViewModels.Attributes
 {
     public class HtmlTextAttributeConfigurationViewModel : AttributeConfigurationViewModel
     {

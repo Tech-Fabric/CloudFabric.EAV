@@ -1,4 +1,3 @@
-﻿using System.Collections.Generic;
 using CloudFabric.EAV.Domain.Enums;
 
 namespace CloudFabric.EAV.Models.RequestModels.Attributes

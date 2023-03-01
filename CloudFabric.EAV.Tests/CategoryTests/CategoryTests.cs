@@ -1,32 +1,18 @@
-using System.Reflection;
-
-using AutoMapper;
-
-using CloudFabric.EAV.Domain.Models;
-using CloudFabric.EAV.Domain.Projections.AttributeConfigurationProjection;
-using CloudFabric.EAV.Domain.Projections.EntityInstanceProjection;
 using CloudFabric.EAV.Models.RequestModels;
 using CloudFabric.EAV.Models.ViewModels;
-using CloudFabric.EAV.Models.ViewModels.EAV;
-using CloudFabric.EAV.Service;
 using CloudFabric.EAV.Tests.Factories;
-using CloudFabric.EventSourcing.Domain;
-using CloudFabric.EventSourcing.EventStore;
-using CloudFabric.EventSourcing.EventStore.Persistence;
-using CloudFabric.Projections;
 using CloudFabric.Projections.Queries;
 
 using FluentAssertions;
 
-using Microsoft.Extensions.Logging;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 // ReSharper disable AsyncConverter.AsyncMethodNamingHighlighting
 // ReSharper disable AsyncConverter.ConfigureAwaitHighlighting
 
-namespace CloudFabric.EAV.Tests
+namespace CloudFabric.EAV.Tests.CategoryTests
 {
-    public abstract class CategoryTests: BaseQueryTests
+    public abstract class CategoryTests : BaseQueryTests.BaseQueryTests
     {
         private async Task<(HierarchyViewModel tree,
             CategoryViewModel laptopsCategory,
@@ -54,7 +40,8 @@ namespace CloudFabric.EAV.Tests
             var categoryInstanceRequest =
                 EntityInstanceFactory.CreateCategoryInstanceRequest(categoryConfiguration.Id, createdTree.Id, null, categoryConfigurationCreateRequest.TenantId, 0, 9);
 
-            var (laptopsCategory, validationErrors) =
+
+            var (laptopsCategory, _) =
                 await _eavService.CreateCategoryInstanceAsync(categoryInstanceRequest);
 
             categoryInstanceRequest.ParentId = laptopsCategory.Id;
@@ -74,7 +61,7 @@ namespace CloudFabric.EAV.Tests
                 await _eavService.CreateCategoryInstanceAsync(categoryInstanceRequest);
 
             await Task.Delay(ProjectionsUpdateDelay);
-            
+
             return (createdTree, laptopsCategory, gamingLaptopsCategory, officeLaptopsCategory, asusGamingLaptopsCategory, rogAsusGamingLaptopsCategory);
         }
 
@@ -112,7 +99,7 @@ namespace CloudFabric.EAV.Tests
         [TestMethod]
         public async Task GetSubcategories_Success()
         {
-            var (createdTree, laptopsCategory, gamingLaptopsCategory, officeLaptopsCategory, asusGamingLaptopsCategory, rogAsusGamingLaptopsCategory) = await BuildTestTreeAsync();
+            var (createdTree, laptopsCategory, gamingLaptopsCategory, _, _, _) = await BuildTestTreeAsync();
             await Task.Delay(ProjectionsUpdateDelay);
 
             var categoryPathValue = $"/{laptopsCategory.Id}/{gamingLaptopsCategory.Id}";
@@ -132,7 +119,7 @@ namespace CloudFabric.EAV.Tests
         [TestMethod]
         public async Task MoveAndGetItemsFromCategory_Success()
         {
-            var (createdTree, laptopsCategory, gamingLaptopsCategory, officeLaptops, asusGamingLaptops, rogAsusGamingLaptops) = await BuildTestTreeAsync();
+            var (createdTree, laptopsCategory, gamingLaptopsCategory, _, asusGamingLaptops, rogAsusGamingLaptops) = await BuildTestTreeAsync();
 
             var itemEntityConfig = EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
             var (itemEntityConfiguration, _) = await _eavService.CreateEntityConfiguration(
@@ -141,7 +128,8 @@ namespace CloudFabric.EAV.Tests
             );
 
             var itemInstanceRequest = EntityInstanceFactory.CreateValidBoardGameEntityInstanceCreateRequest(itemEntityConfiguration.Id);
-            var (createdItemInstance1, _) = await _eavService.CreateEntityInstance(itemInstanceRequest);
+
+            var (_, _) = await _eavService.CreateEntityInstance(itemInstanceRequest);
 
             var (createdItemInstance2, _) = await _eavService.CreateEntityInstance(itemInstanceRequest);
             (createdItemInstance2, _) = await _eavService.UpdateCategoryPathAsync(createdItemInstance2.Id, createdItemInstance2.PartitionKey, createdTree.Id, asusGamingLaptops.Id, CancellationToken.None);

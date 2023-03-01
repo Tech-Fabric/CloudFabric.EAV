@@ -1,4 +1,4 @@
-﻿using CloudFabric.Projections.Attributes;
+using CloudFabric.Projections.Attributes;
 
 namespace CloudFabric.EAV.Domain.Projections.AttributeConfigurationProjection;
 

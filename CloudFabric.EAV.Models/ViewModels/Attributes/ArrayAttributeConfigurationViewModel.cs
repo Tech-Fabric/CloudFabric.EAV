@@ -1,4 +1,4 @@
-﻿using CloudFabric.EAV.Domain.Enums;
+using CloudFabric.EAV.Domain.Enums;
 
 namespace CloudFabric.EAV.Models.ViewModels.Attributes
 {

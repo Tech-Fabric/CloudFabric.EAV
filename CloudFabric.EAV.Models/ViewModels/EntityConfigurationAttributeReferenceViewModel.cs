@@ -5,5 +5,5 @@ namespace CloudFabric.EAV.Models.ViewModels;
 /// </summary>
 public class EntityConfigurationAttributeReferenceViewModel
 {
-    public Guid AttributeConfigurationId { get; set; }       
+    public Guid AttributeConfigurationId { get; set; }
 }

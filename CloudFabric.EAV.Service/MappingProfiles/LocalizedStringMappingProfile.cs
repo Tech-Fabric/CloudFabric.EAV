@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+
 using CloudFabric.EAV.Domain.Models.Base;
 using CloudFabric.EAV.Models.RequestModels;
 using CloudFabric.EAV.Models.ViewModels;
@@ -18,6 +19,5 @@ public class LocalizedStringMappingProfile : Profile
 
         CreateMap<LocalizedStringViewModel, LocalizedStringCreateRequest>();
         CreateMap<LocalizedStringViewModel, LocalizedString>();
-
     }
 }

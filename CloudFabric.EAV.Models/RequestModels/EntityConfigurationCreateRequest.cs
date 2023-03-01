@@ -1,12 +1,9 @@
-using System.Collections.Generic;
-using CloudFabric.EAV.Models.RequestModels.Attributes;
-
 namespace CloudFabric.EAV.Models.RequestModels
 {
     public class EntityConfigurationCreateRequest
     {
         public List<LocalizedStringCreateRequest> Name { get; set; }
-        
+
         public string MachineName { get; set; }
 
         public List<EntityAttributeConfigurationCreateUpdateRequest> Attributes { get; set; }
