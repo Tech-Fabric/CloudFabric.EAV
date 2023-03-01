@@ -23,92 +23,6 @@ public class EntityInstanceProjectionBuilder : ProjectionBuilder,
     {
         _aggregateRepositoryFactory = aggregateRepositoryFactory;
     }
-
-    private async Task<ProjectionDocumentSchema> BuildProjectionDocumentSchemaForEntityConfigurationIdAsync(
-        Guid entityConfigurationId
-    )
-    {
-        var entityConfiguration = await _aggregateRepositoryFactory
-            .GetAggregateRepository<EntityConfiguration>()
-            .LoadAsyncOrThrowNotFound(entityConfigurationId, entityConfigurationId.ToString())
-            .ConfigureAwait(false);
-
-        List<AttributeConfiguration> attributes = new List<AttributeConfiguration>();
-
-        foreach (var attributeReference in entityConfiguration.Attributes)
-        {
-            var attribute = await _aggregateRepositoryFactory
-                .GetAggregateRepository<AttributeConfiguration>()
-                .LoadAsyncOrThrowNotFound(attributeReference.AttributeConfigurationId,
-                    attributeReference.AttributeConfigurationId.ToString()
-                )
-                .ConfigureAwait(false);
-            attributes.Add(attribute);
-        }
-
-        return ProjectionDocumentSchemaFactory.FromEntityConfiguration(entityConfiguration, attributes);
-    }
-
-    public async Task On(EntityInstanceCreated @event)
-    {
-        var projectionDocumentSchema = await BuildProjectionDocumentSchemaForEntityConfigurationIdAsync(
-            @event.EntityConfigurationId
-        ).ConfigureAwait(false);
-
-        var document = new Dictionary<string, object?>()
-        {
-            { "Id", @event.AggregateId },
-            { "EntityConfigurationId", @event.EntityConfigurationId },
-            { "TenantId", @event.TenantId },
-            { "CategoryPaths", new List<CategoryPath>()}
-        };
-
-        foreach (var attribute in @event.Attributes)
-        {
-            document.Add(attribute.ConfigurationAttributeMachineName, attribute.GetValue());
-        }
-
-        await UpsertDocument(
-            projectionDocumentSchema,
-            document,
-            @event.PartitionKey,
-            @event.Timestamp
-        );
-    }
-    //
-    // public async Task On(AttributeInstanceAdded @event)
-    // {
-    //     await UpdateDocument(@event.EntityInstanceId,
-    //         @event.PartitionKey,
-    //         (document) =>
-    //         {
-    //             var attributes =
-    //                 document[nameof(EntityInstanceProjectionDocument.Attributes)] as List<AttributeInstance>;
-    //             attributes ??= new();
-    //
-    //             attributes.Add(@event.AttributeInstance);
-    //         }
-    //     );
-    // }
-    //
-    public async Task On(AttributeInstanceUpdated @event)
-    {
-        var projectionDocumentSchema = await BuildProjectionDocumentSchemaForEntityConfigurationIdAsync(
-            @event.EntityConfigurationId
-        ).ConfigureAwait(false);
-
-        await UpdateDocument(
-            projectionDocumentSchema,
-            @event.AggregateId,
-            @event.PartitionKey,
-            @event.Timestamp,
-            (document) =>
-            {
-                document[@event.AttributeInstance.ConfigurationAttributeMachineName] =
-                    @event.AttributeInstance.GetValue();
-            }
-        ).ConfigureAwait(false);
-    }
     //
     // public async Task On(AttributeInstanceRemoved @event)
     // {
@@ -132,47 +46,136 @@ public class EntityInstanceProjectionBuilder : ProjectionBuilder,
 
     public async Task On(AggregateUpdatedEvent<EntityInstance> @event)
     {
-        var entityInstance = await _aggregateRepositoryFactory
+        EntityInstance entityInstance = await _aggregateRepositoryFactory
             .GetAggregateRepository<EntityInstance>()
             .LoadAsyncOrThrowNotFound(@event.AggregateId, @event.PartitionKey);
 
-        var schema = await BuildProjectionDocumentSchemaForEntityConfigurationIdAsync(
+        ProjectionDocumentSchema schema = await BuildProjectionDocumentSchemaForEntityConfigurationIdAsync(
             entityInstance.EntityConfigurationId
         );
 
         await SetDocumentUpdatedAt(schema, @event.AggregateId, @event.PartitionKey, @event.UpdatedAt);
     }
 
-    public async Task On(EntityCategoryPathChanged @event)
+    //
+    // public async Task On(AttributeInstanceAdded @event)
+    // {
+    //     await UpdateDocument(@event.EntityInstanceId,
+    //         @event.PartitionKey,
+    //         (document) =>
+    //         {
+    //             var attributes =
+    //                 document[nameof(EntityInstanceProjectionDocument.Attributes)] as List<AttributeInstance>;
+    //             attributes ??= new();
+    //
+    //             attributes.Add(@event.AttributeInstance);
+    //         }
+    //     );
+    // }
+    //
+    public async Task On(AttributeInstanceUpdated @event)
     {
-        var projectionDocumentSchema = await BuildProjectionDocumentSchemaForEntityConfigurationIdAsync(
-            @event.EntityConfigurationId
-        ).ConfigureAwait(false);
+        ProjectionDocumentSchema projectionDocumentSchema =
+            await BuildProjectionDocumentSchemaForEntityConfigurationIdAsync(
+                @event.EntityConfigurationId
+            ).ConfigureAwait(false);
 
         await UpdateDocument(
             projectionDocumentSchema,
             @event.AggregateId,
             @event.PartitionKey,
             @event.Timestamp,
-            (document) =>
+            document =>
+            {
+                document[@event.AttributeInstance.ConfigurationAttributeMachineName] =
+                    @event.AttributeInstance.GetValue();
+            }
+        ).ConfigureAwait(false);
+    }
+
+    public async Task On(EntityCategoryPathChanged @event)
+    {
+        ProjectionDocumentSchema projectionDocumentSchema =
+            await BuildProjectionDocumentSchemaForEntityConfigurationIdAsync(
+                @event.EntityConfigurationId
+            ).ConfigureAwait(false);
+
+        await UpdateDocument(
+            projectionDocumentSchema,
+            @event.AggregateId,
+            @event.PartitionKey,
+            @event.Timestamp,
+            document =>
             {
                 document.TryGetValue("CategoryPaths", out var categoryPathsObj);
-                List<CategoryPath> categoryPaths = categoryPathsObj as List<CategoryPath> ?? new List<CategoryPath>();
-                var categoryPath = categoryPaths.FirstOrDefault(x => x.TreeId == @event.CategoryTreeId);
+                List<CategoryPath> categoryPaths =
+                    categoryPathsObj as List<CategoryPath> ?? new List<CategoryPath>();
+                CategoryPath? categoryPath = categoryPaths.FirstOrDefault(x => x.TreeId == @event.CategoryTreeId);
                 if (categoryPath == null)
                 {
-                    categoryPaths.Add(new CategoryPath()
-                    {
-                        Path = @event.CategoryPath,
-                        TreeId = @event.CategoryTreeId
-                    });
+                    categoryPaths.Add(new CategoryPath { Path = @event.CategoryPath, TreeId = @event.CategoryTreeId }
+                    );
                 }
                 else
                 {
                     categoryPath.Path = @event.CategoryPath;
                 }
+
                 document["CategoryPaths"] = categoryPaths;
             }
         ).ConfigureAwait(false);
+    }
+
+    public async Task On(EntityInstanceCreated @event)
+    {
+        ProjectionDocumentSchema projectionDocumentSchema =
+            await BuildProjectionDocumentSchemaForEntityConfigurationIdAsync(
+                @event.EntityConfigurationId
+            ).ConfigureAwait(false);
+
+        var document = new Dictionary<string, object?>
+        {
+            { "Id", @event.AggregateId },
+            { "EntityConfigurationId", @event.EntityConfigurationId },
+            { "TenantId", @event.TenantId },
+            { "CategoryPaths", new List<CategoryPath>() }
+        };
+
+        foreach (AttributeInstance attribute in @event.Attributes)
+        {
+            document.Add(attribute.ConfigurationAttributeMachineName, attribute.GetValue());
+        }
+
+        await UpsertDocument(
+            projectionDocumentSchema,
+            document,
+            @event.PartitionKey,
+            @event.Timestamp
+        );
+    }
+
+    private async Task<ProjectionDocumentSchema> BuildProjectionDocumentSchemaForEntityConfigurationIdAsync(
+        Guid entityConfigurationId
+    )
+    {
+        EntityConfiguration entityConfiguration = await _aggregateRepositoryFactory
+            .GetAggregateRepository<EntityConfiguration>()
+            .LoadAsyncOrThrowNotFound(entityConfigurationId, entityConfigurationId.ToString())
+            .ConfigureAwait(false);
+
+        var attributes = new List<AttributeConfiguration>();
+
+        foreach (EntityConfigurationAttributeReference attributeReference in entityConfiguration.Attributes)
+        {
+            AttributeConfiguration attribute = await _aggregateRepositoryFactory
+                .GetAggregateRepository<AttributeConfiguration>()
+                .LoadAsyncOrThrowNotFound(attributeReference.AttributeConfigurationId,
+                    attributeReference.AttributeConfigurationId.ToString()
+                )
+                .ConfigureAwait(false);
+            attributes.Add(attribute);
+        }
+
+        return ProjectionDocumentSchemaFactory.FromEntityConfiguration(entityConfiguration, attributes);
     }
 }

@@ -1,13 +1,12 @@
-namespace CloudFabric.EAV.Models.RequestModels
+namespace CloudFabric.EAV.Models.RequestModels;
+
+public class EntityConfigurationCreateRequest
 {
-    public class EntityConfigurationCreateRequest
-    {
-        public List<LocalizedStringCreateRequest> Name { get; set; }
+    public List<LocalizedStringCreateRequest> Name { get; set; }
 
-        public string MachineName { get; set; }
+    public string MachineName { get; set; }
 
-        public List<EntityAttributeConfigurationCreateUpdateRequest> Attributes { get; set; }
+    public List<EntityAttributeConfigurationCreateUpdateRequest> Attributes { get; set; }
 
-        public Guid? TenantId { get; set; }
-    }
+    public Guid? TenantId { get; set; }
 }

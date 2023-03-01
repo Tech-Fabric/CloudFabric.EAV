@@ -1,9 +1,8 @@
-﻿namespace CloudFabric.EAV.Models.ViewModels.Attributes
-{
-    public class EntityReferenceAttributeConfigurationViewModel : AttributeConfigurationViewModel
-    {
-        public Guid ReferenceEntityConfiguration { get; set; }
+﻿namespace CloudFabric.EAV.Models.ViewModels.Attributes;
 
-        public Guid DefaultValue { get; set; }
-    }
+public class EntityReferenceAttributeConfigurationViewModel : AttributeConfigurationViewModel
+{
+    public Guid ReferenceEntityConfiguration { get; set; }
+
+    public Guid DefaultValue { get; set; }
 }

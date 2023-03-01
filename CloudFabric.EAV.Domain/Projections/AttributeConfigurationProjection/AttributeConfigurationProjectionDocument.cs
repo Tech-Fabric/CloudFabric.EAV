@@ -32,6 +32,5 @@ public class AttributeConfigurationProjectionDocument : ProjectionDocument
     [ProjectionDocumentProperty(IsFilterable = true)]
     public int NumberOfEntityInstancesWithAttribute { get; set; }
 
-    [ProjectionDocumentProperty]
-    public string? Metadata { get; set; }
+    [ProjectionDocumentProperty] public string? Metadata { get; set; }
 }

@@ -1,7 +1,7 @@
 namespace CloudFabric.EAV.Models.ViewModels;
 
 /// <summary>
-/// Links attribute configuration to entity configuration
+///     Links attribute configuration to entity configuration
 /// </summary>
 public class EntityConfigurationAttributeReferenceViewModel
 {

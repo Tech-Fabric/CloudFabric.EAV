@@ -9,7 +9,8 @@ public record EntityConfigurationAttributeAdded : Event
     {
     }
 
-    public EntityConfigurationAttributeAdded(Guid entityConfigurationId, EntityConfigurationAttributeReference attributeReference)
+    public EntityConfigurationAttributeAdded(Guid entityConfigurationId,
+        EntityConfigurationAttributeReference attributeReference)
     {
         AggregateId = entityConfigurationId;
         AttributeReference = attributeReference;

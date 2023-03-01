@@ -1,7 +1,6 @@
-namespace CloudFabric.EAV.Models.RequestModels.Attributes
+﻿namespace CloudFabric.EAV.Models.RequestModels.Attributes;
+
+public class EntityReferenceAttributeInstanceCreateUpdateRequest : AttributeInstanceCreateUpdateRequest
 {
-    public class EntityReferenceAttributeInstanceCreateUpdateRequest : AttributeInstanceCreateUpdateRequest
-    {
-        public Guid Value { get; set; }
-    }
+    public Guid Value { get; set; }
 }

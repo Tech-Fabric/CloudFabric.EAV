@@ -1,9 +1,8 @@
-﻿namespace CloudFabric.EAV.Models.ViewModels.Attributes
-{
-    public class HtmlTextAttributeConfigurationViewModel : AttributeConfigurationViewModel
-    {
-        public string DefaultValue { get; set; }
+﻿namespace CloudFabric.EAV.Models.ViewModels.Attributes;
 
-        public List<string> AllowedTags { get; set; }
-    }
+public class HtmlTextAttributeConfigurationViewModel : AttributeConfigurationViewModel
+{
+    public string DefaultValue { get; set; }
+
+    public List<string> AllowedTags { get; set; }
 }

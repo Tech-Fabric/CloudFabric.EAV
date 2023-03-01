@@ -8,7 +8,8 @@ public record EntityReferenceAttributeConfigurationUpdated : Event
     {
     }
 
-    public EntityReferenceAttributeConfigurationUpdated(Guid id, Guid referenceEntityConfiguration, Guid defaultValue)
+    public EntityReferenceAttributeConfigurationUpdated(Guid id, Guid referenceEntityConfiguration,
+        Guid defaultValue)
     {
         AggregateId = id;
         DefaultValue = defaultValue;

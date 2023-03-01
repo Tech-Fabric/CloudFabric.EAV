@@ -10,7 +10,8 @@ public record EntityConfigurationCreated : Event
     {
     }
 
-    public EntityConfigurationCreated(Guid id, List<LocalizedString> name, string machineName, List<EntityConfigurationAttributeReference> attributes, Guid? tenantId)
+    public EntityConfigurationCreated(Guid id, List<LocalizedString> name, string machineName,
+        List<EntityConfigurationAttributeReference> attributes, Guid? tenantId)
     {
         AggregateId = id;
         TenantId = tenantId;
@@ -27,4 +28,3 @@ public record EntityConfigurationCreated : Event
 
     public Guid? TenantId { get; set; }
 }
-

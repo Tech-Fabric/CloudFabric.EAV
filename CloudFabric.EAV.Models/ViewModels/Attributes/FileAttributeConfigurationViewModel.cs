@@ -1,7 +1,6 @@
-namespace CloudFabric.EAV.Models.ViewModels.Attributes
+namespace CloudFabric.EAV.Models.ViewModels.Attributes;
+
+public class FileAttributeConfigurationViewModel : AttributeConfigurationViewModel
 {
-    public class FileAttributeConfigurationViewModel : AttributeConfigurationViewModel
-    {
-        public bool IsDownloadable { get; set; }
-    }
+    public bool IsDownloadable { get; set; }
 }

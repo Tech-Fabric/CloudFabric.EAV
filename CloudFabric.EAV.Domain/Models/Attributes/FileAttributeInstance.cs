@@ -1,19 +1,18 @@
-namespace CloudFabric.EAV.Domain.Models.Attributes
+namespace CloudFabric.EAV.Domain.Models.Attributes;
+
+public class FileAttributeInstance : AttributeInstance
 {
-    public class FileAttributeInstance : AttributeInstance
+    public FileAttributeValue Value { get; set; }
+
+    public override object? GetValue()
     {
-        public FileAttributeValue Value { get; set; }
-
-        public override object? GetValue()
-        {
-            return Value;
-        }
+        return Value;
     }
+}
 
-    public class FileAttributeValue
-    {
-        public string Url { get; set; }
+public class FileAttributeValue
+{
+    public string Url { get; set; }
 
-        public string Filename { get; set; }
-    }
+    public string Filename { get; set; }
 }

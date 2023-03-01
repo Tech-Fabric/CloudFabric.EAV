@@ -1,7 +1,6 @@
-﻿namespace CloudFabric.EAV.Models.ViewModels.Attributes
+﻿namespace CloudFabric.EAV.Models.ViewModels.Attributes;
+
+public class NumberAttributeInstanceViewModel : AttributeInstanceViewModel
 {
-    public class NumberAttributeInstanceViewModel : AttributeInstanceViewModel
-    {
-        public decimal? Value { get; set; }
-    }
+    public decimal? Value { get; set; }
 }

@@ -1,4 +1,4 @@
-namespace CloudFabric.EAV.Models.ViewModels;
+﻿namespace CloudFabric.EAV.Models.ViewModels;
 
 public class LocalizedStringViewModel
 {

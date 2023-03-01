@@ -13,67 +13,66 @@ using CloudFabric.Projections;
 using Microsoft.Extensions.Logging;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-namespace CloudFabric.EAV.Tests.BaseQueryTests
+namespace CloudFabric.EAV.Tests.BaseQueryTests;
+
+public abstract class BaseQueryTests
 {
-    public abstract class BaseQueryTests
+    protected EAVService _eavService;
+    protected IEventStore _eventStore;
+    protected ILogger<EAVService> _logger;
+
+    protected virtual TimeSpan ProjectionsUpdateDelay { get; set; } = TimeSpan.FromMilliseconds(0);
+
+    protected abstract IEventStore GetEventStore();
+    protected abstract ProjectionRepositoryFactory GetProjectionRepositoryFactory();
+    protected abstract IEventsObserver GetEventStoreEventsObserver();
+
+    [TestInitialize]
+    public async Task SetUp()
     {
-        protected EAVService _eavService;
-        protected IEventStore _eventStore;
-        protected ILogger<EAVService> _logger;
+        var loggerFactory = new LoggerFactory();
+        _logger = loggerFactory.CreateLogger<EAVService>();
 
-        protected virtual TimeSpan ProjectionsUpdateDelay { get; set; } = TimeSpan.FromMilliseconds(0);
+        var configuration = new MapperConfiguration(cfg =>
+            {
+                cfg.AddMaps(Assembly.GetAssembly(typeof(EAVService)));
+            }
+        );
+        IMapper? mapper = configuration.CreateMapper();
 
-        protected abstract IEventStore GetEventStore();
-        protected abstract ProjectionRepositoryFactory GetProjectionRepositoryFactory();
-        protected abstract IEventsObserver GetEventStoreEventsObserver();
+        _eventStore = GetEventStore();
+        await _eventStore.Initialize();
 
-        [TestInitialize]
-        public async Task SetUp()
-        {
-            var loggerFactory = new LoggerFactory();
-            _logger = loggerFactory.CreateLogger<EAVService>();
+        var aggregateRepositoryFactory = new AggregateRepositoryFactory(_eventStore);
 
-            var configuration = new MapperConfiguration(cfg =>
-                {
-                    cfg.AddMaps(Assembly.GetAssembly(typeof(EAVService)));
-                }
-            );
-            var mapper = configuration.CreateMapper();
+        ProjectionRepositoryFactory projectionRepositoryFactory = GetProjectionRepositoryFactory();
 
-            _eventStore = GetEventStore();
-            await _eventStore.Initialize();
+        // Projections engine - takes events from events observer and passes them to multiple projection builders
+        var projectionsEngine = new ProjectionsEngine(
+            projectionRepositoryFactory.GetProjectionRepository<ProjectionRebuildState>()
+        );
+        projectionsEngine.SetEventsObserver(GetEventStoreEventsObserver());
 
-            var aggregateRepositoryFactory = new AggregateRepositoryFactory(_eventStore);
+        var attributeConfigurationProjectionBuilder = new AttributeConfigurationProjectionBuilder(
+            projectionRepositoryFactory
+        );
 
-            var projectionRepositoryFactory = GetProjectionRepositoryFactory();
+        var entityInstanceProjectionBuilder = new EntityInstanceProjectionBuilder(
+            aggregateRepositoryFactory,
+            projectionRepositoryFactory
+        );
 
-            // Projections engine - takes events from events observer and passes them to multiple projection builders
-            var projectionsEngine = new ProjectionsEngine(
-                projectionRepositoryFactory.GetProjectionRepository<ProjectionRebuildState>()
-            );
-            projectionsEngine.SetEventsObserver(GetEventStoreEventsObserver());
+        projectionsEngine.AddProjectionBuilder(attributeConfigurationProjectionBuilder);
+        projectionsEngine.AddProjectionBuilder(entityInstanceProjectionBuilder);
 
-            var attributeConfigurationProjectionBuilder = new AttributeConfigurationProjectionBuilder(
-                projectionRepositoryFactory
-            );
+        await projectionsEngine.StartAsync("TestInstance");
 
-            var entityInstanceProjectionBuilder = new EntityInstanceProjectionBuilder(
-                aggregateRepositoryFactory,
-                projectionRepositoryFactory
-            );
-
-            projectionsEngine.AddProjectionBuilder(attributeConfigurationProjectionBuilder);
-            projectionsEngine.AddProjectionBuilder(entityInstanceProjectionBuilder);
-
-            await projectionsEngine.StartAsync("TestInstance");
-
-            _eavService = new EAVService(
-                _logger,
-                mapper,
-                aggregateRepositoryFactory,
-                projectionRepositoryFactory,
-                new EventUserInfo(Guid.NewGuid())
-            );
-        }
+        _eavService = new EAVService(
+            _logger,
+            mapper,
+            aggregateRepositoryFactory,
+            projectionRepositoryFactory,
+            new EventUserInfo(Guid.NewGuid())
+        );
     }
 }

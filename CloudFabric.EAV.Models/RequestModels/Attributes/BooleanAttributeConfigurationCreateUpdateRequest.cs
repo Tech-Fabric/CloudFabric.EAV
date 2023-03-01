@@ -1,13 +1,12 @@
-using CloudFabric.EAV.Domain.Enums;
+﻿using CloudFabric.EAV.Domain.Enums;
 
-namespace CloudFabric.EAV.Models.RequestModels.Attributes
+namespace CloudFabric.EAV.Models.RequestModels.Attributes;
+
+public class BooleanAttributeConfigurationCreateUpdateRequest : AttributeConfigurationCreateUpdateRequest
 {
-    public class BooleanAttributeConfigurationCreateUpdateRequest : AttributeConfigurationCreateUpdateRequest
-    {
-        public string TrueDisplayValue { get; set; } = "True";
+    public string TrueDisplayValue { get; set; } = "True";
 
-        public string FalseDisplayValue { get; set; } = "False";
+    public string FalseDisplayValue { get; set; } = "False";
 
-        public override EavAttributeType ValueType { get; } = EavAttributeType.Boolean;
-    }
+    public override EavAttributeType ValueType { get; } = EavAttributeType.Boolean;
 }

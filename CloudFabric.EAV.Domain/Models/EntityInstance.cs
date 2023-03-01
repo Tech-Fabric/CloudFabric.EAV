@@ -4,7 +4,6 @@ namespace CloudFabric.EAV.Domain.Models;
 
 public class EntityInstance : EntityInstanceBase
 {
-
     public EntityInstance(IEnumerable<IEvent> events) : base(events)
     {
     }

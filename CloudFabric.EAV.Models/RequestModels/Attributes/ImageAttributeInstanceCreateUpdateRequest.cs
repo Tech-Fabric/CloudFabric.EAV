@@ -1,7 +1,6 @@
-namespace CloudFabric.EAV.Models.RequestModels.Attributes
+﻿namespace CloudFabric.EAV.Models.RequestModels.Attributes;
+
+public class ImageAttributeInstanceCreateUpdateRequest : AttributeInstanceCreateUpdateRequest
 {
-    public class ImageAttributeInstanceCreateUpdateRequest : AttributeInstanceCreateUpdateRequest
-    {
-        public ImageAttributeValueCreateUpdateRequest Value { get; set; }
-    }
+    public ImageAttributeValueCreateUpdateRequest Value { get; set; }
 }

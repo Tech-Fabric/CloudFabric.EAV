@@ -1,7 +1,6 @@
-namespace CloudFabric.EAV.Models.ViewModels.Attributes
+namespace CloudFabric.EAV.Models.ViewModels.Attributes;
+
+public class ArrayAttributeInstanceViewModel : AttributeInstanceViewModel
 {
-    public class ArrayAttributeInstanceViewModel : AttributeInstanceViewModel
-    {
-        public List<AttributeInstanceViewModel> Items { get; set; }
-    }
+    public List<AttributeInstanceViewModel> Items { get; set; }
 }

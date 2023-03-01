@@ -12,7 +12,9 @@ public record AttributeConfigurationCreated : Event
     {
     }
 
-    public AttributeConfigurationCreated(Guid id, string machineName, List<LocalizedString> name, EavAttributeType valueType, List<LocalizedString>? description, bool isRequired, Guid? tenantId, string? metadata)
+    public AttributeConfigurationCreated(Guid id, string machineName, List<LocalizedString> name,
+        EavAttributeType valueType, List<LocalizedString>? description, bool isRequired, Guid? tenantId,
+        string? metadata)
     {
         AggregateId = id;
         MachineName = machineName;

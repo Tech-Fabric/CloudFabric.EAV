@@ -22,7 +22,7 @@ public class EntityInstanceFromDictionaryDeserializer
         Dictionary<string, object?> record
     )
     {
-        var entityInstance = new EntityInstanceViewModel()
+        var entityInstance = new EntityInstanceViewModel
         {
             Id = (Guid)record["Id"]!,
             TenantId = record.ContainsKey("TenantId") && record["TenantId"] != null
@@ -35,7 +35,9 @@ public class EntityInstanceFromDictionaryDeserializer
                     DeserializeAttribute(attributeConfig, record[attributeConfig.MachineName])
                 )
                 .ToList(),
-            CategoryPaths = record.ContainsKey("CategoryPaths") ? ParseCategoryPaths(record["CategoryPaths"]) : new List<CategoryPath>()
+            CategoryPaths = record.ContainsKey("CategoryPaths")
+                ? ParseCategoryPaths(record["CategoryPaths"])
+                : new List<CategoryPath>()
         };
         return entityInstance;
     }
@@ -50,7 +52,7 @@ public class EntityInstanceFromDictionaryDeserializer
                 if (path is Dictionary<string, object> pathDictionary)
                 {
                     var categoryPath = new CategoryPath();
-                    foreach (var pathItem in pathDictionary)
+                    foreach (KeyValuePair<string, object> pathItem in pathDictionary)
                     {
                         if (pathItem.Key == "Path")
                         {
@@ -61,6 +63,7 @@ public class EntityInstanceFromDictionaryDeserializer
                             categoryPath.TreeId = (Guid)pathItem.Value;
                         }
                     }
+
                     categoryPaths.Add(categoryPath);
                 }
             }
@@ -69,8 +72,10 @@ public class EntityInstanceFromDictionaryDeserializer
         {
             categoryPaths = pathsListOriginal;
         }
+
         return categoryPaths;
     }
+
     private AttributeInstanceViewModel DeserializeAttribute(
         AttributeConfiguration attributeConfiguration,
         object? attributeValue
@@ -81,7 +86,7 @@ public class EntityInstanceFromDictionaryDeserializer
         switch (attributeConfiguration.ValueType)
         {
             case EavAttributeType.Array:
-                attributeInstance = new ArrayAttributeInstanceViewModel()
+                attributeInstance = new ArrayAttributeInstanceViewModel
                 {
                     ConfigurationAttributeMachineName = attributeConfiguration.MachineName,
                     Items = new List<AttributeInstanceViewModel>()
@@ -89,12 +94,12 @@ public class EntityInstanceFromDictionaryDeserializer
 
                 if (attributeValue != null)
                 {
-                    ((attributeInstance! as ArrayAttributeInstanceViewModel)!).Items =
-                        ((attributeValue as List<object?>)!)
+                    (attributeInstance! as ArrayAttributeInstanceViewModel)!.Items =
+                        (attributeValue as List<object?>)!
                         .Select(av =>
                             DeserializeAttribute(
                                 attributeConfiguration.MachineName,
-                                ((attributeConfiguration as ArrayAttributeConfiguration)!).ItemsType,
+                                (attributeConfiguration as ArrayAttributeConfiguration)!.ItemsType,
                                 av
                             )
                         )
@@ -103,7 +108,10 @@ public class EntityInstanceFromDictionaryDeserializer
 
                 break;
             default:
-                attributeInstance = DeserializeAttribute(attributeConfiguration.MachineName, attributeConfiguration.ValueType, attributeValue);
+                attributeInstance = DeserializeAttribute(attributeConfiguration.MachineName,
+                    attributeConfiguration.ValueType,
+                    attributeValue
+                );
                 break;
         }
 
@@ -121,60 +129,46 @@ public class EntityInstanceFromDictionaryDeserializer
         {
             case EavAttributeType.Array:
                 throw new InvalidOperationException("Please use another overload method which accepts whole "
-                                                    + "AttributeConfiguration object to deserialize arrays.");
+                                                    + "AttributeConfiguration object to deserialize arrays."
+                );
             case EavAttributeType.DateRange:
-                attributeInstance = new DateRangeAttributeInstanceViewModel()
+                attributeInstance = new DateRangeAttributeInstanceViewModel
                 {
                     Value = _mapper.Map<DateRangeAttributeInstanceValueViewModel>(attributeValue)
                 };
                 break;
             case EavAttributeType.Image:
-                attributeInstance = new ImageAttributeInstanceViewModel()
+                attributeInstance = new ImageAttributeInstanceViewModel
                 {
                     Value = _mapper.Map<ImageAttributeValueViewModel>(attributeValue)
                 };
                 break;
             case EavAttributeType.LocalizedText:
-                attributeInstance = new LocalizedTextAttributeInstanceViewModel()
+                attributeInstance = new LocalizedTextAttributeInstanceViewModel
                 {
                     Value = _mapper.Map<List<LocalizedStringViewModel>>(attributeValue)
                 };
                 break;
             case EavAttributeType.Number:
-                attributeInstance = new NumberAttributeInstanceViewModel()
-                {
-                    Value = (decimal?)attributeValue
-                };
+                attributeInstance = new NumberAttributeInstanceViewModel { Value = (decimal?)attributeValue };
                 break;
             case EavAttributeType.ValueFromList:
-                attributeInstance = new ValueFromListAttributeInstanceViewModel()
-                {
-                    Value = (string)attributeValue
-                };
+                attributeInstance = new ValueFromListAttributeInstanceViewModel { Value = (string)attributeValue };
                 break;
             case EavAttributeType.Boolean:
-                attributeInstance = new BooleanAttributeInstanceViewModel()
-                {
-                    Value = (bool)attributeValue
-                };
+                attributeInstance = new BooleanAttributeInstanceViewModel { Value = (bool)attributeValue };
                 break;
             case EavAttributeType.File:
-                attributeInstance = new FileAttributeInstanceViewModel()
+                attributeInstance = new FileAttributeInstanceViewModel
                 {
                     Value = _mapper.Map<FileAttributeValueViewModel>(attributeValue)
                 };
                 break;
             case EavAttributeType.Text:
-                attributeInstance = new TextAttributeInstanceViewModel
-                {
-                    Value = (string)attributeValue
-                };
+                attributeInstance = new TextAttributeInstanceViewModel { Value = (string)attributeValue };
                 break;
             case EavAttributeType.Serial:
-                attributeInstance = new SerialAttributeInstanceViewModel()
-                {
-                    Value = (long)attributeValue
-                };
+                attributeInstance = new SerialAttributeInstanceViewModel { Value = (long)attributeValue };
                 break;
             default:
                 throw new NotSupportedException(

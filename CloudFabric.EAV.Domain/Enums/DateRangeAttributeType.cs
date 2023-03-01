@@ -1,8 +1,7 @@
-namespace CloudFabric.EAV.Domain.Enums
+namespace CloudFabric.EAV.Domain.Enums;
+
+public enum DateRangeAttributeType
 {
-    public enum DateRangeAttributeType
-    {
-        SingleDate,
-        DateRange
-    }
+    SingleDate,
+    DateRange
 }

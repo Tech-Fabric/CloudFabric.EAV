@@ -19,4 +19,3 @@ public record EntityConfigurationNameUpdated : Event
 
     public int CultureInfoId { get; set; }
 }
-

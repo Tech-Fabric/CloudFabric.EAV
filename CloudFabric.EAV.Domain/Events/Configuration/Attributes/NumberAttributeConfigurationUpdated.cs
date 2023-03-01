@@ -9,7 +9,8 @@ public record NumberAttributeConfigurationUpdated : Event
     {
     }
 
-    public NumberAttributeConfigurationUpdated(Guid id, decimal defaultValue, decimal? minimumValue, decimal? maximumValue, NumberAttributeType numberType)
+    public NumberAttributeConfigurationUpdated(Guid id, decimal defaultValue, decimal? minimumValue,
+        decimal? maximumValue, NumberAttributeType numberType)
     {
         AggregateId = id;
         NumberType = numberType;

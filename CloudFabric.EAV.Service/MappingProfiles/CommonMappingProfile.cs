@@ -2,15 +2,14 @@ using AutoMapper;
 
 using CloudFabric.Projections;
 
-namespace CloudFabric.EAV.Service.MappingProfiles
+namespace CloudFabric.EAV.Service.MappingProfiles;
+
+public class CommonMappingProfile : Profile
 {
-    public class CommonMappingProfile : Profile
+    public CommonMappingProfile()
     {
-        public CommonMappingProfile()
-        {
-            CreateMap(typeof(ProjectionQueryResult<>), typeof(ProjectionQueryResult<>));
-            CreateMap<FacetStats, FacetStats>();
-            CreateMap(typeof(QueryResultDocument<>), typeof(QueryResultDocument<>));
-        }
+        CreateMap(typeof(ProjectionQueryResult<>), typeof(ProjectionQueryResult<>));
+        CreateMap<FacetStats, FacetStats>();
+        CreateMap(typeof(QueryResultDocument<>), typeof(QueryResultDocument<>));
     }
 }

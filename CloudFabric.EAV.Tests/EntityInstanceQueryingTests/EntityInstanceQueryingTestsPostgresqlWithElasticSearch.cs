@@ -13,8 +13,6 @@ public class EntityInstanceQueryingTestsPostgresqlWithElasticSearch : EntityInst
 {
     private readonly ProjectionRepositoryFactory _projectionRepositoryFactory;
 
-    protected override TimeSpan ProjectionsUpdateDelay { get; set; } = TimeSpan.FromMilliseconds(1000);
-
     public EntityInstanceQueryingTestsPostgresqlWithElasticSearch()
     {
         var connectionString = "Host=localhost;"
@@ -36,6 +34,8 @@ public class EntityInstanceQueryingTestsPostgresqlWithElasticSearch : EntityInst
             new LoggerFactory()
         );
     }
+
+    protected override TimeSpan ProjectionsUpdateDelay { get; set; } = TimeSpan.FromMilliseconds(1000);
 
     protected override IEventStore GetEventStore()
     {

@@ -1,200 +1,197 @@
+using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace CloudFabric.EAV.Json.Utilities
+namespace CloudFabric.EAV.Json.Utilities;
+
+public class PolymorphicJsonConverter<T> : JsonConverter<T>
 {
-    public class PolymorphicJsonConverter<T> : JsonConverter<T>
+    public const string TYPE_NAME_JSON_PROPERTY_NAME = "typeName";
+    public const string TYPE_VALUE_JSON_PROPERTY_NAME = "typeValue";
+
+    public override bool CanConvert(Type type)
     {
-        public const string TYPE_NAME_JSON_PROPERTY_NAME = "typeName";
-        public const string TYPE_VALUE_JSON_PROPERTY_NAME = "typeValue";
-
-        public override bool CanConvert(Type type)
+        if (typeof(T).IsGenericType && type.Name.IndexOf("List", StringComparison.Ordinal) == 0)
         {
-            if (typeof(T).IsGenericType && type.Name.IndexOf("List", StringComparison.Ordinal) == 0)
-            {
-                return typeof(T).GenericTypeArguments[0].IsAssignableFrom(type.GenericTypeArguments[0]);
-            }
-
-            return typeof(T).IsAssignableFrom(type);
+            return typeof(T).GenericTypeArguments[0].IsAssignableFrom(type.GenericTypeArguments[0]);
         }
 
-        public override T Read(
-            ref Utf8JsonReader reader,
-            Type typeToConvert,
-            JsonSerializerOptions options
-        )
+        return typeof(T).IsAssignableFrom(type);
+    }
+
+    public override T Read(
+        ref Utf8JsonReader reader,
+        Type typeToConvert,
+        JsonSerializerOptions options
+    )
+    {
+        // It's important to get assembly from generic of the attribute since we don't want to create types of unknown assemblies
+        var typeAssemblyName = typeof(T).Assembly.FullName;
+
+        if (typeToConvert.Name.IndexOf("List", StringComparison.Ordinal) == 0)
         {
-            // It's important to get assembly from generic of the attribute since we don't want to create types of unknown assemblies
-            var typeAssemblyName = typeof(T).Assembly.FullName;
-
-            if (typeToConvert.Name.IndexOf("List", StringComparison.Ordinal) == 0)
+            if (reader.TokenType != JsonTokenType.StartArray)
             {
-                if (reader.TokenType != JsonTokenType.StartArray)
-                {
-                    throw new JsonException("StartArray expected");
-                }
-
-                typeAssemblyName = typeof(T).GenericTypeArguments[0].Assembly.FullName;
-
-                reader.Read();
-
-                var list = (T)Activator.CreateInstance(typeof(T));
-
-                while (reader.TokenType != JsonTokenType.EndArray)
-                {
-                    var element = ReadElement(ref reader, typeAssemblyName, options);
-                    (list as dynamic).Add((dynamic)element);
-
-                    if (reader.TokenType == JsonTokenType.EndObject)
-                    {
-                        reader.Read();
-                    }
-                }
-
-                return list;
+                throw new JsonException("StartArray expected");
             }
 
-            var obj = (T)ReadElement(ref reader, typeAssemblyName, options);
-
-            return obj;
-        }
-
-        protected object ReadElement(
-            ref Utf8JsonReader reader,
-            string typeAssemblyName,
-            JsonSerializerOptions options
-        )
-        {
-            var jsonNamingPolicy = options.PropertyNamingPolicy ?? JsonNamingPolicy.CamelCase;
-
-            if (reader.TokenType != JsonTokenType.StartObject)
-            {
-                throw new JsonException();
-            }
-
-            if (!reader.Read()
-                || reader.TokenType != JsonTokenType.PropertyName
-                || reader.GetString() != TYPE_NAME_JSON_PROPERTY_NAME)
-            {
-                throw new JsonException($"{TYPE_NAME_JSON_PROPERTY_NAME} should be first property in json");
-            }
-
-
-            if (!reader.Read() || reader.TokenType != JsonTokenType.String)
-            {
-                throw new JsonException($"{TYPE_NAME_JSON_PROPERTY_NAME} value should be string");
-            }
-
-            var typeName = reader.GetString();
-
-            if (!reader.Read()
-                || reader.TokenType != JsonTokenType.PropertyName
-                || reader.GetString() != TYPE_VALUE_JSON_PROPERTY_NAME)
-            {
-                throw new JsonException($"{TYPE_VALUE_JSON_PROPERTY_NAME} should go right after {TYPE_NAME_JSON_PROPERTY_NAME} property value");
-            }
-
-            if (!reader.Read() || reader.TokenType != JsonTokenType.StartObject)
-            {
-                throw new JsonException($"{TYPE_VALUE_JSON_PROPERTY_NAME} value should be an object");
-            }
+            typeAssemblyName = typeof(T).GenericTypeArguments[0].Assembly.FullName;
 
             reader.Read();
 
-            var instance = Activator.CreateInstance(Type.GetType($"{typeName}, {typeAssemblyName}"));
+            var list = (T)Activator.CreateInstance(typeof(T));
 
-            var properties = instance.GetType().GetProperties();
-            var propertiesFromJson = new Dictionary<string, object>();
-
-            for (var i = 0; i < properties.Length; i++)
+            while (reader.TokenType != JsonTokenType.EndArray)
             {
-                if (reader.TokenType == JsonTokenType.PropertyName)
+                var element = ReadElement(ref reader, typeAssemblyName, options);
+                (list as dynamic).Add((dynamic)element);
+
+                if (reader.TokenType == JsonTokenType.EndObject)
                 {
-                    var jsonPropertyName = reader.GetString();
                     reader.Read();
-                    var propertyType = properties.FirstOrDefault(
-                        p => jsonNamingPolicy.ConvertName(p.Name) == jsonPropertyName
-                    );
-                    if (propertyType != null)
-                    {
-                        try
-                        {
-                            var jsonPropertyValue = JsonSerializer.Deserialize(ref reader, propertyType.PropertyType, options);
-
-                            if (propertyType.SetMethod != null)
-                            {
-                                propertyType.SetValue(instance, jsonPropertyValue);
-                            }
-                        }
-                        catch (NotSupportedException ex)
-                        {
-                            throw;
-                        }
-
-                        reader.Read();
-                    }
                 }
             }
 
-            if (!reader.Read() || reader.TokenType != JsonTokenType.EndObject)
-            {
-                throw new JsonException();
-            }
-
-            return instance;
+            return list;
         }
 
-        public override void Write(
-            Utf8JsonWriter writer,
-            T value,
-            JsonSerializerOptions options)
+        var obj = (T)ReadElement(ref reader, typeAssemblyName, options);
+
+        return obj;
+    }
+
+    protected object ReadElement(
+        ref Utf8JsonReader reader,
+        string typeAssemblyName,
+        JsonSerializerOptions options
+    )
+    {
+        JsonNamingPolicy jsonNamingPolicy = options.PropertyNamingPolicy ?? JsonNamingPolicy.CamelCase;
+
+        if (reader.TokenType != JsonTokenType.StartObject)
         {
-            if (typeof(T).Name.IndexOf("List", StringComparison.Ordinal) == 0)
+            throw new JsonException();
+        }
+
+        if (!reader.Read()
+            || reader.TokenType != JsonTokenType.PropertyName
+            || reader.GetString() != TYPE_NAME_JSON_PROPERTY_NAME)
+        {
+            throw new JsonException($"{TYPE_NAME_JSON_PROPERTY_NAME} should be first property in json");
+        }
+
+
+        if (!reader.Read() || reader.TokenType != JsonTokenType.String)
+        {
+            throw new JsonException($"{TYPE_NAME_JSON_PROPERTY_NAME} value should be string");
+        }
+
+        var typeName = reader.GetString();
+
+        if (!reader.Read()
+            || reader.TokenType != JsonTokenType.PropertyName
+            || reader.GetString() != TYPE_VALUE_JSON_PROPERTY_NAME)
+        {
+            throw new JsonException(
+                $"{TYPE_VALUE_JSON_PROPERTY_NAME} should go right after {TYPE_NAME_JSON_PROPERTY_NAME} property value"
+            );
+        }
+
+        if (!reader.Read() || reader.TokenType != JsonTokenType.StartObject)
+        {
+            throw new JsonException($"{TYPE_VALUE_JSON_PROPERTY_NAME} value should be an object");
+        }
+
+        reader.Read();
+
+        var instance = Activator.CreateInstance(Type.GetType($"{typeName}, {typeAssemblyName}"));
+
+        PropertyInfo[] properties = instance.GetType().GetProperties();
+        var propertiesFromJson = new Dictionary<string, object>();
+
+        for (var i = 0; i < properties.Length; i++)
+        {
+            if (reader.TokenType == JsonTokenType.PropertyName)
             {
-                writer.WriteStartArray();
-
-                foreach (var element in (IEnumerable<object>)value)
+                var jsonPropertyName = reader.GetString();
+                reader.Read();
+                PropertyInfo? propertyType = properties.FirstOrDefault(
+                    p => jsonNamingPolicy.ConvertName(p.Name) == jsonPropertyName
+                );
+                if (propertyType != null)
                 {
-                    WriteElement(writer, element, options);
-                }
+                    var jsonPropertyValue =
+                        JsonSerializer.Deserialize(ref reader, propertyType.PropertyType, options);
 
-                writer.WriteEndArray();
+                    if (propertyType.SetMethod != null)
+                    {
+                        propertyType.SetValue(instance, jsonPropertyValue);
+                    }
+
+                    reader.Read();
+                }
+            }
+        }
+
+        if (!reader.Read() || reader.TokenType != JsonTokenType.EndObject)
+        {
+            throw new JsonException();
+        }
+
+        return instance;
+    }
+
+    public override void Write(
+        Utf8JsonWriter writer,
+        T value,
+        JsonSerializerOptions options)
+    {
+        if (typeof(T).Name.IndexOf("List", StringComparison.Ordinal) == 0)
+        {
+            writer.WriteStartArray();
+
+            foreach (var element in (IEnumerable<object>)value)
+            {
+                WriteElement(writer, element, options);
+            }
+
+            writer.WriteEndArray();
+        }
+        else
+        {
+            WriteElement(writer, value, options);
+        }
+    }
+
+    protected void WriteElement(Utf8JsonWriter writer, object value, JsonSerializerOptions options)
+    {
+        JsonNamingPolicy jsonNamingPolicy = options.PropertyNamingPolicy ?? JsonNamingPolicy.CamelCase;
+
+        writer.WriteStartObject();
+
+        writer.WriteString(TYPE_NAME_JSON_PROPERTY_NAME, value.GetType().FullName);
+        writer.WritePropertyName(TYPE_VALUE_JSON_PROPERTY_NAME);
+
+        writer.WriteStartObject();
+        PropertyInfo[] properties = value.GetType().GetProperties();
+        foreach (PropertyInfo prop in properties)
+        {
+            writer.WritePropertyName(
+                jsonNamingPolicy.ConvertName(prop.Name)
+            );
+
+            if (typeof(T).IsAssignableFrom(prop.PropertyType))
+            {
+                WriteElement(writer, prop.GetValue(value), options);
             }
             else
             {
-                WriteElement(writer, value, options);
+                JsonSerializer.Serialize(writer, prop.GetValue(value), options);
             }
         }
 
-        protected void WriteElement(Utf8JsonWriter writer, object value, JsonSerializerOptions options)
-        {
-            JsonNamingPolicy jsonNamingPolicy = options.PropertyNamingPolicy ?? JsonNamingPolicy.CamelCase;
+        writer.WriteEndObject();
 
-            writer.WriteStartObject();
-
-            writer.WriteString(TYPE_NAME_JSON_PROPERTY_NAME, value.GetType().FullName);
-            writer.WritePropertyName(TYPE_VALUE_JSON_PROPERTY_NAME);
-
-            writer.WriteStartObject();
-            var properties = value.GetType().GetProperties();
-            foreach (var prop in properties)
-            {
-                writer.WritePropertyName(
-                    jsonNamingPolicy.ConvertName(prop.Name)
-                );
-
-                if (typeof(T).IsAssignableFrom(prop.PropertyType))
-                {
-                    WriteElement(writer, prop.GetValue(value), options);
-                }
-                else
-                {
-                    JsonSerializer.Serialize(writer, prop.GetValue(value), options);
-                }
-            }
-            writer.WriteEndObject();
-
-            writer.WriteEndObject();
-        }
+        writer.WriteEndObject();
     }
 }

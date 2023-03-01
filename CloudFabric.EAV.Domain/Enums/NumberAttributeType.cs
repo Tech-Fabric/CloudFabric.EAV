@@ -1,8 +1,7 @@
-namespace CloudFabric.EAV.Domain.Enums
+namespace CloudFabric.EAV.Domain.Enums;
+
+public enum NumberAttributeType
 {
-    public enum NumberAttributeType
-    {
-        Integer,
-        Decimal
-    }
+    Integer,
+    Decimal
 }

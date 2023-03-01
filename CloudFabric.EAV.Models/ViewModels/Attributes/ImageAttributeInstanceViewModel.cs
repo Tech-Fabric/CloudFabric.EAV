@@ -1,7 +1,6 @@
-namespace CloudFabric.EAV.Models.ViewModels.Attributes
+namespace CloudFabric.EAV.Models.ViewModels.Attributes;
+
+public class ImageAttributeInstanceViewModel : AttributeInstanceViewModel
 {
-    public class ImageAttributeInstanceViewModel : AttributeInstanceViewModel
-    {
-        public ImageAttributeValueViewModel Value { get; set; }
-    }
+    public ImageAttributeValueViewModel Value { get; set; }
 }

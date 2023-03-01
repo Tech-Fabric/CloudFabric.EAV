@@ -1,23 +1,23 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-    <PackageId>CloudFabric.EAV.Service</PackageId>
-    <Version>0.0.1</Version>
-    <Authors>CloudFabric Developers</Authors>
-    <Company>CloudFabric</Company>
-  </PropertyGroup>
+    <PropertyGroup>
+        <TargetFramework>net6.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <PackageId>CloudFabric.EAV.Service</PackageId>
+        <Version>0.0.1</Version>
+        <Authors>CloudFabric Developers</Authors>
+        <Company>CloudFabric</Company>
+    </PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="AutoMapper" Version="11.0.1" />
-    <PackageReference Include="CloudFabric.EventSourcing.Domain" Version="0.0.32" />
-  </ItemGroup>
+    <ItemGroup>
+        <PackageReference Include="AutoMapper" Version="11.0.1"/>
+        <PackageReference Include="CloudFabric.EventSourcing.Domain" Version="0.0.32"/>
+    </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\CloudFabric.EAV.Json\CloudFabric.EAV.Json.csproj" />
-    <ProjectReference Include="..\CloudFabric.EAV.Models\CloudFabric.EAV.Models.csproj" />
-  </ItemGroup>
+    <ItemGroup>
+        <ProjectReference Include="..\CloudFabric.EAV.Json\CloudFabric.EAV.Json.csproj"/>
+        <ProjectReference Include="..\CloudFabric.EAV.Models\CloudFabric.EAV.Models.csproj"/>
+    </ItemGroup>
 
 </Project>
