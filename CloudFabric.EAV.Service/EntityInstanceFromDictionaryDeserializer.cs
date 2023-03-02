@@ -31,6 +31,7 @@ public class EntityInstanceFromDictionaryDeserializer
             EntityConfigurationId = (Guid)record["EntityConfigurationId"]!,
             PartitionKey = (string)record["PartitionKey"]!,
             Attributes = attributesConfigurations
+                .Where(attributeConfig => record.ContainsKey(attributeConfig.MachineName))
                 .Select(attributeConfig =>
                     DeserializeAttribute(attributeConfig, record[attributeConfig.MachineName])
                 )
