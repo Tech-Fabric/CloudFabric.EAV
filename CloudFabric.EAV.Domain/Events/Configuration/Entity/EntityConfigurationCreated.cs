@@ -6,6 +6,8 @@ namespace CloudFabric.EAV.Domain.Events.Configuration.Entity;
 
 public record EntityConfigurationCreated : Event
 {
+    // ReSharper disable once UnusedMember.Global
+    // This constructor is required for Event Store to properly deserialize from json
     public EntityConfigurationCreated()
     {
     }

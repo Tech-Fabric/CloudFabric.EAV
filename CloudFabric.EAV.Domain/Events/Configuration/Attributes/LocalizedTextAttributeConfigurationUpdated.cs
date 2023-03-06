@@ -5,6 +5,8 @@ namespace CloudFabric.EAV.Domain.Events.Configuration.Attributes;
 
 public record LocalizedTextAttributeConfigurationUpdated : Event
 {
+    // ReSharper disable once UnusedMember.Global
+    // This constructor is required for Event Store to properly deserialize from json
     public LocalizedTextAttributeConfigurationUpdated()
     {
     }

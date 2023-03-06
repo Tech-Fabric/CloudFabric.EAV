@@ -5,6 +5,12 @@ namespace CloudFabric.EAV.Domain.Events.Instance.Attribute;
 
 public record AttributeInstanceUpdated : Event
 {
+    // ReSharper disable once UnusedMember.Global
+    // This constructor is required for Event Store to properly deserialize from json
+    public AttributeInstanceUpdated()
+    {
+    }
+
     public AttributeInstanceUpdated(
         Guid entityInstanceId,
         Guid entityConfigurationId,
