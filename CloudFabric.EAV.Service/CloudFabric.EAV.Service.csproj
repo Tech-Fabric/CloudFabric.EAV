@@ -11,13 +11,13 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="AutoMapper" Version="11.0.1"/>
-        <PackageReference Include="CloudFabric.EventSourcing.Domain" Version="0.0.32"/>
+        <PackageReference Include="AutoMapper" Version="12.0.1" />
+        <PackageReference Include="CloudFabric.EventSourcing.Domain" Version="0.0.34" />
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\CloudFabric.EAV.Json\CloudFabric.EAV.Json.csproj"/>
-        <ProjectReference Include="..\CloudFabric.EAV.Models\CloudFabric.EAV.Models.csproj"/>
+        <ProjectReference Include="..\CloudFabric.EAV.Json\CloudFabric.EAV.Json.csproj" />
+        <ProjectReference Include="..\CloudFabric.EAV.Models\CloudFabric.EAV.Models.csproj" />
     </ItemGroup>
 
 </Project>
