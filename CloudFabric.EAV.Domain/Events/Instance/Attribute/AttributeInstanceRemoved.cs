@@ -1,9 +1,11 @@
 using CloudFabric.EventSourcing.EventStore;
 
-namespace CloudFabric.EAV.Domain.Events.Instance.Entity;
+namespace CloudFabric.EAV.Domain.Events.Instance.Attribute;
 
 public record AttributeInstanceRemoved : Event
 {
+    // ReSharper disable once UnusedMember.Global
+    // This constructor is required for Event Store to properly deserialize from json
     public AttributeInstanceRemoved()
     {
     }
