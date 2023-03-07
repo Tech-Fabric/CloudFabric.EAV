@@ -196,6 +196,48 @@ public class Tests
     }
 
     [TestMethod]
+    public async Task CreateInstance_MissingRequiredAttributeValue()
+    {
+        EntityConfigurationCreateRequest configurationCreateRequest =
+            EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
+        var requiredAttributeMachineName = "test_date";
+
+        configurationCreateRequest.Attributes.Add(new DateRangeAttributeConfigurationUpdateRequest()
+        {
+            DateRangeAttributeType = DateRangeAttributeType.SingleDate,
+            IsRequired = true,
+            MachineName = requiredAttributeMachineName,
+            Name = new List<LocalizedStringCreateRequest>()
+            {
+                new LocalizedStringCreateRequest()
+                {
+                    CultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID,
+                    String = "Test Date"
+                }
+            }
+        });
+        (EntityConfigurationViewModel? createdConfiguration, _) = await _eavService.CreateEntityConfiguration(
+            configurationCreateRequest,
+            CancellationToken.None
+        );
+
+        EntityConfigurationViewModel configuration =
+            await _eavService.GetEntityConfiguration(createdConfiguration.Id, createdConfiguration.PartitionKey);
+        EntityInstanceCreateRequest entityInstanceCreateRequest =
+            EntityInstanceFactory.CreateValidBoardGameEntityInstanceCreateRequest(createdConfiguration.Id);
+        entityInstanceCreateRequest.Attributes.Add(
+            new DateRangeAttributeInstanceCreateUpdateRequest()
+            {
+                ConfigurationAttributeMachineName = requiredAttributeMachineName,
+                Value = null
+            });
+
+        (EntityInstanceViewModel createdInstance, ProblemDetails validationErrors) =
+            await _eavService.CreateEntityInstance(entityInstanceCreateRequest);
+        createdInstance.Should().BeNull();
+    }
+
+    [TestMethod]
     public async Task CreateEntityConfiguration_Success()
     {
         EntityConfigurationCreateRequest configurationCreateRequest =
