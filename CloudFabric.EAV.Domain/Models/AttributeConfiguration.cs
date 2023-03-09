@@ -82,12 +82,11 @@ public abstract class AttributeConfiguration : AggregateBase
 
     public virtual List<string> ValidateInstance(AttributeInstance? instance)
     {
-        if (IsRequired && instance == null)
+        if (!IsRequired)
         {
-            return new List<string> { "Attribute is Required" };
+            return new List<string>();
         }
-
-        return new List<string>();
+        return instance?.GetValue() == null ? new List<string> { "Attribute is Required" } : new List<string>();
     }
 
     public void UpdateName(string newName)
