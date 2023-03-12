@@ -32,8 +32,7 @@ public abstract class EntityInstanceQueryingTests : BaseQueryTests.BaseQueryTest
         );
 
         EntityConfigurationViewModel configuration = await _eavService.GetEntityConfiguration(
-            createdConfiguration.Id,
-            createdConfiguration.PartitionKey
+            createdConfiguration.Id
         );
 
         configuration.Should().BeEquivalentTo(createdConfiguration);
@@ -78,8 +77,7 @@ public abstract class EntityInstanceQueryingTests : BaseQueryTests.BaseQueryTest
         );
 
         EntityConfigurationViewModel configuration = await _eavService.GetEntityConfiguration(
-            createdConfiguration.Id,
-            createdConfiguration.PartitionKey
+            createdConfiguration.Id
         );
 
         configuration.Should().BeEquivalentTo(createdConfiguration);

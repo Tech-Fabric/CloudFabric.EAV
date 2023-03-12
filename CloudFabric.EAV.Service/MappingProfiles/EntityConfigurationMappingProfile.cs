@@ -14,9 +14,15 @@ public class EntityConfigurationMappingProfile : Profile
     public EntityConfigurationMappingProfile()
     {
         CreateMap<EntityConfigurationCreateRequest, EntityConfiguration>();
+        CreateMap<EntityConfigurationCreateRequest, EntityConfigurationCreateRequest>();
         CreateMap<EntityConfigurationUpdateRequest, EntityConfiguration>();
 
         CreateMap<EntityConfiguration, EntityConfigurationViewModel>();
+        CreateMap<EntityConfiguration, EntityConfigurationWithAttributesViewModel>()
+            .ForMember(
+                c => c.Attributes,
+                memberOptions => memberOptions.Ignore()
+            );
 
         CreateMap<EntityConfigurationProjectionDocument, EntityConfigurationViewModel>();
         CreateMap<AttributeConfigurationReference, EntityConfigurationAttributeReferenceViewModel>();
