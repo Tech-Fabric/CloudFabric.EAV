@@ -553,14 +553,14 @@ public class EAVService : IEAVService
             cancellationToken
         ).ConfigureAwait(false);
 
-        var entityConfigurationExistingAttributes =
-            await GetAttributeConfigurationsForEntityConfiguration(entityConfiguration, cancellationToken);
-
         if (entityConfiguration == null)
         {
             return (null,
                 new ValidationErrorResponse(nameof(entityUpdateRequest.Id), "Entity configuration not found"))!;
         }
+
+        var entityConfigurationExistingAttributes =
+            await GetAttributeConfigurationsForEntityConfiguration(entityConfiguration, cancellationToken);
 
         // Update config name
         foreach (LocalizedStringCreateRequest name in entityUpdateRequest.Name.Where(name =>
