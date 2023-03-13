@@ -276,56 +276,53 @@ public class EAVService : IEAVService
 
     #region EntityConfiguration
 
-    public async Task<EntityConfigurationViewModel> GetEntityConfiguration(Guid id, string partitionKey)
+    public async Task<EntityConfigurationViewModel> GetEntityConfiguration(Guid id)
     {
-        EntityConfiguration? entityConfiguration = await _entityConfigurationRepository.LoadAsync(id, partitionKey);
+        EntityConfiguration? entityConfiguration = await _entityConfigurationRepository.LoadAsync(id, id.ToString());
 
         return _mapper.Map<EntityConfigurationViewModel>(entityConfiguration);
     }
-    //
-    // public async Task<EntityConfigurationWithAttributesViewModel> GetEntityConfigurationWithAttributes(
-    //     Guid id,
-    //     string partitionKey,
-    //     CancellationToken cancellationToken = default(CancellationToken)
-    // )
-    // {
-    //     var entityConfiguration = await _entityConfigurationRepository.LoadAsyncOrThrowNotFound(
-    //         id,
-    //         partitionKey,
-    //         cancellationToken
-    //     );
-    //
-    //     var entityConfigurationViewModel = _mapper.Map<EntityConfigurationWithAttributesViewModel>(entityConfiguration);
-    //
-    //     var attributes = await GetAttributeConfigurationsForEntityConfiguration(
-    //         entityConfiguration,
-    //         cancellationToken
-    //     );
-    //
-    //     entityConfigurationViewModel.Attributes = _mapper.Map<List<AttributeConfigurationViewModel>>(attributes);
-    //
-    //     return entityConfigurationViewModel;
-    // }
+
+    public async Task<EntityConfigurationWithAttributesViewModel> GetEntityConfigurationWithAttributes(
+        Guid id,
+        CancellationToken cancellationToken = default
+    )
+    {
+        var entityConfiguration = await _entityConfigurationRepository.LoadAsyncOrThrowNotFound(
+            id,
+            id.ToString(), // EntityConfiguration partition key is set to it's id in Domain model
+            cancellationToken
+        );
+
+        var entityConfigurationViewModel = _mapper.Map<EntityConfigurationWithAttributesViewModel>(entityConfiguration);
+
+        var attributes = await GetAttributeConfigurationsForEntityConfiguration(
+            entityConfiguration,
+            cancellationToken
+        );
+
+        entityConfigurationViewModel.Attributes = _mapper.Map<List<AttributeConfigurationViewModel>>(attributes);
+
+        return entityConfigurationViewModel;
+    }
 
     public async Task<ProjectionQueryResult<AttributeConfigurationListItemViewModel>> ListAttributes(
         ProjectionQuery query,
-        string? partitionKey = null,
         CancellationToken cancellationToken = default
     )
     {
         ProjectionQueryResult<AttributeConfigurationProjectionDocument> list =
-            await _attributeConfigurationProjectionRepository.Query(query, partitionKey, cancellationToken);
+            await _attributeConfigurationProjectionRepository.Query(query, null, cancellationToken);
         return _mapper.Map<ProjectionQueryResult<AttributeConfigurationListItemViewModel>>(list);
     }
 
     public async Task<ProjectionQueryResult<EntityConfigurationViewModel>> ListEntityConfigurations(
         ProjectionQuery query,
-        string? partitionKey = null,
         CancellationToken cancellationToken = default
     )
     {
         ProjectionQueryResult<EntityConfigurationProjectionDocument> records =
-            await _entityConfigurationProjectionRepository.Query(query, partitionKey, cancellationToken);
+            await _entityConfigurationProjectionRepository.Query(query, null, cancellationToken);
         return _mapper.Map<ProjectionQueryResult<EntityConfigurationViewModel>>(records);
     }
 
@@ -352,12 +349,11 @@ public class EAVService : IEAVService
 
     public async Task<AttributeConfigurationViewModel> GetAttribute(
         Guid id,
-        string partitionKey,
         CancellationToken cancellationToken = default
     )
     {
         AttributeConfiguration attribute = await _attributeConfigurationRepository
-            .LoadAsyncOrThrowNotFound(id, partitionKey, cancellationToken);
+            .LoadAsyncOrThrowNotFound(id, id.ToString(), cancellationToken);
 
         if (attribute.IsDeleted)
         {
@@ -405,10 +401,16 @@ public class EAVService : IEAVService
     }
 
     public async Task<(EntityConfigurationViewModel?, ProblemDetails?)> CreateEntityConfiguration(
-        EntityConfigurationCreateRequest entityConfigurationCreateRequest,
+        EntityConfigurationCreateRequest createRequest,
         CancellationToken cancellationToken
     )
     {
+        // We modify request attributes below to replace them with id references to attributes in the store
+        // It's not a good practice to modify something which comes from api consumer, so we make a copy of
+        // the request with automapper.
+        var entityConfigurationCreateRequest = new EntityConfigurationCreateRequest();
+        _mapper.Map(createRequest, entityConfigurationCreateRequest);
+
         foreach (EntityAttributeConfigurationCreateUpdateRequest attribute in entityConfigurationCreateRequest
                      .Attributes
                      .Where(x => x is AttributeConfigurationCreateUpdateRequest))
@@ -557,6 +559,9 @@ public class EAVService : IEAVService
                 new ValidationErrorResponse(nameof(entityUpdateRequest.Id), "Entity configuration not found"))!;
         }
 
+        var entityConfigurationExistingAttributes =
+            await GetAttributeConfigurationsForEntityConfiguration(entityConfiguration, cancellationToken);
+
         // Update config name
         foreach (LocalizedStringCreateRequest name in entityUpdateRequest.Name.Where(name =>
                      !entityConfiguration.Name.Any(
@@ -597,19 +602,36 @@ public class EAVService : IEAVService
             }
             else if (attributeUpdate is AttributeConfigurationCreateUpdateRequest attributeCreateRequest)
             {
-                (AttributeConfigurationViewModel? attributeCreated, ValidationErrorResponse? attrProblemDetails) =
-                    await CreateAttribute(
-                        attributeCreateRequest,
-                        cancellationToken
-                    ).ConfigureAwait(false);
-                if (attrProblemDetails != null)
+                // Make sure such attribute does not already exist on the entity
+                if (entityConfigurationExistingAttributes.Any(c => c.MachineName == attributeCreateRequest.MachineName))
                 {
-                    allAttrProblemDetails.Add(attrProblemDetails);
+                    return (null,
+                        new ValidationErrorResponse(
+                            $"Attributes[{entityUpdateRequest.Attributes.IndexOf(attributeUpdate)}]",
+                            "UpdateEntityConfiguration method should not be used to update individual attribute configurations. " +
+                            "Attribute configurations are separate entities and can be attached to multiple entity configurations. " +
+                            "That means that updating entity configuration only means updating it's name and ONLY adding/removing attributes." +
+                            "Although it's possible to create new attributes by simply adding full attribute request to update method - that will just create a new attribute and add reference to this entity configuration."
+                        )
+                    );
                 }
                 else
                 {
-                    entityConfiguration.AddAttribute(attributeCreated.Id);
-                    reservedAttributes.Add(attributeCreated.Id);
+                    (AttributeConfigurationViewModel? attributeCreated, ValidationErrorResponse? attrProblemDetails) =
+                        await CreateAttribute(
+                            attributeCreateRequest,
+                            cancellationToken
+                        ).ConfigureAwait(false);
+
+                    if (attrProblemDetails != null)
+                    {
+                        allAttrProblemDetails.Add(attrProblemDetails);
+                    }
+                    else
+                    {
+                        entityConfiguration.AddAttribute(attributeCreated.Id);
+                        reservedAttributes.Add(attributeCreated.Id);
+                    }
                 }
             }
         }
@@ -1101,6 +1123,9 @@ public class EAVService : IEAVService
                 validationErrors.Add(a.MachineName, attrValidationErrors.ToArray());
             }
 
+            // Note that this method updates entityConfiguration state (for serial attribute it increments the number
+            // stored in externalvalues) but does not save entity configuration, we need to do that manually outside of
+            // the loop
             InitializeAttributeInstanceWithExternalValuesFromEntity(entityConfiguration, a, attributeValue);
         }
 
@@ -1109,7 +1134,6 @@ public class EAVService : IEAVService
             return (null, new ValidationErrorResponse(validationErrors))!;
         }
 
-        //TODO: Why we need to save configuration here?
         var entityConfigurationSaved = await _entityConfigurationRepository
             .SaveAsync(_userInfo, entityConfiguration, cancellationToken).ConfigureAwait(false);
 

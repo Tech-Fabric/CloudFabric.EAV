@@ -44,6 +44,7 @@ public class Tests
     private IEventStore _eventStore;
     private ILogger<EAVService> _logger;
     private PostgresqlProjectionRepositoryFactory _projectionRepositoryFactory;
+    private IMapper _mapper;
 
     [TestInitialize]
     public async Task SetUp()
@@ -56,7 +57,7 @@ public class Tests
                 cfg.AddMaps(Assembly.GetAssembly(typeof(EAVService)));
             }
         );
-        IMapper? mapper = configuration.CreateMapper();
+        _mapper = configuration.CreateMapper();
 
         var connectionString = "Host=localhost;"
                                + "Username=cloudfabric_eventsourcing_test;"
@@ -94,7 +95,7 @@ public class Tests
 
         _eavService = new EAVService(
             _logger,
-            mapper,
+            _mapper,
             _aggregateRepositoryFactory,
             _projectionRepositoryFactory,
             new EventUserInfo(Guid.NewGuid())
@@ -141,7 +142,7 @@ public class Tests
         );
 
         EntityConfigurationViewModel configuration =
-            await _eavService.GetEntityConfiguration(createdConfiguration.Id, createdConfiguration.PartitionKey);
+            await _eavService.GetEntityConfiguration(createdConfiguration.Id);
 
         EntityInstanceCreateRequest entityInstanceCreateRequest =
             EntityInstanceFactory.CreateValidBoardGameEntityInstanceCreateRequest(createdConfiguration.Id);
@@ -180,7 +181,7 @@ public class Tests
         );
 
         EntityConfigurationViewModel configuration =
-            await _eavService.GetEntityConfiguration(createdConfiguration.Id, createdConfiguration.PartitionKey);
+            await _eavService.GetEntityConfiguration(createdConfiguration.Id);
         var requiredAttributeMachineName = "players_min";
         EntityInstanceCreateRequest entityInstanceCreateRequest =
             EntityInstanceFactory.CreateValidBoardGameEntityInstanceCreateRequest(createdConfiguration.Id);
@@ -222,7 +223,7 @@ public class Tests
         );
 
         EntityConfigurationViewModel configuration =
-            await _eavService.GetEntityConfiguration(createdConfiguration.Id, createdConfiguration.PartitionKey);
+            await _eavService.GetEntityConfiguration(createdConfiguration.Id);
         EntityInstanceCreateRequest entityInstanceCreateRequest =
             EntityInstanceFactory.CreateValidBoardGameEntityInstanceCreateRequest(createdConfiguration.Id);
         entityInstanceCreateRequest.Attributes.Add(
@@ -259,6 +260,11 @@ public class Tests
 
         createdConfiguration.MachineName.Should().Be(configurationCreateRequest.MachineName);
         createdConfiguration.Attributes.Count.Should().Be(configurationCreateRequest.Attributes.Count);
+
+        var configurationWithAttributes =
+            await _eavService.GetEntityConfigurationWithAttributes(createdConfiguration.Id);
+
+        configurationWithAttributes.Should().BeEquivalentTo(configurationCreateRequest);
     }
 
     [TestMethod]
@@ -323,8 +329,7 @@ public class Tests
         );
 
         EntityConfigurationViewModel configuration = await _eavService.GetEntityConfiguration(
-            createdConfiguration.Id,
-            createdConfiguration.PartitionKey
+            createdConfiguration.Id
         );
 
         configuration.Should().BeEquivalentTo(createdConfiguration);
@@ -382,7 +387,6 @@ public class Tests
 
         AttributeConfigurationViewModel updatedAttribute = await _eavService.GetAttribute(
             created.Attributes[0].AttributeConfigurationId,
-            created.Attributes[0].AttributeConfigurationId.ToString(),
             CancellationToken.None
         );
 
@@ -460,11 +464,10 @@ public class Tests
         await _eavService.DeleteAttributes(new List<Guid> { attributeToDelete }, CancellationToken.None);
 
         EntityConfigurationViewModel entityConfAfterAttributeDeleted =
-            await _eavService.GetEntityConfiguration(entityConfig.Id, entityConfig.Id.ToString());
+            await _eavService.GetEntityConfiguration(entityConfig.Id);
         entityConfAfterAttributeDeleted.Attributes.Count().Should().Be(entityConfig.Attributes.Count() - 1);
 
-        Func<Task> act = async () =>
-            await _eavService.GetAttribute(attributeToDelete, attributeToDelete.ToString());
+        Func<Task> act = async () => await _eavService.GetAttribute(attributeToDelete);
         await act.Should().ThrowAsync<NotFoundException>();
 
         ProjectionQueryResult<AttributeConfigurationListItemViewModel> attributesProjections =
@@ -507,8 +510,7 @@ public class Tests
             entityConfig.Id,
             CancellationToken.None
         );
-        EntityConfigurationViewModel entityConfigAfterDeletingNotExistingAttribute =
-            await _eavService.GetEntityConfiguration(entityConfig.Id, entityConfig.Id.ToString());
+        EntityConfigurationViewModel entityConfigAfterDeletingNotExistingAttribute = await _eavService.GetEntityConfiguration(entityConfig.Id);
         entityConfigAfterDeletingNotExistingAttribute.Attributes.Count.Should().Be(entityConfig.Attributes.Count);
     }
 
@@ -661,7 +663,7 @@ public class Tests
             EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
         (EntityConfigurationViewModel? createdConfig, _) =
             await _eavService.CreateEntityConfiguration(configRequest, CancellationToken.None);
-        const string newAttributeMachineName = "avg_time_mins";
+        const string newAttributeMachineName = "some_new_attribute_name";
 
         var newAttributeRequest = new NumberAttributeConfigurationCreateUpdateRequest
         {
@@ -672,11 +674,17 @@ public class Tests
             Description = new List<LocalizedStringCreateRequest>()
         };
 
-        configRequest.Attributes.Add(newAttributeRequest);
+        List<EntityAttributeConfigurationCreateUpdateRequest> newAttributesUpdateRequest =
+            createdConfig.Attributes.Select(a => new EntityAttributeConfigurationCreateUpdateReferenceRequest()
+            {
+                AttributeConfigurationId = a.AttributeConfigurationId
+            }).ToList<EntityAttributeConfigurationCreateUpdateRequest>();
+
+        newAttributesUpdateRequest.Add(newAttributeRequest);
 
         var updateRequest = new EntityConfigurationUpdateRequest
         {
-            Attributes = configRequest.Attributes, Id = createdConfig.Id, Name = configRequest.Name
+            Attributes = newAttributesUpdateRequest, Id = createdConfig.Id, Name = configRequest.Name
         };
 
         (_, ProblemDetails? errors) =
@@ -688,7 +696,7 @@ public class Tests
     }
 
     [TestMethod]
-    public async Task UpdateEntityConfiguration_ChangeName_Success()
+    public async Task UpdateEntityConfiguration_ChangeAttributeName_Fail()
     {
         var cultureId = CultureInfo.GetCultureInfo("EN-us").LCID;
         const string newName = "newName";
@@ -705,10 +713,12 @@ public class Tests
         {
             Attributes = configRequest.Attributes, Id = createdConfig.Id, Name = configRequest.Name
         };
-        (EntityConfigurationViewModel? updatedConfig, _) =
+        (EntityConfigurationViewModel? updatedConfig, ProblemDetails? updateError) =
             await _eavService.UpdateEntityConfiguration(updateRequest, CancellationToken.None);
-        updatedConfig.Name.First(n => n.CultureInfoId == cultureId).String.Should().Be(newName);
-        updatedConfig.Should().BeEquivalentTo(createdConfig, opt => opt.Excluding(o => o.Name));
+
+        updateError.Should().NotBeNull();
+        updateError.As<ValidationErrorResponse>().Errors.First().Key.Should().Be("Attributes[0]");
+        updateError.As<ValidationErrorResponse>().Errors.First().Value.First().Should().Contain("should not be used");
     }
 
     [TestMethod]
@@ -719,7 +729,6 @@ public class Tests
                 ProjectionQueryExpressionExtensions.Where<EntityConfigurationProjectionDocument>(x =>
                     x.MachineName == "BoardGame"
                 ),
-                null,
                 CancellationToken.None
             );
 
@@ -867,7 +876,6 @@ public class Tests
 
         AttributeConfigurationViewModel createdAttribute = await _eavService.GetAttribute(
             created.Attributes[0].AttributeConfigurationId,
-            created.Attributes[0].AttributeConfigurationId.ToString(),
             CancellationToken.None
         );
 
@@ -914,8 +922,8 @@ public class Tests
             CancellationToken.None
         );
 
-        AttributeConfigurationViewModel createdAttribute =
-            await _eavService.GetAttribute(updated!.Id, updated.Id.ToString(), CancellationToken.None);
+        AttributeConfigurationViewModel createdAttribute = await _eavService
+            .GetAttribute(updated!.Id, CancellationToken.None);
 
         createdAttribute.IsRequired.Should().Be(fileAttribute.IsRequired);
         createdAttribute.As<FileAttributeConfigurationViewModel>().IsDownloadable.Should()
@@ -1020,8 +1028,7 @@ public class Tests
         created.Attributes.Count.Should().Be(1);
 
         AttributeConfigurationViewModel createdAttribute = await _eavService.GetAttribute(
-            created.Attributes[0].AttributeConfigurationId,
-            created.Attributes[0].AttributeConfigurationId.ToString()
+            created.Attributes[0].AttributeConfigurationId
         );
 
         createdAttribute.MachineName.Should().Be("testAttr");
@@ -1606,8 +1613,7 @@ public class Tests
 
         // check that attribute is added
         EntityConfigurationViewModel updatedEntityConfiguration = await _eavService.GetEntityConfiguration(
-            createdEntityConfiguration.Id,
-            createdEntityConfiguration.Id.ToString()
+            createdEntityConfiguration.Id
         );
 
         updatedEntityConfiguration.Attributes.Any(x => x.AttributeConfigurationId == createdAttribute.Id)
@@ -2052,8 +2058,7 @@ public class Tests
         );
 
         EntityConfigurationViewModel configuration = await _eavService.GetEntityConfiguration(
-            createdConfiguration.Id,
-            createdConfiguration.PartitionKey
+            createdConfiguration.Id
         );
 
         //configuration.Should().BeEquivalentTo(createdConfiguration);
@@ -2196,7 +2201,6 @@ public class Tests
 
         AttributeConfigurationViewModel attribute = await _eavService.GetAttribute(
             createdConfig!.Attributes[0].AttributeConfigurationId,
-            createdConfig.Attributes[0].AttributeConfigurationId.ToString(),
             CancellationToken.None
         );
 
@@ -2257,7 +2261,6 @@ public class Tests
 
         AttributeConfigurationViewModel attribute = await _eavService.GetAttribute(
             updatedAttribute.Id,
-            updatedAttribute.Id.ToString(),
             CancellationToken.None
         );
 
