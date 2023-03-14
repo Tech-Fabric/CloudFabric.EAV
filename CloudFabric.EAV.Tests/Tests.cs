@@ -514,6 +514,94 @@ public class Tests
         entityConfigAfterDeletingNotExistingAttribute.Attributes.Count.Should().Be(entityConfig.Attributes.Count);
     }
 
+    [TestMethod]
+    public async Task GetAttributeByUsedEntities_Success()
+    {
+        var cultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID;
+        var numberAttribute = new NumberAttributeConfigurationCreateUpdateRequest
+        {
+            MachineName = "number_attribute",
+            Description =
+                new List<LocalizedStringCreateRequest>
+                {
+                    new() { CultureInfoId = cultureInfoId, String = "Number attribute description" }
+                },
+            Name = new List<LocalizedStringCreateRequest>
+            {
+                new() { CultureInfoId = cultureInfoId, String = "New Number Attribute" }
+            },
+            DefaultValue = 15,
+            IsRequired = false,
+            MaximumValue = 100,
+            MinimumValue = -100
+        };
+
+        var configurationCreateRequest = new EntityConfigurationCreateRequest
+        {
+            MachineName = "test",
+            Name = new List<LocalizedStringCreateRequest>
+            {
+                new() { CultureInfoId = cultureInfoId, String = "test" }
+            },
+            Attributes = new List<EntityAttributeConfigurationCreateUpdateRequest> { numberAttribute }
+        };
+        (EntityConfigurationViewModel? created, _) =
+            await _eavService.CreateEntityConfiguration(configurationCreateRequest, CancellationToken.None);
+
+        ProjectionQuery query = new ProjectionQuery()
+        {
+            Filters = new()
+            {
+                new Filter
+                {
+                    PropertyName = nameof(AttributeConfigurationProjectionDocument.UsedByEntityConfigurationIds).ToLowerInvariant(),
+                    Operator = FilterOperator.Contains,
+                    Value = created.Id.ToString()
+                }
+            }
+        };
+
+        var result = await _eavService.ListAttributes(query);
+        result.TotalRecordsFound.Should().Be(1);
+        result.Records.FirstOrDefault().Document.As<AttributeConfigurationProjectionDocument>().UsedByEntityConfigurationIds.FirstOrDefault().Should().Be(created.Id.ToString());
+
+        //configurationCreateRequest = new EntityConfigurationCreateRequest
+        //{
+        //    MachineName = "test",
+        //    Name = new List<LocalizedStringCreateRequest>
+        //    {
+        //        new() { CultureInfoId = cultureInfoId, String = "test" }
+        //    },
+        //    Attributes = new List<EntityAttributeConfigurationCreateUpdateRequest> { numberAttribute }
+        //};
+        //(EntityConfigurationViewModel? created, _) =
+        //    await _eavService.CreateEntityConfiguration(configurationCreateRequest, CancellationToken.None);
+
+
+
+        //var numberAttribute2 = new NumberAttributeConfigurationCreateUpdateRequest
+        //{
+        //    MachineName = "number_attribute",
+        //    Description =
+        //new List<LocalizedStringCreateRequest>
+        //{
+        //                    new() { CultureInfoId = cultureInfoId, String = "Number attribute description" }
+        //},
+        //    Name = new List<LocalizedStringCreateRequest>
+        //    {
+        //        new() { CultureInfoId = cultureInfoId, String = "New Number Attribute" }
+        //    },
+        //    DefaultValue = 15,
+        //    IsRequired = false,
+        //    MaximumValue = 100,
+        //    MinimumValue = -100
+        //};
+        //await _eavService.CreateAttribute(numberAttribute2);
+
+        //await _eavService.AddAttributeToEntityConfiguration()
+
+    }
+
     //
     // [TestMethod]
     //  public async Task UpdateEntityConfiguration_ChangeLocalizedStringAttribute_Success()

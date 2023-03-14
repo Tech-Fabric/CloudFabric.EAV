@@ -23,5 +23,7 @@ public class AttributeConfigurationListItemViewModel
 
     public int NumberOfEntityInstancesWithAttribute { get; set; }
 
+    public List<Guid> UsedByEntityConfigurationIds { get; set; } = new List<Guid>();
+
     public string? Metadata { get; set; }
 }
