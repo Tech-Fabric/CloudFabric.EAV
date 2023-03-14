@@ -555,7 +555,7 @@ public class Tests
                 new Filter
                 {
                     PropertyName = nameof(AttributeConfigurationProjectionDocument.UsedByEntityConfigurationIds).ToLowerInvariant(),
-                    Operator = FilterOperator.Contains,
+                    Operator = FilterOperator.ArrayContains,
                     Value = created.Id.ToString()
                 }
             }
@@ -563,7 +563,8 @@ public class Tests
 
         var result = await _eavService.ListAttributes(query);
         result.TotalRecordsFound.Should().Be(1);
-        result.Records.FirstOrDefault().Document.As<AttributeConfigurationProjectionDocument>().UsedByEntityConfigurationIds.FirstOrDefault().Should().Be(created.Id.ToString());
+        result.Records.FirstOrDefault().Document.As<AttributeConfigurationListItemViewModel>()
+            .UsedByEntityConfigurationIds.FirstOrDefault().Should().Be(created.Id.ToString());
 
         //configurationCreateRequest = new EntityConfigurationCreateRequest
         //{
