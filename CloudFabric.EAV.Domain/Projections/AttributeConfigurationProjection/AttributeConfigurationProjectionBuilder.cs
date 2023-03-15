@@ -280,7 +280,7 @@ public class AttributeConfigurationProjectionBuilder : ProjectionBuilder<Attribu
             @event.Timestamp,
             document =>
             {
-                document.UsedByEntityConfigurationIds.Add(@event.AttributeReference.AttributeConfigurationId.ToString());
+                document.UsedByEntityConfigurationIds.Add(@event.AggregateId.ToString());
             }
         );
     }
@@ -292,7 +292,7 @@ public class AttributeConfigurationProjectionBuilder : ProjectionBuilder<Attribu
             @event.Timestamp,
             document =>
             {
-                document.UsedByEntityConfigurationIds.Remove(@event.AttributeConfigurationId.ToString());
+                document.UsedByEntityConfigurationIds.Remove(@event.AggregateId.ToString());
             }
         );
     }
