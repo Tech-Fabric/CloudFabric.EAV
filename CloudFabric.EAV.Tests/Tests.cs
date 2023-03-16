@@ -1,3 +1,4 @@
+using System;
 using System.Globalization;
 using System.Reflection;
 using System.Text.Json;
@@ -512,6 +513,152 @@ public class Tests
         );
         EntityConfigurationViewModel entityConfigAfterDeletingNotExistingAttribute = await _eavService.GetEntityConfiguration(entityConfig.Id);
         entityConfigAfterDeletingNotExistingAttribute.Attributes.Count.Should().Be(entityConfig.Attributes.Count);
+    }
+
+    [TestMethod]
+    public async Task GetAttributeByUsedEntities_Success()
+    {
+        var cultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID;
+
+        // Create attributes
+        var numberAttributeRequest = new NumberAttributeConfigurationCreateUpdateRequest
+        {
+            MachineName = "number_attribute",
+            Name = new List<LocalizedStringCreateRequest>
+                {
+                    new() { CultureInfoId = cultureInfoId, String = "Number Attribute" }
+                },
+            DefaultValue = 15,
+            IsRequired = false,
+            MaximumValue = 100,
+            MinimumValue = -100
+        };
+        (AttributeConfigurationViewModel numberAttribute, _) = await _eavService.CreateAttribute(numberAttributeRequest);
+
+        var textAttributeRequest = new TextAttributeConfigurationCreateUpdateRequest
+        {
+            MachineName = "text_attribute",
+            Name = new List<LocalizedStringCreateRequest>
+                    {
+                        new() { CultureInfoId = cultureInfoId, String = "Text Attribute" }
+                    },
+            IsRequired = true,
+            IsSearchable = true,
+            MaxLength = 100,
+            DefaultValue = "-"
+        };
+        (AttributeConfigurationViewModel textAttribute, _) = await _eavService.CreateAttribute(textAttributeRequest);
+
+        // Create entity and add attributes
+        var configurationCreateRequest = new EntityConfigurationCreateRequest
+        {
+            MachineName = "test",
+            Name = new List<LocalizedStringCreateRequest>
+            {
+                new() { CultureInfoId = cultureInfoId, String = "test" }
+            }
+        };
+        (EntityConfigurationViewModel? createdFirstEntity, _) =
+            await _eavService.CreateEntityConfiguration(configurationCreateRequest, CancellationToken.None);
+
+        await _eavService.AddAttributeToEntityConfiguration(numberAttribute.Id, createdFirstEntity.Id);
+        await _eavService.AddAttributeToEntityConfiguration(textAttribute.Id, createdFirstEntity.Id);
+
+        // Get attributes by UsedByEntityConfigurationIds
+        ProjectionQuery query = new ProjectionQuery()
+        {
+            Filters = new()
+            {
+                new Filter
+                {
+                    PropertyName = nameof(AttributeConfigurationProjectionDocument.UsedByEntityConfigurationIds).ToLowerInvariant(),
+                    Operator = FilterOperator.ArrayContains,
+                    Value = createdFirstEntity.Id.ToString()
+                }
+            }
+        };
+
+        var result = await _eavService.ListAttributes(query);
+        result.TotalRecordsFound.Should().Be(2);
+        result.Records.FirstOrDefault().Document.As<AttributeConfigurationListItemViewModel>()
+            .UsedByEntityConfigurationIds.FirstOrDefault().Should().Be(createdFirstEntity.Id.ToString());
+
+        // Create another entity with attribute
+        configurationCreateRequest = new EntityConfigurationCreateRequest
+        {
+            MachineName = "another_test",
+            Name = new List<LocalizedStringCreateRequest>
+            {
+                new() { CultureInfoId = cultureInfoId, String = "test" }
+            }
+        };
+        (EntityConfigurationViewModel? createdSecondEntity, _) =
+            await _eavService.CreateEntityConfiguration(configurationCreateRequest, CancellationToken.None);
+        await _eavService.AddAttributeToEntityConfiguration(numberAttribute.Id, createdSecondEntity.Id);
+
+        // Get attribute by one of UsedByEntityConfigurationIds
+        query.Filters = new()
+        {
+            new Filter
+            {
+                PropertyName = nameof(AttributeConfigurationProjectionDocument.UsedByEntityConfigurationIds).ToLowerInvariant(),
+                Operator = FilterOperator.ArrayContains,
+                Value = createdSecondEntity.Id.ToString()
+            }
+        };
+
+        result = await _eavService.ListAttributes(query);
+        result.TotalRecordsFound.Should().Be(1);
+        result.Records.FirstOrDefault().Document.As<AttributeConfigurationListItemViewModel>()
+            .UsedByEntityConfigurationIds.Count.Should().Be(2);
+
+        // Get after delete
+        await _eavService.DeleteAttributes(new List<Guid>() { numberAttribute.Id });
+        result = await _eavService.ListAttributes(query);
+        result.TotalRecordsFound.Should().Be(0);
+
+        // Get attributes when created in a flow of entity creation
+        List<EntityAttributeConfigurationCreateUpdateRequest> createAttrList = new();
+        for (int i = 0; i < 20; i++)
+        {
+            createAttrList.Add(new NumberAttributeConfigurationCreateUpdateRequest
+            {
+                MachineName = $"number_attribute{i}",
+                Name = new List<LocalizedStringCreateRequest>
+                {
+                    new() { CultureInfoId = cultureInfoId, String = "Number Attribute" }
+                },
+                DefaultValue = 15,
+                IsRequired = false,
+                MaximumValue = 100,
+                MinimumValue = -100
+            });
+        }
+
+        configurationCreateRequest = new EntityConfigurationCreateRequest
+        {
+            MachineName = "test2",
+            Name = new List<LocalizedStringCreateRequest>
+            {
+                new() { CultureInfoId = cultureInfoId, String = "test" }
+            },
+            Attributes = createAttrList
+        };
+        (EntityConfigurationViewModel? createdThirdEntity, _) =
+            await _eavService.CreateEntityConfiguration(configurationCreateRequest, CancellationToken.None);
+
+        query.Filters = new()
+        {
+            new Filter
+            {
+                PropertyName = nameof(AttributeConfigurationProjectionDocument.UsedByEntityConfigurationIds).ToLowerInvariant(),
+                Operator = FilterOperator.ArrayContains,
+                Value = createdThirdEntity.Id.ToString()
+            }
+        };
+
+        result = await _eavService.ListAttributes(query);
+        result.TotalRecordsFound.Should().Be(20);
     }
 
     //

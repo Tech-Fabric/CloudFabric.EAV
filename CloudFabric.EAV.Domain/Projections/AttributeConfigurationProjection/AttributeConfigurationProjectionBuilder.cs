@@ -1,4 +1,5 @@
 using CloudFabric.EAV.Domain.Events.Configuration.Attribute;
+using CloudFabric.EAV.Domain.Events.Configuration.Entity;
 using CloudFabric.EAV.Domain.Events.Instance.Attribute;
 using CloudFabric.EAV.Domain.Events.Instance.Entity;
 using CloudFabric.EAV.Domain.Models;
@@ -18,7 +19,10 @@ public class AttributeConfigurationProjectionBuilder : ProjectionBuilder<Attribu
     IHandleEvent<EntityInstanceCreated>,
     IHandleEvent<AttributeInstanceAdded>,
     IHandleEvent<AttributeInstanceRemoved>,
-    IHandleEvent<AggregateUpdatedEvent<AttributeConfiguration>>
+    IHandleEvent<AggregateUpdatedEvent<AttributeConfiguration>>,
+    IHandleEvent<EntityConfigurationCreated>,
+    IHandleEvent<EntityConfigurationAttributeAdded>,
+    IHandleEvent<EntityConfigurationAttributeRemoved>
 {
     public AttributeConfigurationProjectionBuilder(
         ProjectionRepositoryFactory projectionRepositoryFactory
@@ -253,5 +257,43 @@ public class AttributeConfigurationProjectionBuilder : ProjectionBuilder<Attribu
                 );
             }
         }
+    }
+
+    public async Task On(EntityConfigurationCreated @event)
+    {
+        foreach (var attribute in @event.Attributes)
+        {
+            await UpdateDocument(attribute.AttributeConfigurationId,
+            attribute.AttributeConfigurationId.ToString(),
+            @event.Timestamp,
+            document =>
+                {
+                    document.UsedByEntityConfigurationIds.Add(@event.AggregateId.ToString());
+                }
+            );
+        }
+    }
+    public async Task On(EntityConfigurationAttributeAdded @event)
+    {
+        await UpdateDocument(@event.AttributeReference.AttributeConfigurationId,
+            @event.AttributeReference.AttributeConfigurationId.ToString(),
+            @event.Timestamp,
+            document =>
+            {
+                document.UsedByEntityConfigurationIds.Add(@event.AggregateId.ToString());
+            }
+        );
+    }
+
+    public async Task On(EntityConfigurationAttributeRemoved @event)
+    {
+        await UpdateDocument(@event.AttributeConfigurationId,
+            @event.AttributeConfigurationId.ToString(),
+            @event.Timestamp,
+            document =>
+            {
+                document.UsedByEntityConfigurationIds.Remove(@event.AggregateId.ToString());
+            }
+        );
     }
 }
