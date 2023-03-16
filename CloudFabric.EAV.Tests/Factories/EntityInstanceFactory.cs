@@ -34,6 +34,74 @@ public class EntityInstanceFactory
         };
     }
 
+    public static string CreateValidBoardGameEntityInstanceCreateRequestJsonSingleLanguage(Guid entityConfigurationId)
+    {
+        return @"
+            {
+                ""entityConfigurationId"": """ + entityConfigurationId + @""",
+                ""name"": ""Azul"",
+                ""description"": ""In the game Azul, players take turns drafting colored tiles from suppliers to their player board. Later in the round, players score points based on how they've placed their tiles to decorate the palace. Extra points are scored for specific patterns and completing sets; wasted supplies harm the player's score. The player with the most points at the end of the game wins."",
+                ""brand"": ""HobbyGames"",
+                ""players_min"": 1,
+                ""players_max"": 4,
+                ""avg_time_mins"": 15,
+                ""price"": 31.50,
+                ""release_date"": ""2017"",
+                ""images"": [
+                    {
+                        ""title"": ""Photo 1"",
+                        ""url"": ""/images/photo1.jpg"",
+                        ""alt"": ""A photo of Azul board game box""
+                    },
+                    {
+                        ""title"": ""Azul Rulebook"",
+                        ""url"": ""/images/rulebook.jpg"",
+                        ""alt"": ""A photo of Azul board game rulebook, page 1""
+                    }
+                ]
+            }
+        ";
+    }
+
+    public static string CreateValidBoardGameEntityInstanceCreateRequestJsonMultiLanguage(Guid entityConfigurationId)
+    {
+        return @"
+            {
+                ""entityConfigurationId"": """ + entityConfigurationId + @""",
+                ""name"": [
+                    {
+                        ""EN-us"": ""Azul"",
+                        ""RU-ru"": ""Азул""
+                    }
+                ],
+                ""description"": [
+                    {
+                         ""EN-us"": ""In the game Azul, players take turns drafting colored tiles from suppliers to their player board. Later in the round, players score points based on how they've placed their tiles to decorate the palace. Extra points are scored for specific patterns and completing sets; wasted supplies harm the player's score. The player with the most points at the end of the game wins."",
+                         ""RU-ru"": ""Представьте, что вы попали в красивый дворец, все стены которого выложены изящной разноцветной плиткой. Вы понимаете, что не один мастер тут потрудился, это была целая команда художников и ремесленников, которая работала не покладая рук много лет, чтобы вы смогли сегодня восхититься красотой узоров. В ней нет и кусочка повторения, как будто бы в каждой плитке свой особый сюжет, пропитанный духом времени.""
+                    }
+                ],
+                ""brand"": ""HobbyGames"",
+                ""players_min"": 1,
+                ""players_max"": 4,
+                ""avg_time_mins"": 15,
+                ""price"": 31.50,
+                ""release_date"": ""2017"",
+                ""images"": [
+                    {{
+                        ""title"": ""Photo 1"",
+                        ""url"": ""/images/photo1.jpg"",
+                        ""llt"": ""A photo of Azul board game box""
+                    }},
+                    {{
+                        ""title"": ""Azul Rulebook"",
+                        ""url"": ""/images/rulebook.jpg"",
+                        ""alt"": ""A photo of Azul board game rulebook, page 1""
+                    }}
+                ]
+            }}
+        ";
+    }
+
     public static EntityInstanceCreateRequest CreateValidBoardGameEntityInstanceCreateRequest(
         Guid entityConfigurationId)
     {

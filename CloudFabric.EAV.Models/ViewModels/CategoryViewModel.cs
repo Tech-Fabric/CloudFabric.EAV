@@ -1,4 +1,3 @@
-using CloudFabric.EAV.Domain.Models;
 using CloudFabric.EAV.Models.ViewModels.Attributes;
 
 namespace CloudFabric.EAV.Models.ViewModels;
@@ -15,5 +14,5 @@ public class CategoryViewModel
 
     public string PartitionKey { get; set; }
 
-    public List<CategoryPath> CategoryPaths { get; set; }
+    public List<CategoryPathViewModel> CategoryPaths { get; set; }
 }

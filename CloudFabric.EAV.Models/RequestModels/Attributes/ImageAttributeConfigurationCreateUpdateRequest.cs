@@ -1,4 +1,4 @@
-﻿using CloudFabric.EAV.Domain.Enums;
+﻿using CloudFabric.EAV.Enums;
 
 namespace CloudFabric.EAV.Models.RequestModels.Attributes;
 
@@ -7,6 +7,8 @@ public class ImageThumbnailDefinitionCreateUpdateRequest
     public int MaxWidth { get; set; }
 
     public int MaxHeight { get; set; }
+
+    public string Name { get; set; }
 }
 
 public class ImageAttributeValueCreateUpdateRequest

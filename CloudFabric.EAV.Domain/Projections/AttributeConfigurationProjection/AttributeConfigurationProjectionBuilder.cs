@@ -1,4 +1,5 @@
 using CloudFabric.EAV.Domain.Events.Configuration.Attribute;
+using CloudFabric.EAV.Domain.Events.Configuration.Entity;
 using CloudFabric.EAV.Domain.Events.Instance.Attribute;
 using CloudFabric.EAV.Domain.Events.Instance.Entity;
 using CloudFabric.EAV.Domain.Models;

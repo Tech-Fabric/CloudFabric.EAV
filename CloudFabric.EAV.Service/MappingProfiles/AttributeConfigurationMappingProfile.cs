@@ -27,7 +27,7 @@ public class AttributeConfigurationProfile : Profile
                     o.MachineName,
                     ctx.Mapper.Map<List<LocalizedString>>(o.Name),
                     o.ItemsType,
-                    Guid.Empty, //o.ItemsAttributeConfiguration,
+                    Guid.Empty,
                     ctx.Mapper.Map<List<LocalizedString>>(o.Description),
                     o.IsRequired,
                     o.TenantId,
@@ -49,6 +49,7 @@ public class AttributeConfigurationProfile : Profile
                 )
             );
         CreateMap<ImageThumbnailDefinitionCreateUpdateRequest, ImageThumbnailDefinition>();
+
         CreateMap<LocalizedTextAttributeConfigurationCreateUpdateRequest, LocalizedTextAttributeConfiguration>()
             .ConvertUsing((o, dst, ctx) => new LocalizedTextAttributeConfiguration(
                     Guid.NewGuid(),
@@ -168,7 +169,7 @@ public class AttributeConfigurationProfile : Profile
             );
 
         // Use 0 as a StartingNumber default value for SerialAttributeConfiguration constructor.
-        // Value doesn't participate in attribute update. 
+        // Value doesn't participate in attribute update.
         CreateMap<SerialAttributeConfigurationUpdateRequest, SerialAttributeConfiguration>()
             .ConvertUsing((o, dst, ctx) => new SerialAttributeConfiguration(
                     Guid.NewGuid(),

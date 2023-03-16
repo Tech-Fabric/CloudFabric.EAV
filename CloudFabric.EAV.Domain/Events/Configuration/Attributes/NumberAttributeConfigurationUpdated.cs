@@ -1,4 +1,4 @@
-using CloudFabric.EAV.Domain.Enums;
+using CloudFabric.EAV.Enums;
 using CloudFabric.EventSourcing.EventStore;
 
 namespace CloudFabric.EAV.Domain.Events.Configuration.Attributes;

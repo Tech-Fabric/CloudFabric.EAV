@@ -1,4 +1,4 @@
-using CloudFabric.EAV.Domain.Enums;
+using CloudFabric.EAV.Enums;
 using CloudFabric.EAV.Domain.Events.Configuration.Attributes;
 using CloudFabric.EAV.Domain.Models.Base;
 using CloudFabric.EventSourcing.EventStore;
@@ -63,6 +63,14 @@ public class ArrayAttributeConfiguration : AttributeConfiguration
                 )
             );
         }
+    }
+
+    public void UpdateItemsAttributeConfigurationId(Guid newItemsAttributeConfigurationId)
+    {
+        Apply(new ArrayAttributeConfigurationUpdated(Id,
+            this.ItemsType,
+            newItemsAttributeConfigurationId
+        ));
     }
 
     #region EventHandlers

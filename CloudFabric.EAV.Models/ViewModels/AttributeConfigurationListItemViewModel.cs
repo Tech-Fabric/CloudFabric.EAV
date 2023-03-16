@@ -1,5 +1,4 @@
-using CloudFabric.EAV.Domain.Enums;
-using CloudFabric.EAV.Domain.Models.Base;
+using CloudFabric.EAV.Enums;
 
 namespace CloudFabric.EAV.Models.ViewModels;
 
@@ -9,7 +8,7 @@ public class AttributeConfigurationListItemViewModel
 
     public List<LocalizedStringViewModel> Name { get; set; }
 
-    public List<LocalizedString> Description { get; set; }
+    public List<LocalizedStringViewModel> Description { get; set; }
 
     public string MachineName { get; set; }
 

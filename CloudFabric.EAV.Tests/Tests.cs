@@ -4,7 +4,7 @@ using System.Text.Json;
 
 using AutoMapper;
 
-using CloudFabric.EAV.Domain.Enums;
+using CloudFabric.EAV.Enums;
 using CloudFabric.EAV.Domain.Models;
 using CloudFabric.EAV.Domain.Models.Attributes;
 using CloudFabric.EAV.Domain.Projections.AttributeConfigurationProjection;

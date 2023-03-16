@@ -1,3 +1,5 @@
+using System.Collections.Immutable;
+
 using CloudFabric.EAV.Domain.Models.Attributes;
 using CloudFabric.EventSourcing.EventStore;
 
@@ -11,11 +13,11 @@ public record ImageAttributeConfigurationUpdated : Event
     {
     }
 
-    public ImageAttributeConfigurationUpdated(Guid id, List<ImageThumbnailDefinition> thumbnailsConfiguration)
+    public ImageAttributeConfigurationUpdated(Guid id, ImmutableList<ImageThumbnailDefinition> thumbnailsConfiguration)
     {
         AggregateId = id;
         ThumbnailsConfiguration = thumbnailsConfiguration;
     }
 
-    public List<ImageThumbnailDefinition> ThumbnailsConfiguration { get; set; }
+    public ImmutableList<ImageThumbnailDefinition> ThumbnailsConfiguration { get; set; }
 }

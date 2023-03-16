@@ -5,15 +5,17 @@ using System.Text.RegularExpressions;
 
 using AutoMapper;
 
-using CloudFabric.EAV.Domain.Enums;
+using CloudFabric.EAV.Enums;
 using CloudFabric.EAV.Domain.Models;
 using CloudFabric.EAV.Domain.Models.Attributes;
 using CloudFabric.EAV.Domain.Models.Base;
 using CloudFabric.EAV.Domain.Projections.AttributeConfigurationProjection;
 using CloudFabric.EAV.Domain.Projections.EntityConfigurationProjection;
 using CloudFabric.EAV.Models.RequestModels;
+using CloudFabric.EAV.Models.RequestModels.Attributes;
 using CloudFabric.EAV.Models.ViewModels;
 using CloudFabric.EAV.Models.ViewModels.Attributes;
+using CloudFabric.EAV.Service.Serialization;
 using CloudFabric.EventSourcing.Domain;
 using CloudFabric.EventSourcing.EventStore;
 using CloudFabric.EventSourcing.EventStore.Persistence;
@@ -44,6 +46,9 @@ public class EAVService : IEAVService
     private readonly AggregateRepository<EntityConfiguration> _entityConfigurationRepository;
 
     private readonly EntityInstanceFromDictionaryDeserializer _entityInstanceFromDictionaryDeserializer;
+
+    private readonly EntityInstanceCreateUpdateRequestFromJsonDeserializer
+        _entityInstanceCreateUpdateRequestFromJsonDeserializer;
     private readonly AggregateRepository<EntityInstance> _entityInstanceRepository;
     private readonly ILogger<EAVService> _logger;
     private readonly IMapper _mapper;
@@ -80,6 +85,8 @@ public class EAVService : IEAVService
             .GetProjectionRepository<EntityConfigurationProjectionDocument>();
 
         _entityInstanceFromDictionaryDeserializer = new EntityInstanceFromDictionaryDeserializer(_mapper);
+        _entityInstanceCreateUpdateRequestFromJsonDeserializer =
+            new EntityInstanceCreateUpdateRequestFromJsonDeserializer(_mapper, _attributeConfigurationRepository);
     }
 
     private void EnsureAttributeMachineNameIsAdded(AttributeConfigurationCreateUpdateRequest attributeRequest)
@@ -340,10 +347,54 @@ public class EAVService : IEAVService
             return (null, new ValidationErrorResponse(attribute.MachineName, validationErrors.ToArray()));
         }
 
+        // make sure that a projection exists for attribute list because once we save the attribute
+        // a projection builder will be triggered to create a projection of this attribute.
         await _attributeConfigurationProjectionRepository.EnsureIndex(cancellationToken).ConfigureAwait(false);
+
+        if (attributeConfigurationCreateUpdateRequest is ArrayAttributeConfigurationCreateUpdateRequest array)
+        {
+            array.ItemsAttributeConfiguration.TenantId = array.TenantId;
+
+            if (array.ItemsAttributeConfiguration.Name == null || array.ItemsAttributeConfiguration.Name.Count < 1)
+            {
+                array.ItemsAttributeConfiguration.Name = array.Name.Select(n => new LocalizedStringCreateRequest()
+                {
+                    CultureInfoId = n.CultureInfoId,
+                    String = $"Items configuration of {array.MachineName} - {n.String}"
+                }).ToList();
+            }
+
+            if (array.ItemsAttributeConfiguration.Description == null || array.ItemsAttributeConfiguration.Description.Count < 1)
+            {
+                array.ItemsAttributeConfiguration.Description = new List<LocalizedStringCreateRequest>()
+                {
+                    new LocalizedStringCreateRequest()
+                    {
+                        CultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID,
+                        String = $"This attribute was created for {array.MachineName} attribute. " +
+                                 $"Since that attribute is an array and has it's own configuration, a separate attribute " +
+                                 $"is required to configure array elements."
+                    }
+                };
+            }
+
+            var (createdArrayItemsConfiguration, arrayItemsConfigurationErrors) = await
+                CreateAttribute(array.ItemsAttributeConfiguration);
+
+            if (arrayItemsConfigurationErrors != null)
+            {
+                return (null, arrayItemsConfigurationErrors);
+            }
+
+            ((attribute as ArrayAttributeConfiguration)!).UpdateItemsAttributeConfigurationId(
+                createdArrayItemsConfiguration!.Id
+            );
+        }
 
         await _attributeConfigurationRepository.SaveAsync(_userInfo, attribute, cancellationToken)
             .ConfigureAwait(false);
+
+
         return (_mapper.Map<AttributeConfigurationViewModel>(attribute), null);
     }
 
@@ -463,7 +514,8 @@ public class EAVService : IEAVService
             EntityAttributeConfigurationCreateUpdateRequest attribute =
                 entityConfigurationCreateRequest.Attributes[i];
 
-            if (!(attribute is EntityAttributeConfigurationCreateUpdateReferenceRequest))
+            if (
+            !(attribute is EntityAttributeConfigurationCreateUpdateReferenceRequest))
             {
                 (AttributeConfigurationViewModel? attrCreated, ValidationErrorResponse? attrProblemDetails) =
                     await CreateAttribute(
@@ -1082,7 +1134,109 @@ public class EAVService : IEAVService
 
     #region EntityInstance
 
-    public async Task<(EntityInstanceViewModel, ProblemDetails)> CreateEntityInstance(
+    public Task<(EntityInstanceViewModel?, ProblemDetails?)> CreateEntityInstance(
+        string entity, CancellationToken cancellationToken = default
+    )
+    {
+        JsonDocument entityJson = JsonDocument.Parse(entity);
+
+        return CreateEntityInstance(entityJson, cancellationToken);
+    }
+
+    public Task<(EntityInstanceViewModel?, ProblemDetails?)> CreateEntityInstance(
+        string entity, Guid entityConfigurationId, Guid tenantId, CancellationToken cancellationToken = default
+    )
+    {
+        JsonDocument entityJson = JsonDocument.Parse(entity);
+
+        return CreateEntityInstance(entityJson, entityConfigurationId, tenantId, cancellationToken);
+    }
+
+    public async Task<(EntityInstanceViewModel?, ProblemDetails?)> CreateEntityInstance(
+        JsonDocument entityJson, CancellationToken cancellationToken = default
+    )
+    {
+        Guid? entityConfigurationId = null;
+        if (entityJson.RootElement.TryGetProperty("entityConfigurationId", out var entityConfigurationIdJsonElement))
+        {
+            if (entityConfigurationIdJsonElement.TryGetGuid(out var entityConfigurationIdGuid))
+            {
+                entityConfigurationId = entityConfigurationIdGuid;
+            }
+            else
+            {
+                return (null, new ValidationErrorResponse("entityConfigurationId", "Value is not a valid Guid"))!;
+            }
+        }
+        else
+        {
+            return (null, new ValidationErrorResponse("entityConfigurationId", "Value is missing"));
+        }
+
+        Guid? tenantId = null;
+        if (entityJson.RootElement.TryGetProperty("tenantId", out var tenantIdJsonElement))
+        {
+            if (tenantIdJsonElement.TryGetGuid(out var tenantIdGuid))
+            {
+                tenantId = tenantIdGuid;
+            }
+            else
+            {
+                return (null, new ValidationErrorResponse("tenantId", "Value is not a valid Guid"))!;
+            }
+        }
+        else
+        {
+            return (null, new ValidationErrorResponse("tenantId", "Value is missing"));
+        }
+
+        return await CreateEntityInstance(entityJson, entityConfigurationId.Value, tenantId.Value, cancellationToken);
+    }
+
+    public async Task<(EntityInstanceViewModel?, ProblemDetails?)> CreateEntityInstance(
+        JsonDocument entityJson, Guid entityConfigurationId, Guid tenantId, CancellationToken cancellationToken = default
+    )
+    {
+        EntityConfiguration? entityConfiguration = await _entityConfigurationRepository.LoadAsync(
+            entityConfigurationId,
+            entityConfigurationId.ToString(),
+            cancellationToken
+        ).ConfigureAwait(false);
+
+        if (entityConfiguration == null)
+        {
+            return (null, new ValidationErrorResponse("EntityConfigurationId", "EntityConfiguration not found"))!;
+        }
+
+        List<AttributeConfiguration> attributeConfigurations =
+            await GetAttributeConfigurationsForEntityConfiguration(
+                entityConfiguration,
+                cancellationToken
+            ).ConfigureAwait(false);
+
+        var (entityInstanceCreateRequest, deserializationErrors) = await
+            _entityInstanceCreateUpdateRequestFromJsonDeserializer.DeserializeEntityInstanceCreateRequest(
+                entityConfigurationId, tenantId, attributeConfigurations, entityJson
+            );
+
+        if (deserializationErrors != null)
+        {
+            return (null, deserializationErrors);
+        }
+
+        var (createdEntity, validationErrors) = await CreateEntityInstance(
+            entityInstanceCreateRequest, cancellationToken
+        );
+
+        if (validationErrors != null)
+        {
+            return (null, validationErrors);
+        }
+
+        return (createdEntity, null);
+    }
+
+    public async Task<(EntityInstanceViewModel?, ProblemDetails?)> CreateEntityInstance(
         EntityInstanceCreateRequest entity, CancellationToken cancellationToken = default
     )
     {
@@ -1157,7 +1311,7 @@ public class EAVService : IEAVService
             throw new Exception("Entity was not saved");
         }
 
-        return (_mapper.Map<EntityInstanceViewModel>(entityInstance), null)!;
+        return (_mapper.Map<EntityInstanceViewModel>(entityInstance), null);
     }
 
     public async Task<EntityInstanceViewModel> GetEntityInstance(Guid id, string partitionKey)

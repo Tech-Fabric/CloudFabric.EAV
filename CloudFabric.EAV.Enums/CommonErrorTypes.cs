@@ -1,4 +1,4 @@
-namespace CloudFabric.EAV.Domain.Enums;
+namespace CloudFabric.EAV.Enums;
 
 public static class CommonErrorTypes
 {

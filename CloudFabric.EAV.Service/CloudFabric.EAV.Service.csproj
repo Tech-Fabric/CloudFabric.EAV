@@ -16,6 +16,7 @@
     </ItemGroup>
 
     <ItemGroup>
+        <ProjectReference Include="..\CloudFabric.EAV.Domain\CloudFabric.EAV.Domain.csproj" />
         <ProjectReference Include="..\CloudFabric.EAV.Json\CloudFabric.EAV.Json.csproj" />
         <ProjectReference Include="..\CloudFabric.EAV.Models\CloudFabric.EAV.Models.csproj" />
     </ItemGroup>

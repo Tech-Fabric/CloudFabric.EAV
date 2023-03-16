@@ -1,12 +1,12 @@
 using AutoMapper;
 
-using CloudFabric.EAV.Domain.Enums;
+using CloudFabric.EAV.Enums;
 using CloudFabric.EAV.Domain.Models;
 using CloudFabric.EAV.Domain.Models.Attributes;
 using CloudFabric.EAV.Models.ViewModels;
 using CloudFabric.EAV.Models.ViewModels.Attributes;
 
-namespace CloudFabric.EAV.Service;
+namespace CloudFabric.EAV.Service.Serialization;
 
 public class EntityInstanceFromDictionaryDeserializer
 {
@@ -38,21 +38,21 @@ public class EntityInstanceFromDictionaryDeserializer
                 .ToList(),
             CategoryPaths = record.ContainsKey("CategoryPaths")
                 ? ParseCategoryPaths(record["CategoryPaths"])
-                : new List<CategoryPath>()
+                : new List<CategoryPathViewModel>()
         };
         return entityInstance;
     }
 
-    private List<CategoryPath> ParseCategoryPaths(object? paths)
+    private List<CategoryPathViewModel> ParseCategoryPaths(object? paths)
     {
-        var categoryPaths = new List<CategoryPath>();
+        var categoryPaths = new List<CategoryPathViewModel>();
         if (paths is List<object> pathsList)
         {
             foreach (var path in pathsList)
             {
                 if (path is Dictionary<string, object> pathDictionary)
                 {
-                    var categoryPath = new CategoryPath();
+                    var categoryPath = new CategoryPathViewModel();
                     foreach (KeyValuePair<string, object> pathItem in pathDictionary)
                     {
                         if (pathItem.Key == "Path")
@@ -69,7 +69,7 @@ public class EntityInstanceFromDictionaryDeserializer
                 }
             }
         }
-        else if (paths is List<CategoryPath> pathsListOriginal)
+        else if (paths is List<CategoryPathViewModel> pathsListOriginal)
         {
             categoryPaths = pathsListOriginal;
         }

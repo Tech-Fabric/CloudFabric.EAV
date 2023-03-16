@@ -2,7 +2,7 @@ using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Text.Json.Serialization;
 
-using CloudFabric.EAV.Domain.Enums;
+using CloudFabric.EAV.Enums;
 using CloudFabric.EAV.Domain.Events.Configuration.Attribute;
 using CloudFabric.EAV.Domain.Models.Base;
 using CloudFabric.EAV.Json.Utilities;
