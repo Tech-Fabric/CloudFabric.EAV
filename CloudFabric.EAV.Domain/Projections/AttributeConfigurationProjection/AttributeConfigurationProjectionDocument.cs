@@ -32,5 +32,8 @@ public class AttributeConfigurationProjectionDocument : ProjectionDocument
     [ProjectionDocumentProperty(IsFilterable = true)]
     public int NumberOfEntityInstancesWithAttribute { get; set; }
 
+    [ProjectionDocumentProperty(IsNestedArray = true)]
+    public List<string> UsedByEntityConfigurationIds { get; set; } = new List<string>();
+
     [ProjectionDocumentProperty] public string? Metadata { get; set; }
 }
