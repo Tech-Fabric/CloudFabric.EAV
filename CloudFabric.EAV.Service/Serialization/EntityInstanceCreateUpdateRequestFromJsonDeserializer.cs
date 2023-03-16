@@ -41,22 +41,14 @@ public class EntityInstanceCreateUpdateRequestFromJsonDeserializer
             TenantId = tenantId,
             EntityConfigurationId = entityConfigurationId,
             Attributes = new List<AttributeInstanceCreateUpdateRequest>()
-            // Attributes = attributesConfigurations
-            //     .Where(attributeConfig => record.ContainsKey(attributeConfig.MachineName))
-            //     .Select(attributeConfig =>
-            //         DeserializeAttribute(attributeConfig, record[attributeConfig.MachineName])
-            //     )
-            //     .ToList(),
-            // CategoryPaths = record.ContainsKey("CategoryPaths")
-            //     ? ParseCategoryPaths(record["CategoryPaths"])
-            //     : new List<CategoryPathViewModel>()
         };
 
         foreach (var attribute in attributesConfigurations)
         {
             if (record.RootElement.TryGetProperty(attribute.MachineName, out var attributeValue))
             {
-                var (deserializedAttribute, deserializationErrors) = await DeserializeAttribute(attribute, attributeValue);
+                var (deserializedAttribute, deserializationErrors) =
+                    await DeserializeAttribute(attribute, attributeValue);
 
                 if (deserializationErrors != null)
                 {
@@ -75,40 +67,6 @@ public class EntityInstanceCreateUpdateRequestFromJsonDeserializer
         }
 
         return (entityInstance, null);
-    }
-
-    private List<CategoryPathViewModel> ParseCategoryPaths(object? paths)
-    {
-        var categoryPaths = new List<CategoryPathViewModel>();
-        if (paths is List<object> pathsList)
-        {
-            foreach (var path in pathsList)
-            {
-                if (path is Dictionary<string, object> pathDictionary)
-                {
-                    var categoryPath = new CategoryPathViewModel();
-                    foreach (KeyValuePair<string, object> pathItem in pathDictionary)
-                    {
-                        if (pathItem.Key == "Path")
-                        {
-                            categoryPath.Path = (string)pathItem.Value;
-                        }
-                        else if (pathItem.Key == "TreeId")
-                        {
-                            categoryPath.TreeId = (Guid)pathItem.Value;
-                        }
-                    }
-
-                    categoryPaths.Add(categoryPath);
-                }
-            }
-        }
-        else if (paths is List<CategoryPathViewModel> pathsListOriginal)
-        {
-            categoryPaths = pathsListOriginal;
-        }
-
-        return categoryPaths;
     }
 
     private async Task<(AttributeInstanceCreateUpdateRequest?, List<string>?)> DeserializeAttribute(
@@ -151,9 +109,8 @@ public class EntityInstanceCreateUpdateRequestFromJsonDeserializer
 
                 var arrayElements = attributeValue.EnumerateArray().ToList();
 
-                for(var i =0; i<arrayElements.Count; i++)
+                for (var i = 0; i < arrayElements.Count; i++)
                 {
-
                     var (deserializedElement, deserializationErrors) = await DeserializeAttribute(
                         arrayItemsAttributeConfiguration, arrayElements[i]
                     );
@@ -165,20 +122,6 @@ public class EntityInstanceCreateUpdateRequestFromJsonDeserializer
 
                     ((attributeInstance as ArrayAttributeInstanceCreateUpdateRequest)!).Items.Add(deserializedElement!);
                 }
-
-                // if (attributeValue != null)
-                // {
-                //     (attributeInstance! as ArrayAttributeInstanceViewModel)!.Items =
-                //         (attributeValue as List<object?>)!
-                //         .Select(av =>
-                //             DeserializeAttribute(
-                //                 attributeConfiguration.MachineName,
-                //                 (attributeConfiguration as ArrayAttributeConfiguration)!.ItemsType,
-                //                 av
-                //             )
-                //         )
-                //         .ToList();
-                // }
 
                 break;
             default:
@@ -210,18 +153,16 @@ public class EntityInstanceCreateUpdateRequestFromJsonDeserializer
             case EavAttributeType.DateRange:
                 attributeInstance = new DateRangeAttributeInstanceCreateUpdateRequest
                 {
-                    //Value = _mapper.Map<DateRangeAttributeInstanceValueCreateUpdateRequest>(attributeValue)
+                    Value = attributeValue.Deserialize<DateRangeAttributeInstanceValueRequest>(
+                        new JsonSerializerOptions() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase }
+                    )
                 };
                 break;
             case EavAttributeType.Image:
                 attributeInstance = new ImageAttributeInstanceCreateUpdateRequest
                 {
-                    Value = JsonSerializer.Deserialize<ImageAttributeValueCreateUpdateRequest>(
-                        attributeValue,
-                        new JsonSerializerOptions()
-                        {
-                            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-                        }
+                    Value = attributeValue.Deserialize<ImageAttributeValueCreateUpdateRequest>(
+                        new JsonSerializerOptions() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase }
                     )
                 };
                 break;
@@ -287,12 +228,14 @@ public class EntityInstanceCreateUpdateRequestFromJsonDeserializer
                 attributeInstance =
                     new BooleanAttributeInstanceCreateUpdateRequest { Value = attributeValue.GetBoolean() };
                 break;
-            // case EavAttributeType.File:
-            //     attributeInstance = new FileAttributeInstanceCreateUpdateRequest
-            //     {
-            //         Value = _mapper.Map<FileAttributeValueCreateUpdateRequest>(attributeValue)
-            //     };
-            //     break;
+            case EavAttributeType.File:
+                attributeInstance = new FileAttributeInstanceCreateUpdateRequest
+                {
+                    Value = attributeValue.Deserialize<FileAttributeValueCreateUpdateRequest>(
+                        new JsonSerializerOptions() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase }
+                    )
+                };
+                break;
             case EavAttributeType.Text:
                 attributeInstance =
                     new TextAttributeInstanceCreateUpdateRequest { Value = attributeValue.GetString()! };

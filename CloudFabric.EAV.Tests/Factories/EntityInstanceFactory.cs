@@ -46,7 +46,7 @@ public class EntityInstanceFactory
                 ""players_max"": 4,
                 ""avg_time_mins"": 15,
                 ""price"": 31.50,
-                ""release_date"": ""2017"",
+                ""release_date"": { ""from"": ""2023-03-16T16:12:56"" },
                 ""images"": [
                     {
                         ""title"": ""Photo 1"",
@@ -85,18 +85,18 @@ public class EntityInstanceFactory
                 ""players_max"": 4,
                 ""avg_time_mins"": 15,
                 ""price"": 31.50,
-                ""release_date"": ""2017"",
+                ""release_date"": { ""from"": ""2023-03-16T16:12:56"" },
                 ""images"": [
-                    {{
+                    {
                         ""title"": ""Photo 1"",
                         ""url"": ""/images/photo1.jpg"",
                         ""llt"": ""A photo of Azul board game box""
-                    }},
-                    {{
+                    },
+                    {
                         ""title"": ""Azul Rulebook"",
                         ""url"": ""/images/rulebook.jpg"",
                         ""alt"": ""A photo of Azul board game rulebook, page 1""
-                    }}
+                    }
                 ]
             }}
         ";
