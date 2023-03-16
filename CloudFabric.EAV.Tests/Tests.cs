@@ -518,6 +518,8 @@ public class Tests
     [TestMethod]
     public async Task GetAttributeByUsedEntities_Success()
     {
+        var projectionRepository = _projectionRepositoryFactory.GetProjectionRepository<AttributeConfigurationProjectionDocument>();
+
         var cultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID;
 
         // Create attributes
@@ -578,10 +580,11 @@ public class Tests
             }
         };
 
-        var result = await _eavService.ListAttributes(query);
+        //var result = await _eavService.ListAttributes(query);
+        //result.TotalRecordsFound.Should().Be(2);
+        var result = await projectionRepository.Query(query);
         result.TotalRecordsFound.Should().Be(2);
-        result.Records.FirstOrDefault().Document.As<AttributeConfigurationListItemViewModel>()
-            .UsedByEntityConfigurationIds.FirstOrDefault().Should().Be(createdFirstEntity.Id.ToString());
+        result.Records.First().Document.UsedByEntityConfigurationIds.FirstOrDefault().Should().Be(createdFirstEntity.Id.ToString());
 
         // Create another entity with attribute
         configurationCreateRequest = new EntityConfigurationCreateRequest
@@ -607,14 +610,13 @@ public class Tests
             }
         };
 
-        result = await _eavService.ListAttributes(query);
+        result = await projectionRepository.Query(query);
         result.TotalRecordsFound.Should().Be(1);
-        result.Records.FirstOrDefault().Document.As<AttributeConfigurationListItemViewModel>()
-            .UsedByEntityConfigurationIds.Count.Should().Be(2);
+        result.Records.FirstOrDefault().Document.UsedByEntityConfigurationIds.Count.Should().Be(2);
 
         // Get after delete
         await _eavService.DeleteAttributes(new List<Guid>() { numberAttribute.Id });
-        result = await _eavService.ListAttributes(query);
+        result = await projectionRepository.Query(query);
         result.TotalRecordsFound.Should().Be(0);
 
         // Get attributes when created in a flow of entity creation
@@ -657,7 +659,7 @@ public class Tests
             }
         };
 
-        result = await _eavService.ListAttributes(query);
+        result = await projectionRepository.Query(query);
         result.TotalRecordsFound.Should().Be(20);
     }
 
