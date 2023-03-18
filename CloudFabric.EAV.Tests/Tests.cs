@@ -97,6 +97,11 @@ public class Tests
         _eavService = new EAVService(
             _logger,
             _mapper,
+            new JsonSerializerOptions()
+            {
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                DictionaryKeyPolicy = JsonNamingPolicy.CamelCase
+            },
             _aggregateRepositoryFactory,
             _projectionRepositoryFactory,
             new EventUserInfo(Guid.NewGuid())

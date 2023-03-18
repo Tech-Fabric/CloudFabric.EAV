@@ -1,4 +1,5 @@
 using System.Reflection;
+using System.Text.Json;
 
 using AutoMapper;
 
@@ -70,6 +71,11 @@ public abstract class BaseQueryTests
         _eavService = new EAVService(
             _logger,
             mapper,
+            new JsonSerializerOptions()
+            {
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                DictionaryKeyPolicy = JsonNamingPolicy.CamelCase
+            },
             aggregateRepositoryFactory,
             projectionRepositoryFactory,
             new EventUserInfo(Guid.NewGuid())

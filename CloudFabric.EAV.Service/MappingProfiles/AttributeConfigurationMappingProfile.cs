@@ -9,6 +9,7 @@ using CloudFabric.EAV.Models.RequestModels.Attributes;
 using CloudFabric.EAV.Models.ViewModels;
 using CloudFabric.EAV.Models.ViewModels.Attributes;
 using CloudFabric.Projections;
+using CloudFabric.Projections.Queries;
 
 namespace CloudFabric.EAV.Service.MappingProfiles;
 

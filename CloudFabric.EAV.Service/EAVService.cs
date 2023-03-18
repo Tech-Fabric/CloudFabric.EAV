@@ -52,6 +52,7 @@ public class EAVService : IEAVService
     private readonly AggregateRepository<EntityInstance> _entityInstanceRepository;
     private readonly ILogger<EAVService> _logger;
     private readonly IMapper _mapper;
+    private readonly JsonSerializerOptions _jsonSerializerOptions;
     private readonly ProjectionRepositoryFactory _projectionRepositoryFactory;
 
     private readonly EventUserInfo _userInfo;
@@ -59,6 +60,7 @@ public class EAVService : IEAVService
     public EAVService(
         ILogger<EAVService> logger,
         IMapper mapper,
+        JsonSerializerOptions jsonSerializerOptions,
         AggregateRepositoryFactory aggregateRepositoryFactory,
         ProjectionRepositoryFactory projectionRepositoryFactory,
         EventUserInfo userInfo
@@ -66,8 +68,11 @@ public class EAVService : IEAVService
     {
         _logger = logger;
         _mapper = mapper;
+        _jsonSerializerOptions = jsonSerializerOptions;
+
         _aggregateRepositoryFactory = aggregateRepositoryFactory;
         _projectionRepositoryFactory = projectionRepositoryFactory;
+
         _userInfo = userInfo;
 
         _attributeConfigurationRepository = _aggregateRepositoryFactory
@@ -85,8 +90,11 @@ public class EAVService : IEAVService
             .GetProjectionRepository<EntityConfigurationProjectionDocument>();
 
         _entityInstanceFromDictionaryDeserializer = new EntityInstanceFromDictionaryDeserializer(_mapper);
+
         _entityInstanceCreateUpdateRequestFromJsonDeserializer =
-            new EntityInstanceCreateUpdateRequestFromJsonDeserializer(_mapper, _attributeConfigurationRepository);
+            new EntityInstanceCreateUpdateRequestFromJsonDeserializer(
+                _attributeConfigurationRepository, jsonSerializerOptions
+            );
     }
 
     private void EnsureAttributeMachineNameIsAdded(AttributeConfigurationCreateUpdateRequest attributeRequest)
@@ -1134,24 +1142,95 @@ public class EAVService : IEAVService
 
     #region EntityInstance
 
+    /// <summary>
+    /// Create new entity instance from provided json string.
+    /// </summary>
+    /// <remarks>
+    /// Use following json format:
+    ///
+    /// ```
+    /// {
+    ///     "sku": "123",
+    ///     "name": "New Entity",
+    ///     "entityConfigurationId": "fb80cb74-6f47-4d38-bb87-25bd820efee7",
+    ///     "tenantId": "b6842a71-162b-411d-86e9-3ec01f909c82"
+    /// }
+    ///
+    /// Where "sku" and "name" are attributes machine names,
+    /// "entityConfigurationId" - obviously the id of entity configuration which has all attributes,
+    /// "tenantId" - tenant id guid. A guid which uniquely identifies and isolates the data. For single tenant
+    /// application this should be one hardcoded guid for whole app.
+    ///
+    /// ```
+    /// </remarks>
+    /// <param name="entityJsonString"></param>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
     public Task<(EntityInstanceViewModel?, ProblemDetails?)> CreateEntityInstance(
-        string entity, CancellationToken cancellationToken = default
+        string entityJsonString, CancellationToken cancellationToken = default
     )
     {
-        JsonDocument entityJson = JsonDocument.Parse(entity);
+        JsonDocument entityJson = JsonDocument.Parse(entityJsonString);
 
         return CreateEntityInstance(entityJson, cancellationToken);
     }
 
+    /// <summary>
+    /// Create new entity instance from provided json string.
+    /// </summary>
+    /// <remarks>
+    /// Use following json format:
+    ///
+    /// ```
+    /// {
+    ///     "sku": "123",
+    ///     "name": "New Entity"
+    /// }
+    ///
+    /// Note that this overload accepts "entityConfigurationId" and "tenantId" via method arguments,
+    /// so they should not be in json.
+    ///
+    /// ```
+    /// </remarks>
+    /// <param name="entityJsonString"></param>
+    /// <param name="entityConfigurationId">Id of entity configuration which has all attributes</param>
+    /// <param name="tenantId">Tenant id guid. A guid which uniquely identifies and isolates the data. For single
+    /// tenant application this should be one hardcoded guid for whole app.</param>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
     public Task<(EntityInstanceViewModel?, ProblemDetails?)> CreateEntityInstance(
-        string entity, Guid entityConfigurationId, Guid tenantId, CancellationToken cancellationToken = default
+        string entityJsonString, Guid entityConfigurationId, Guid tenantId, CancellationToken cancellationToken = default
     )
     {
-        JsonDocument entityJson = JsonDocument.Parse(entity);
+        JsonDocument entityJson = JsonDocument.Parse(entityJsonString);
 
         return CreateEntityInstance(entityJson, entityConfigurationId, tenantId, cancellationToken);
     }
 
+    /// <summary>
+    /// Create new entity instance from provided json document.
+    /// </summary>
+    /// <remarks>
+    /// Use following json format:
+    ///
+    /// ```
+    /// {
+    ///     "sku": "123",
+    ///     "name": "New Entity",
+    ///     "entityConfigurationId": "fb80cb74-6f47-4d38-bb87-25bd820efee7",
+    ///     "tenantId": "b6842a71-162b-411d-86e9-3ec01f909c82"
+    /// }
+    ///
+    /// Where "sku" and "name" are attributes machine names,
+    /// "entityConfigurationId" - obviously the id of entity configuration which has all attributes,
+    /// "tenantId" - tenant id guid. A guid which uniquely identifies and isolates the data. For single tenant
+    /// application this should be one hardcoded guid for whole app.
+    ///
+    /// ```
+    /// </remarks>
+    /// <param name="entityJson"></param>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
     public async Task<(EntityInstanceViewModel?, ProblemDetails?)> CreateEntityInstance(
         JsonDocument entityJson, CancellationToken cancellationToken = default
     )
@@ -1193,6 +1272,29 @@ public class EAVService : IEAVService
         return await CreateEntityInstance(entityJson, entityConfigurationId.Value, tenantId.Value, cancellationToken);
     }
 
+    /// <summary>
+    /// Create new entity instance from provided json document.
+    /// </summary>
+    /// <remarks>
+    /// Use following json format:
+    ///
+    /// ```
+    /// {
+    ///     "sku": "123",
+    ///     "name": "New Entity"
+    /// }
+    ///
+    /// Note that this overload accepts "entityConfigurationId" and "tenantId" via method arguments,
+    /// so they should not be in json.
+    ///
+    /// ```
+    /// </remarks>
+    /// <param name="entityJson"></param>
+    /// <param name="entityConfigurationId">Id of entity configuration which has all attributes</param>
+    /// <param name="tenantId">Tenant id guid. A guid which uniquely identifies and isolates the data. For single
+    /// tenant application this should be one hardcoded guid for whole app.</param>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
     public async Task<(EntityInstanceViewModel?, ProblemDetails?)> CreateEntityInstance(
         JsonDocument entityJson, Guid entityConfigurationId, Guid tenantId, CancellationToken cancellationToken = default
     )
@@ -1225,7 +1327,7 @@ public class EAVService : IEAVService
         }
 
         var (createdEntity, validationErrors) = await CreateEntityInstance(
-            entityInstanceCreateRequest, cancellationToken
+            entityInstanceCreateRequest!, cancellationToken
         );
 
         if (validationErrors != null)
@@ -1432,7 +1534,7 @@ public class EAVService : IEAVService
         return (_mapper.Map<EntityInstanceViewModel>(entityInstance), null)!;
     }
 
-    public async Task<ProjectionQueryResult<EntityInstanceViewModel>> QueryInstances(
+    private async Task<ProjectionQueryResult<Dictionary<string, object?>>> QueryInstancesInternal(
         Guid entityConfigurationId,
         ProjectionQuery query,
         CancellationToken cancellationToken = default
@@ -1455,11 +1557,139 @@ public class EAVService : IEAVService
         IProjectionRepository projectionRepository = _projectionRepositoryFactory.GetProjectionRepository(schema);
 
         ProjectionQueryResult<Dictionary<string, object?>> results = await projectionRepository
-            .Query(query, entityConfigurationId.ToString(), cancellationToken)
+            .Query(query, entityConfiguration.Id.ToString(), cancellationToken)
             .ConfigureAwait(false);
+
+        return results;
+    }
+
+
+    /// <summary>
+    /// Returns records in internal EntityInstanceViewModel format - use this is library is used by .net code.
+    /// That way you will have full control over attributes and will be able to convert them to
+    /// create/update request models for updating the entity.
+    /// </summary>
+    /// <param name="entityConfigurationId"></param>
+    /// <param name="query"></param>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    public async Task<ProjectionQueryResult<EntityInstanceViewModel>> QueryInstances(
+        Guid entityConfigurationId,
+        ProjectionQuery query,
+        CancellationToken cancellationToken = default
+    )
+    {
+        var results = await QueryInstancesInternal(
+            entityConfigurationId,
+            query,
+            cancellationToken
+        );
+
+        EntityConfiguration entityConfiguration = await _entityConfigurationRepository.LoadAsyncOrThrowNotFound(
+            entityConfigurationId,
+            entityConfigurationId.ToString(),
+            cancellationToken
+        ).ConfigureAwait(false);
+
+        List<AttributeConfiguration> attributes = await GetAttributeConfigurationsForEntityConfiguration(
+            entityConfiguration,
+            cancellationToken
+        ).ConfigureAwait(false);
 
         return results.TransformResultDocuments(
             r => _entityInstanceFromDictionaryDeserializer.Deserialize(attributes, r)
+        );
+    }
+
+    /// <summary>
+    /// Returns records in json serialized format.
+    /// LocalizedStrings are returned as objects whose property names are language identifiers
+    /// and property values are language translation strings.
+    ///
+    /// EntityInstance with:
+    ///
+    /// - one text attribute of type LocalizedString "productName"
+    /// - one number attribute of type Number "price"
+    ///
+    /// will be returned in following json format:
+    ///
+    /// ```
+    /// {
+    ///   "productName": {
+    ///     "EN-us": "Terraforming Mars",
+    ///     "RU-ru": "Покорение Марса"
+    ///   },
+    ///   "price": 100
+    /// }
+    /// ```
+    /// </summary>
+    /// <param name="entityConfigurationId"></param>
+    /// <param name="query"></param>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    public async Task<ProjectionQueryResult<JsonDocument>> QueryInstancesJsonMultiLanguage(
+        Guid entityConfigurationId,
+        ProjectionQuery query,
+        CancellationToken cancellationToken = default
+    )
+    {
+        var results = await QueryInstancesInternal(
+            entityConfigurationId,
+            query,
+            cancellationToken
+        );
+
+        var serializerOptions = new JsonSerializerOptions(_jsonSerializerOptions);
+        serializerOptions.Converters.Add(new LocalizedStringMultiLanguageSerializer());
+
+        return results.TransformResultDocuments(
+            r => JsonSerializer.SerializeToDocument(r, serializerOptions)
+        );
+    }
+
+    /// <summary>
+    /// Returns records in json serialized format.
+    /// LocalizedStrings are converted to a single language string of the language passed in parameters.
+    ///
+    /// EntityInstance with:
+    ///
+    /// - one text attribute of type LocalizedString "productName"
+    /// - one number attribute of type Number "price"
+    ///
+    /// will be returned in following json format:
+    ///
+    /// ```
+    /// {
+    ///   "productName": "Terraforming Mars",
+    ///   "price": 100
+    /// }
+    /// ```
+    /// </summary>
+    /// <param name="entityConfigurationId"></param>
+    /// <param name="query"></param>
+    /// <param name="language">Language to use from all localized strings. Only this language strings will be returned.</param>
+    /// <param name="fallbackLanguage">If main language will not be found, this language will be tried. Defaults to EN-us.</param>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    public async Task<ProjectionQueryResult<JsonDocument>> QueryInstancesJsonSingleLanguage(
+        Guid entityConfigurationId,
+        ProjectionQuery query,
+        string language = "EN-us",
+        string fallbackLanguage = "EN-us",
+        CancellationToken cancellationToken = default
+    )
+    {
+        var results = await QueryInstancesInternal(
+            entityConfigurationId,
+            query,
+            cancellationToken
+        );
+
+        var serializerOptions = new JsonSerializerOptions(_jsonSerializerOptions);
+        serializerOptions.Converters.Add(new LocalizedStringSingleLanguageSerializer(language, fallbackLanguage));
+
+        return results.TransformResultDocuments(
+            r => JsonSerializer.SerializeToDocument(r, serializerOptions)
         );
     }
 

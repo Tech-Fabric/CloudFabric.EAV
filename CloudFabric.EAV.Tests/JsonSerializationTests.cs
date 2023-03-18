@@ -1,3 +1,5 @@
+using System.Text.Json;
+
 using CloudFabric.EAV.Models.RequestModels;
 using CloudFabric.EAV.Models.ViewModels;
 using CloudFabric.EAV.Tests.Factories;
@@ -83,6 +85,19 @@ public class JsonSerializationTests : BaseQueryTests.BaseQueryTests
         results?.TotalRecordsFound.Should().BeGreaterThan(0);
 
         results?.Records.Select(r => r.Document).First().Should().BeEquivalentTo(createdInstance);
+
+        ProjectionQueryResult<JsonDocument>? resultsJsonMultiLanguage = await _eavService
+            .QueryInstancesJsonMultiLanguage(createdConfiguration.Id, query);
+
+        ProjectionQueryResult<JsonDocument>? resultsJsonSingleLanguage = await _eavService.QueryInstancesJsonSingleLanguage(
+            createdConfiguration.Id, query, "EN-us"
+        );
+
+        string resultJsonMultiLanguageString = JsonSerializer.Serialize(
+            resultsJsonMultiLanguage, new JsonSerializerOptions() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase }
+        );
+
+        results?.TotalRecordsFound.Should().BeGreaterThan(0);
     }
 
 }

@@ -1,6 +1,7 @@
 using AutoMapper;
 
 using CloudFabric.Projections;
+using CloudFabric.Projections.Queries;
 
 namespace CloudFabric.EAV.Service.MappingProfiles;
 

@@ -6,6 +6,7 @@ using CloudFabric.EAV.Domain.Projections.EntityConfigurationProjection;
 using CloudFabric.EAV.Models.RequestModels;
 using CloudFabric.EAV.Models.ViewModels;
 using CloudFabric.Projections;
+using CloudFabric.Projections.Queries;
 
 namespace CloudFabric.EAV.Service.MappingProfiles;
 

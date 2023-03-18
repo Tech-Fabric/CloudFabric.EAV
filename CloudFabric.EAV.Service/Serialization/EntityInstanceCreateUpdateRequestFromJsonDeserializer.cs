@@ -15,16 +15,16 @@ namespace CloudFabric.EAV.Service.Serialization;
 
 public class EntityInstanceCreateUpdateRequestFromJsonDeserializer
 {
-    private readonly IMapper _mapper;
     private readonly AggregateRepository<AttributeConfiguration> _attributeConfigurationRepository;
+    private readonly JsonSerializerOptions _jsonSerializerOptions;
 
     public EntityInstanceCreateUpdateRequestFromJsonDeserializer(
-        IMapper mapper,
-        AggregateRepository<AttributeConfiguration> attributeConfigurationRepository
+        AggregateRepository<AttributeConfiguration> attributeConfigurationRepository,
+        JsonSerializerOptions jsonSerializerOptions
     )
     {
-        _mapper = mapper;
         _attributeConfigurationRepository = attributeConfigurationRepository;
+        _jsonSerializerOptions = jsonSerializerOptions;
     }
 
     public async Task<(EntityInstanceCreateRequest?, ValidationErrorResponse?)> DeserializeEntityInstanceCreateRequest(
@@ -169,7 +169,7 @@ public class EntityInstanceCreateUpdateRequestFromJsonDeserializer
             case EavAttributeType.LocalizedText:
                 var localizedText = new LocalizedTextAttributeInstanceCreateUpdateRequest
                 {
-                    Value = new System.Collections.Generic.List<LocalizedStringCreateRequest>()
+                    Value = new List<LocalizedStringCreateRequest>()
                 };
 
                 if (attributeValue.ValueKind == JsonValueKind.Array)
@@ -196,7 +196,9 @@ public class EntityInstanceCreateUpdateRequestFromJsonDeserializer
                                     {
                                         $"{element.Name} culture is not supported. " +
                                         $"Example: EN-us. " +
-                                        $"Please use following page to find out available cultures: https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-lcid/a9eac961-e77d-41a6-90a5-ce1a8b0cdb9c?redirectedfrom=MSDN"
+                                        $"Please use following page to find out available cultures: " +
+                                        $"https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-lcid/" +
+                                        $"a9eac961-e77d-41a6-90a5-ce1a8b0cdb9c?redirectedfrom=MSDN"
                                     }
                                 );
                             }
@@ -231,9 +233,7 @@ public class EntityInstanceCreateUpdateRequestFromJsonDeserializer
             case EavAttributeType.File:
                 attributeInstance = new FileAttributeInstanceCreateUpdateRequest
                 {
-                    Value = attributeValue.Deserialize<FileAttributeValueCreateUpdateRequest>(
-                        new JsonSerializerOptions() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase }
-                    )
+                    Value = attributeValue.Deserialize<FileAttributeValueCreateUpdateRequest>(_jsonSerializerOptions)
                 };
                 break;
             case EavAttributeType.Text:
