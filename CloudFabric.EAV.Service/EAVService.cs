@@ -1423,6 +1423,32 @@ public class EAVService : IEAVService
         return _mapper.Map<EntityInstanceViewModel>(entityInstance);
     }
 
+    public async Task<JsonDocument> GetEntityInstanceJsonMultiLanguage(Guid id, string partitionKey)
+    {
+        EntityInstance? entityInstance = await _entityInstanceRepository.LoadAsync(id, partitionKey);
+
+        var serializerOptions = new JsonSerializerOptions(_jsonSerializerOptions);
+        serializerOptions.Converters.Add(new LocalizedStringMultiLanguageSerializer());
+        serializerOptions.Converters.Add(new EntityInstanceToJsonSerializer());
+
+        return JsonSerializer.SerializeToDocument(entityInstance, serializerOptions);
+    }
+
+    public async Task<JsonDocument> GetEntityInstanceJsonSingleLanguage(
+        Guid id,
+        string partitionKey,
+        string language,
+        string fallbackLanguage = "EN-us")
+    {
+        EntityInstance? entityInstance = await _entityInstanceRepository.LoadAsync(id, partitionKey);
+
+        var serializerOptions = new JsonSerializerOptions(_jsonSerializerOptions);
+        serializerOptions.Converters.Add(new LocalizedStringSingleLanguageSerializer(language, fallbackLanguage));
+        serializerOptions.Converters.Add(new EntityInstanceToJsonSerializer());
+
+        return JsonSerializer.SerializeToDocument(entityInstance, serializerOptions);
+    }
+
     public async Task<(EntityInstanceViewModel, ProblemDetails)> UpdateEntityInstance(string partitionKey,
         EntityInstanceUpdateRequest updateRequest, CancellationToken cancellationToken)
     {
