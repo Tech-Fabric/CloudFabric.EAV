@@ -11,14 +11,19 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <PackageReference Include="Microsoft.AspNetCore.Mvc.Core" Version="2.2.5" />
         <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="6.0.3" />
         <PackageReference Include="System.ComponentModel.Annotations" Version="5.0.0" />
         <PackageReference Include="System.Text.Json" Version="6.0.7" />
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\CloudFabric.EAV.Domain\CloudFabric.EAV.Domain.csproj" />
+        <ProjectReference Include="..\CloudFabric.EAV.Enums\CloudFabric.EAV.Enums.csproj" />
         <ProjectReference Include="..\CloudFabric.EAV.Json\CloudFabric.EAV.Json.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Reference Include="Microsoft.AspNetCore.Http.Extensions" />
     </ItemGroup>
 
 </Project>

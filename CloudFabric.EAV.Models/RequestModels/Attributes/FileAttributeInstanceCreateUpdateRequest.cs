@@ -2,7 +2,7 @@
 
 public class FileAttributeInstanceCreateUpdateRequest : AttributeInstanceCreateUpdateRequest
 {
-    public FileAttributeValueCreateUpdateRequest Value { get; set; }
+    public FileAttributeValueCreateUpdateRequest? Value { get; set; }
 }
 
 public class FileAttributeValueCreateUpdateRequest

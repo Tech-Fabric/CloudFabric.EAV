@@ -2,7 +2,7 @@ using System.Globalization;
 
 using Castle.Components.DictionaryAdapter;
 
-using CloudFabric.EAV.Domain.Enums;
+using CloudFabric.EAV.Enums;
 using CloudFabric.EAV.Models.RequestModels;
 using CloudFabric.EAV.Models.RequestModels.Attributes;
 
@@ -183,6 +183,7 @@ public static class EntityConfigurationFactory
                     },
                     DefaultValue = 1,
                     MinimumValue = 1,
+                    NumberType = NumberAttributeType.Decimal,
                     IsRequired = true,
                     TenantId = tenantId
                 },

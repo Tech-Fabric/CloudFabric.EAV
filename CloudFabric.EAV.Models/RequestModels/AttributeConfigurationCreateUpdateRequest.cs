@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-using CloudFabric.EAV.Domain.Enums;
+using CloudFabric.EAV.Enums;
 using CloudFabric.EAV.Models.JsonConverters;
 
 namespace CloudFabric.EAV.Models.RequestModels;

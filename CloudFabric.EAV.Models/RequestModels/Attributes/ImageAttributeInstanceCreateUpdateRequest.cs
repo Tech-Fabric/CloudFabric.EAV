@@ -2,5 +2,5 @@
 
 public class ImageAttributeInstanceCreateUpdateRequest : AttributeInstanceCreateUpdateRequest
 {
-    public ImageAttributeValueCreateUpdateRequest Value { get; set; }
+    public ImageAttributeValueCreateUpdateRequest? Value { get; set; }
 }

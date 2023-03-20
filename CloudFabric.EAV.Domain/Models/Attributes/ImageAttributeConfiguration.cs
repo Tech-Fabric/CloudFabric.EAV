@@ -1,62 +1,36 @@
-﻿using CloudFabric.EAV.Domain.Enums;
+﻿using System.Collections.Immutable;
+
 using CloudFabric.EAV.Domain.Events.Configuration.Attributes;
 using CloudFabric.EAV.Domain.Models.Base;
+using CloudFabric.EAV.Enums;
+using CloudFabric.EventSourcing.EventStore;
 
 namespace CloudFabric.EAV.Domain.Models.Attributes;
 
-public class ImageThumbnailDefinition
+public record ImageThumbnailDefinition
 {
     public static int MaxThumbnailSize = 1024;
-    public int Width { get; set; }
+    public int MaxWidth { get; set; }
 
-    public int Height { get; set; }
+    public int MaxHeight { get; set; }
+
     public string Name { get; set; }
-
-    public override bool Equals(object obj)
-    {
-        return Equals(obj as ImageThumbnailDefinition);
-    }
-
-    private bool Equals(ImageThumbnailDefinition other)
-    {
-        return Width == other.Width
-               && Height == other.Height
-               && Name == other.Name;
-    }
-
-    public override int GetHashCode()
-    {
-        throw new NotImplementedException();
-    }
 }
 
-public class ImageAttributeValue
+public record ImageAttributeValue
 {
     public string Url { get; set; }
     public string Title { get; set; }
 
     public string Alt { get; set; }
-
-    public override bool Equals(object obj)
-    {
-        return Equals(obj as ImageAttributeValue);
-    }
-
-    private bool Equals(ImageAttributeValue other)
-    {
-        return Url == other.Url
-               && Title == other.Title
-               && Alt == other.Alt;
-    }
-
-    public override int GetHashCode()
-    {
-        throw new NotImplementedException();
-    }
 }
 
-public class ImageAttributeConfiguration : AttributeConfiguration
+public class ImageAttributeConfiguration : AttributeConfiguration, IEquatable<ImageAttributeConfiguration>
 {
+    public ImageAttributeConfiguration(IEnumerable<IEvent> events) : base(events)
+    {
+    }
+
     public ImageAttributeConfiguration(
         Guid id,
         string machineName,
@@ -68,10 +42,10 @@ public class ImageAttributeConfiguration : AttributeConfiguration
         string? metadata = null
     ) : base(id, machineName, name, EavAttributeType.Image, description, isRequired, tenantId, metadata)
     {
-        Apply(new ImageAttributeConfigurationUpdated(id, thumbnailsConfiguration));
+        Apply(new ImageAttributeConfigurationUpdated(id, thumbnailsConfiguration.ToImmutableList()));
     }
 
-    public List<ImageThumbnailDefinition> ThumbnailsConfiguration { get; set; }
+    public IReadOnlyCollection<ImageThumbnailDefinition> ThumbnailsConfiguration { get; set; }
 
     public override EavAttributeType ValueType => EavAttributeType.Image;
 
@@ -89,15 +63,15 @@ public class ImageAttributeConfiguration : AttributeConfiguration
         if (!ThumbnailsConfiguration.Equals(updated.ThumbnailsConfiguration)
            )
         {
-            Apply(new ImageAttributeConfigurationUpdated(Id, updated.ThumbnailsConfiguration));
+            Apply(new ImageAttributeConfigurationUpdated(Id, updated.ThumbnailsConfiguration.ToImmutableList()));
         }
     }
 
     public override List<string> Validate()
     {
         List<string> errors = base.Validate();
-        if (ThumbnailsConfiguration.Any(t => t.Height > ImageThumbnailDefinition.MaxThumbnailSize
-                                             || t.Width > ImageThumbnailDefinition.MaxThumbnailSize
+        if (ThumbnailsConfiguration.Any(t => t.MaxHeight > ImageThumbnailDefinition.MaxThumbnailSize
+                                             || t.MaxWidth > ImageThumbnailDefinition.MaxThumbnailSize
             ))
         {
             errors.Add(
@@ -152,8 +126,25 @@ public class ImageAttributeConfiguration : AttributeConfiguration
         return Equals(obj as ImageAttributeConfiguration);
     }
 
-    private bool Equals(ImageAttributeConfiguration other)
+    public bool Equals(ImageAttributeConfiguration? other)
     {
+        if (other is null)
+        {
+            return false;
+        }
+
+        // Optimization for a common success case.
+        if (object.ReferenceEquals(this, other))
+        {
+            return true;
+        }
+
+        // If run-time types are not exactly the same, return false.
+        if (this.GetType() != other.GetType())
+        {
+            return false;
+        }
+
         return base.Equals(other)
                && ThumbnailsConfiguration.Equals(other.ThumbnailsConfiguration)
                && ValueType == other.ValueType;
@@ -164,13 +155,10 @@ public class ImageAttributeConfiguration : AttributeConfiguration
 
     public void On(ImageAttributeConfigurationUpdated @event)
     {
-        ThumbnailsConfiguration = @event.ThumbnailsConfiguration;
+        ThumbnailsConfiguration = @event.ThumbnailsConfiguration.ToList().AsReadOnly();
     }
 
-    public override int GetHashCode()
-    {
-        throw new NotImplementedException();
-    }
+    public override int GetHashCode() => (ThumbnailsConfiguration, ValueType).GetHashCode();
 
     #endregion
 }

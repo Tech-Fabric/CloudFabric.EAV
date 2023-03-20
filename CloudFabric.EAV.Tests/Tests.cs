@@ -5,7 +5,7 @@ using System.Text.Json;
 
 using AutoMapper;
 
-using CloudFabric.EAV.Domain.Enums;
+using CloudFabric.EAV.Enums;
 using CloudFabric.EAV.Domain.Models;
 using CloudFabric.EAV.Domain.Models.Attributes;
 using CloudFabric.EAV.Domain.Projections.AttributeConfigurationProjection;
@@ -97,6 +97,11 @@ public class Tests
         _eavService = new EAVService(
             _logger,
             _mapper,
+            new JsonSerializerOptions()
+            {
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                DictionaryKeyPolicy = JsonNamingPolicy.CamelCase
+            },
             _aggregateRepositoryFactory,
             _projectionRepositoryFactory,
             new EventUserInfo(Guid.NewGuid())

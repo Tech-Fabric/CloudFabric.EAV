@@ -1,4 +1,4 @@
-using CloudFabric.EAV.Domain.Enums;
+using CloudFabric.EAV.Enums;
 using CloudFabric.EAV.Domain.Models.Base;
 using CloudFabric.Projections;
 using CloudFabric.Projections.Attributes;

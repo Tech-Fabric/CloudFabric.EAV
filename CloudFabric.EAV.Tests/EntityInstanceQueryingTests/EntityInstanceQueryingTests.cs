@@ -64,7 +64,6 @@ public abstract class EntityInstanceQueryingTests : BaseQueryTests.BaseQueryTest
         results?.Records.Select(r => r.Document).First().Should().BeEquivalentTo(createdInstance);
     }
 
-
     [TestMethod]
     public async Task TestCreateInstanceUpdateAndQuery()
     {

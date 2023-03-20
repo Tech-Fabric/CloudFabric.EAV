@@ -27,5 +27,7 @@ public class EntityInstanceProfile : Profile
 
         CreateMap<EntityInstance, Category>();
         CreateMap<Category, EntityInstance>();
+
+        CreateMap<CategoryPath, CategoryPathViewModel>();
     }
 }

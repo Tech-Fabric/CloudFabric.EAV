@@ -20,6 +20,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\CloudFabric.EventSourcing\CloudFabric.EventSourcing.Domain\CloudFabric.EventSourcing.Domain.csproj" />
     <ProjectReference Include="..\..\CloudFabric.EventSourcing\CloudFabric.Projections\CloudFabric.Projections.csproj" />
+    <ProjectReference Include="..\CloudFabric.EAV.Enums\CloudFabric.EAV.Enums.csproj" />
     <ProjectReference Include="..\CloudFabric.EAV.Json\CloudFabric.EAV.Json.LocalEventSourcingPackages.csproj" />
   </ItemGroup>
 
