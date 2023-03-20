@@ -82,12 +82,14 @@ RUN printf '%s\n' 'cluster.routing.allocation.disk.watermark.low: "1gb"' \
 
 COPY CloudFabric.EAV.Domain/CloudFabric.EAV.Domain.csproj /src/CloudFabric.EAV.Domain/CloudFabric.EAV.Domain.csproj
 COPY CloudFabric.EAV.Json/CloudFabric.EAV.Json.csproj /src/CloudFabric.EAV.Json/CloudFabric.EAV.Json.csproj
+COPY CloudFabric.EAV.Enums/CloudFabric.EAV.Enums.csproj /src/CloudFabric.EAV.Enums/CloudFabric.EAV.Enums.csproj
 COPY CloudFabric.EAV.Models/CloudFabric.EAV.Models.csproj /src/CloudFabric.EAV.Models/CloudFabric.EAV.Models.csproj
 COPY CloudFabric.EAV.Service/CloudFabric.EAV.Service.csproj /src/CloudFabric.EAV.Service/CloudFabric.EAV.Service.csproj
 COPY CloudFabric.EAV.Tests/CloudFabric.EAV.Tests.csproj /src/CloudFabric.EAV.Tests/CloudFabric.EAV.Tests.csproj
 
 RUN dotnet restore /src/CloudFabric.EAV.Domain/CloudFabric.EAV.Domain.csproj
 RUN dotnet restore /src/CloudFabric.EAV.Json/CloudFabric.EAV.Json.csproj
+RUN dotnet restore /src/CloudFabric.EAV.Enums/CloudFabric.EAV.Enums.csproj
 RUN dotnet restore /src/CloudFabric.EAV.Models/CloudFabric.EAV.Models.csproj
 RUN dotnet restore /src/CloudFabric.EAV.Service/CloudFabric.EAV.Service.csproj
 RUN dotnet restore /src/CloudFabric.EAV.Tests/CloudFabric.EAV.Tests.csproj
@@ -141,16 +143,19 @@ ARG PACKAGE_VERSION
 
 RUN sed -i "s|<Version>.*</Version>|<Version>$PACKAGE_VERSION</Version>|g" /src/CloudFabric.EAV.Domain/CloudFabric.EAV.Domain.csproj && \
     sed -i "s|<Version>.*</Version>|<Version>$PACKAGE_VERSION</Version>|g" /src/CloudFabric.EAV.Json/CloudFabric.EAV.Json.csproj && \
+    sed -i "s|<Version>.*</Version>|<Version>$PACKAGE_VERSION</Version>|g" /src/CloudFabric.EAV.Enums/CloudFabric.EAV.Enums.csproj && \
     sed -i "s|<Version>.*</Version>|<Version>$PACKAGE_VERSION</Version>|g" /src/CloudFabric.EAV.Models/CloudFabric.EAV.Models.csproj && \
     sed -i "s|<Version>.*</Version>|<Version>$PACKAGE_VERSION</Version>|g" /src/CloudFabric.EAV.Service/CloudFabric.EAV.Service.csproj && \
     dotnet pack /src/CloudFabric.EAV.Domain/CloudFabric.EAV.Domain.csproj -o /artifacts/nugets -p:IncludeSymbols=true -p:SymbolPackageFormat=snupkg && \
     dotnet pack /src/CloudFabric.EAV.Json/CloudFabric.EAV.Json.csproj -o /artifacts/nugets -p:IncludeSymbols=true -p:SymbolPackageFormat=snupkg && \
+    dotnet pack /src/CloudFabric.EAV.Enums/CloudFabric.EAV.Enums.csproj -o /artifacts/nugets -p:IncludeSymbols=true -p:SymbolPackageFormat=snupkg && \
     dotnet pack /src/CloudFabric.EAV.Models/CloudFabric.EAV.Models.csproj -o /artifacts/nugets -p:IncludeSymbols=true -p:SymbolPackageFormat=snupkg && \
     dotnet pack /src/CloudFabric.EAV.Service/CloudFabric.EAV.Service.csproj -o /artifacts/nugets -p:IncludeSymbols=true -p:SymbolPackageFormat=snupkg
 
 ARG NUGET_API_KEY
 RUN if [ -n "$NUGET_API_KEY" ] ; then dotnet nuget push /artifacts/nugets/CloudFabric.EAV.Domain.$PACKAGE_VERSION.nupkg --skip-duplicate -k $NUGET_API_KEY -s https://api.nuget.org/v3/index.json ; fi
 RUN if [ -n "$NUGET_API_KEY" ] ; then dotnet nuget push /artifacts/nugets/CloudFabric.EAV.Json.$PACKAGE_VERSION.nupkg --skip-duplicate -k $NUGET_API_KEY -s https://api.nuget.org/v3/index.json ; fi
+RUN if [ -n "$NUGET_API_KEY" ] ; then dotnet nuget push /artifacts/nugets/CloudFabric.EAV.Enums.$PACKAGE_VERSION.nupkg --skip-duplicate -k $NUGET_API_KEY -s https://api.nuget.org/v3/index.json ; fi
 RUN if [ -n "$NUGET_API_KEY" ] ; then dotnet nuget push /artifacts/nugets/CloudFabric.EAV.Models.$PACKAGE_VERSION.nupkg --skip-duplicate -k $NUGET_API_KEY -s https://api.nuget.org/v3/index.json ; fi
 RUN if [ -n "$NUGET_API_KEY" ] ; then dotnet nuget push /artifacts/nugets/CloudFabric.EAV.Service.$PACKAGE_VERSION.nupkg --skip-duplicate -k $NUGET_API_KEY -s https://api.nuget.org/v3/index.json ; fi
 
