@@ -8,6 +8,7 @@
         <Version>0.0.1</Version>
         <Authors>CloudFabric Developers</Authors>
         <Company>CloudFabric</Company>
+        <PackageLicenseExpression>MIT</PackageLicenseExpression>
     </PropertyGroup>
 
     <ItemGroup>
