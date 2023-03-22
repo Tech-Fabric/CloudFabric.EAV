@@ -1166,12 +1166,12 @@ public class EAVService : IEAVService
     /// <param name="entityJsonString"></param>
     /// <param name="requestDeserializedCallback">This function will be called after deserializing the request from json
     /// to EntityInstanceCreateRequest and allows adding additional validation or any other pre-processing logic.
-    /// </params>
+    /// </param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
     public Task<(EntityInstanceViewModel?, ProblemDetails?)> CreateEntityInstance(
         string entityJsonString,
-        Func<EntityInstanceCreateRequest, EntityInstanceCreateRequest>? requestDeserializedCallback = null,
+        Func<EntityInstanceCreateRequest, Task<EntityInstanceCreateRequest>>? requestDeserializedCallback = null,
         CancellationToken cancellationToken = default
     )
     {
@@ -1207,14 +1207,14 @@ public class EAVService : IEAVService
     /// tenant application this should be one hardcoded guid for whole app.</param>
     /// <param name="requestDeserializedCallback">This function will be called after deserializing the request from json
     /// to EntityInstanceCreateRequest and allows adding additional validation or any other pre-processing logic.
-    /// </params>
+    /// </param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
     public Task<(EntityInstanceViewModel?, ProblemDetails?)> CreateEntityInstance(
         string entityJsonString,
         Guid entityConfigurationId,
         Guid tenantId,
-        Func<EntityInstanceCreateRequest, EntityInstanceCreateRequest>? requestDeserializedCallback = null,
+        Func<EntityInstanceCreateRequest, Task<EntityInstanceCreateRequest>>? requestDeserializedCallback = null,
         CancellationToken cancellationToken = default
     )
     {
@@ -1253,12 +1253,12 @@ public class EAVService : IEAVService
     /// <param name="entityJson"></param>
     /// <param name="requestDeserializedCallback">This function will be called after deserializing the request from json
     /// to EntityInstanceCreateRequest and allows adding additional validation or any other pre-processing logic.
-    /// </params>
+    /// </param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
     public async Task<(EntityInstanceViewModel?, ProblemDetails?)> CreateEntityInstance(
         JsonDocument entityJson,
-        Func<EntityInstanceCreateRequest, EntityInstanceCreateRequest>? requestDeserializedCallback = null,
+        Func<EntityInstanceCreateRequest, Task<EntityInstanceCreateRequest>>? requestDeserializedCallback = null,
         CancellationToken cancellationToken = default
     )
     {
@@ -1328,14 +1328,14 @@ public class EAVService : IEAVService
     /// tenant application this should be one hardcoded guid for whole app.</param>
     /// <param name="requestDeserializedCallback">This function will be called after deserializing the request from json
     /// to EntityInstanceCreateRequest and allows adding additional validation or any other pre-processing logic.
-    /// </params>
+    /// </param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
     public async Task<(EntityInstanceViewModel?, ProblemDetails?)> CreateEntityInstance(
         JsonDocument entityJson,
         Guid entityConfigurationId,
         Guid tenantId,
-        Func<EntityInstanceCreateRequest, EntityInstanceCreateRequest>? requestDeserializedCallback = null,
+        Func<EntityInstanceCreateRequest, Task<EntityInstanceCreateRequest>>? requestDeserializedCallback = null,
         CancellationToken cancellationToken = default
     )
     {
@@ -1368,7 +1368,7 @@ public class EAVService : IEAVService
 
         if (requestDeserializedCallback != null)
         {
-            entityInstanceCreateRequest = requestDeserializedCallback(entityInstanceCreateRequest!);
+            entityInstanceCreateRequest = await requestDeserializedCallback(entityInstanceCreateRequest!);
         }
 
         var (createdEntity, validationErrors) = await CreateEntityInstance(
