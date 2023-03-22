@@ -1164,15 +1164,24 @@ public class EAVService : IEAVService
     /// ```
     /// </remarks>
     /// <param name="entityJsonString"></param>
+    /// <param name="requestDeserializedCallback">This function will be called after deserializing the request from json
+    /// to EntityInstanceCreateRequest and allows adding additional validation or any other pre-processing logic.
+    /// </params>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
     public Task<(EntityInstanceViewModel?, ProblemDetails?)> CreateEntityInstance(
-        string entityJsonString, CancellationToken cancellationToken = default
+        string entityJsonString,
+        Func<EntityInstanceCreateRequest, EntityInstanceCreateRequest>? requestDeserializedCallback = null,
+        CancellationToken cancellationToken = default
     )
     {
         JsonDocument entityJson = JsonDocument.Parse(entityJsonString);
 
-        return CreateEntityInstance(entityJson, cancellationToken);
+        return CreateEntityInstance(
+            entityJson,
+            requestDeserializedCallback,
+            cancellationToken
+        );
     }
 
     /// <summary>
@@ -1196,15 +1205,28 @@ public class EAVService : IEAVService
     /// <param name="entityConfigurationId">Id of entity configuration which has all attributes</param>
     /// <param name="tenantId">Tenant id guid. A guid which uniquely identifies and isolates the data. For single
     /// tenant application this should be one hardcoded guid for whole app.</param>
+    /// <param name="requestDeserializedCallback">This function will be called after deserializing the request from json
+    /// to EntityInstanceCreateRequest and allows adding additional validation or any other pre-processing logic.
+    /// </params>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
     public Task<(EntityInstanceViewModel?, ProblemDetails?)> CreateEntityInstance(
-        string entityJsonString, Guid entityConfigurationId, Guid tenantId, CancellationToken cancellationToken = default
+        string entityJsonString,
+        Guid entityConfigurationId,
+        Guid tenantId,
+        Func<EntityInstanceCreateRequest, EntityInstanceCreateRequest>? requestDeserializedCallback = null,
+        CancellationToken cancellationToken = default
     )
     {
         JsonDocument entityJson = JsonDocument.Parse(entityJsonString);
 
-        return CreateEntityInstance(entityJson, entityConfigurationId, tenantId, cancellationToken);
+        return CreateEntityInstance(
+            entityJson,
+            entityConfigurationId,
+            tenantId,
+            requestDeserializedCallback,
+            cancellationToken
+        );
     }
 
     /// <summary>
@@ -1229,10 +1251,15 @@ public class EAVService : IEAVService
     /// ```
     /// </remarks>
     /// <param name="entityJson"></param>
+    /// <param name="requestDeserializedCallback">This function will be called after deserializing the request from json
+    /// to EntityInstanceCreateRequest and allows adding additional validation or any other pre-processing logic.
+    /// </params>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
     public async Task<(EntityInstanceViewModel?, ProblemDetails?)> CreateEntityInstance(
-        JsonDocument entityJson, CancellationToken cancellationToken = default
+        JsonDocument entityJson,
+        Func<EntityInstanceCreateRequest, EntityInstanceCreateRequest>? requestDeserializedCallback = null,
+        CancellationToken cancellationToken = default
     )
     {
         Guid? entityConfigurationId = null;
@@ -1269,7 +1296,13 @@ public class EAVService : IEAVService
             return (null, new ValidationErrorResponse("tenantId", "Value is missing"));
         }
 
-        return await CreateEntityInstance(entityJson, entityConfigurationId.Value, tenantId.Value, cancellationToken);
+        return await CreateEntityInstance(
+            entityJson,
+            entityConfigurationId.Value,
+            tenantId.Value,
+            requestDeserializedCallback,
+            cancellationToken
+        );
     }
 
     /// <summary>
@@ -1293,10 +1326,17 @@ public class EAVService : IEAVService
     /// <param name="entityConfigurationId">Id of entity configuration which has all attributes</param>
     /// <param name="tenantId">Tenant id guid. A guid which uniquely identifies and isolates the data. For single
     /// tenant application this should be one hardcoded guid for whole app.</param>
+    /// <param name="requestDeserializedCallback">This function will be called after deserializing the request from json
+    /// to EntityInstanceCreateRequest and allows adding additional validation or any other pre-processing logic.
+    /// </params>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
     public async Task<(EntityInstanceViewModel?, ProblemDetails?)> CreateEntityInstance(
-        JsonDocument entityJson, Guid entityConfigurationId, Guid tenantId, CancellationToken cancellationToken = default
+        JsonDocument entityJson,
+        Guid entityConfigurationId,
+        Guid tenantId,
+        Func<EntityInstanceCreateRequest, EntityInstanceCreateRequest>? requestDeserializedCallback = null,
+        CancellationToken cancellationToken = default
     )
     {
         EntityConfiguration? entityConfiguration = await _entityConfigurationRepository.LoadAsync(
@@ -1324,6 +1364,11 @@ public class EAVService : IEAVService
         if (deserializationErrors != null)
         {
             return (null, deserializationErrors);
+        }
+
+        if (requestDeserializedCallback != null)
+        {
+            entityInstanceCreateRequest = requestDeserializedCallback(entityInstanceCreateRequest!);
         }
 
         var (createdEntity, validationErrors) = await CreateEntityInstance(
