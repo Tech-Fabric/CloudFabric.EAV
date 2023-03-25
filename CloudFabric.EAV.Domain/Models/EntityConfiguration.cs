@@ -60,7 +60,7 @@ public class EntityConfiguration : AggregateBase
 
     public void UpdateName(string newName)
     {
-        Apply(new EntityConfigurationNameUpdated(Id, newName, CultureInfo.GetCultureInfo("EN-us").LCID));
+        Apply(new EntityConfigurationNameUpdated(Id, newName, CultureInfo.GetCultureInfo("en-US").LCID));
     }
 
     public void UpdateName(string newName, int cultureInfoId)

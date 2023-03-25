@@ -218,7 +218,7 @@ public class Tests
             {
                 new LocalizedStringCreateRequest()
                 {
-                    CultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID,
+                    CultureInfoId = CultureInfo.GetCultureInfo("en-US").LCID,
                     String = "Test Date"
                 }
             }
@@ -301,7 +301,7 @@ public class Tests
             {
                 Name = new List<LocalizedStringCreateRequest>
                 {
-                    new() { CultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID, String = "test" }
+                    new() { CultureInfoId = CultureInfo.GetCultureInfo("en-US").LCID, String = "test" }
                 },
                 MachineName =
                     (configurationCreateRequest.Attributes[0] as AttributeConfigurationCreateUpdateRequest)!
@@ -344,7 +344,7 @@ public class Tests
     [TestMethod]
     public async Task UpdateAttribute_Success()
     {
-        var cultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID;
+        var cultureInfoId = CultureInfo.GetCultureInfo("en-US").LCID;
         var numberAttribute = new NumberAttributeConfigurationCreateUpdateRequest
         {
             MachineName = "number_attribute",
@@ -407,7 +407,7 @@ public class Tests
     [TestMethod]
     public async Task UpdateAttribute_ValidationError()
     {
-        var cultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID;
+        var cultureInfoId = CultureInfo.GetCultureInfo("en-US").LCID;
         var numberAttribute = new NumberAttributeConfigurationCreateUpdateRequest
         {
             MachineName = "number_attribute",
@@ -525,7 +525,7 @@ public class Tests
     {
         var projectionRepository = _projectionRepositoryFactory.GetProjectionRepository<AttributeConfigurationProjectionDocument>();
 
-        var cultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID;
+        var cultureInfoId = CultureInfo.GetCultureInfo("en-US").LCID;
 
         // Create attributes
         var numberAttributeRequest = new NumberAttributeConfigurationCreateUpdateRequest
@@ -672,7 +672,7 @@ public class Tests
     // [TestMethod]
     //  public async Task UpdateEntityConfiguration_ChangeLocalizedStringAttribute_Success()
     //  {
-    //      var cultureId = CultureInfo.GetCultureInfo("EN-us").LCID;
+    //      var cultureId = CultureInfo.GetCultureInfo("en-US").LCID;
     //      const string newName = "newName";
     //      var configRequest = EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
     //
@@ -730,7 +730,7 @@ public class Tests
     [TestMethod]
     public async Task UpdateEntityConfiguration_AddedNewAttribute_MachineNamesAreNotUnique()
     {
-        var cultureId = CultureInfo.GetCultureInfo("EN-us").LCID;
+        var cultureId = CultureInfo.GetCultureInfo("en-US").LCID;
 
         EntityConfigurationCreateRequest configRequest =
             EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
@@ -772,7 +772,7 @@ public class Tests
     [TestMethod]
     public async Task UpdateEntityConfiguration_AddedNewAttribute_Success()
     {
-        var cultureId = CultureInfo.GetCultureInfo("EN-us").LCID;
+        var cultureId = CultureInfo.GetCultureInfo("en-US").LCID;
 
         EntityConfigurationCreateRequest configRequest =
             EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
@@ -811,7 +811,7 @@ public class Tests
     [TestMethod]
     public async Task UpdateEntityConfiguration_AddedNewAttribute_ValidationError()
     {
-        _ = CultureInfo.GetCultureInfo("EN-us").LCID;
+        _ = CultureInfo.GetCultureInfo("en-US").LCID;
 
         EntityConfigurationCreateRequest configRequest =
             EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
@@ -852,7 +852,7 @@ public class Tests
     [TestMethod]
     public async Task UpdateEntityConfiguration_ChangeAttributeName_Fail()
     {
-        var cultureId = CultureInfo.GetCultureInfo("EN-us").LCID;
+        var cultureId = CultureInfo.GetCultureInfo("en-US").LCID;
         const string newName = "newName";
         EntityConfigurationCreateRequest configRequest =
             EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
@@ -941,7 +941,7 @@ public class Tests
     [TestMethod]
     public async Task CreateNumberAttribute_Success()
     {
-        var cultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID;
+        var cultureInfoId = CultureInfo.GetCultureInfo("en-US").LCID;
         var numberAttribute = new NumberAttributeConfigurationCreateUpdateRequest
         {
             MachineName = "testAttr",
@@ -997,7 +997,7 @@ public class Tests
     [TestMethod]
     public async Task CreateFileAttribute_Success()
     {
-        var cultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID;
+        var cultureInfoId = CultureInfo.GetCultureInfo("en-US").LCID;
         var fileAttribute = new FileAttributeConfigurationCreateUpdateRequest
         {
             MachineName = "testAttr",
@@ -1041,7 +1041,7 @@ public class Tests
     [TestMethod]
     public async Task UpdateFileAttribute_Success()
     {
-        var cultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID;
+        var cultureInfoId = CultureInfo.GetCultureInfo("en-US").LCID;
         var fileAttribute = new FileAttributeConfigurationCreateUpdateRequest
         {
             MachineName = "testAttr",
@@ -1087,7 +1087,7 @@ public class Tests
     [TestMethod]
     public async Task CreateFileAttributeInstance_Success()
     {
-        var cultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID;
+        var cultureInfoId = CultureInfo.GetCultureInfo("en-US").LCID;
         var fileAttribute = new FileAttributeConfigurationCreateUpdateRequest
         {
             MachineName = "testAttr",
@@ -1148,7 +1148,7 @@ public class Tests
     [TestMethod]
     public async Task GetNumberAttribute_Success()
     {
-        var cultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID;
+        var cultureInfoId = CultureInfo.GetCultureInfo("en-US").LCID;
         var numberAttribute = new NumberAttributeConfigurationCreateUpdateRequest
         {
             MachineName = "testAttr",
@@ -1194,7 +1194,7 @@ public class Tests
         AggregateRepository<ValueFromListAttributeConfiguration> valueFromListAttributeRepository =
             _aggregateRepositoryFactory.GetAggregateRepository<ValueFromListAttributeConfiguration>();
 
-        var cultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID;
+        var cultureInfoId = CultureInfo.GetCultureInfo("en-US").LCID;
         var valueFromListAttribute = new ValueFromListAttributeConfigurationCreateUpdateRequest
         {
             MachineName = "testValueAttr",
@@ -1247,7 +1247,7 @@ public class Tests
     [TestMethod]
     public async Task CreateValueFromListAttribute_ValidationError()
     {
-        var cultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID;
+        var cultureInfoId = CultureInfo.GetCultureInfo("en-US").LCID;
         var valueFromListAttribute = new ValueFromListAttributeConfigurationCreateUpdateRequest
         {
             MachineName = "testValueAttr",
@@ -1318,7 +1318,7 @@ public class Tests
         AggregateRepository<ValueFromListAttributeConfiguration> valueFromListRepository =
             _aggregateRepositoryFactory.GetAggregateRepository<ValueFromListAttributeConfiguration>();
 
-        var cultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID;
+        var cultureInfoId = CultureInfo.GetCultureInfo("en-US").LCID;
         var valueFromListAttributeCreateRequest = new ValueFromListAttributeConfigurationCreateUpdateRequest
         {
             MachineName = "testValueAttr",
@@ -1368,7 +1368,7 @@ public class Tests
     public async Task CreateEntityInstanceWithValueFromListAttribute_ValidationError()
     {
         // create entity configuration with value from list attribute
-        var cultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID;
+        var cultureInfoId = CultureInfo.GetCultureInfo("en-US").LCID;
         var valueFromListAttribute = new ValueFromListAttributeConfigurationCreateUpdateRequest
         {
             MachineName = "testValueAttr",
@@ -1443,7 +1443,7 @@ public class Tests
         AggregateRepository<SerialAttributeConfiguration> serialAttributeRepository =
             _aggregateRepositoryFactory.GetAggregateRepository<SerialAttributeConfiguration>();
 
-        var cultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID;
+        var cultureInfoId = CultureInfo.GetCultureInfo("en-US").LCID;
         var serialAttributeCreateRequest = new SerialAttributeConfigurationCreateRequest
         {
             MachineName = "serialAttr",
@@ -1499,7 +1499,7 @@ public class Tests
     [TestMethod]
     public async Task CreateSerialAttribute_ValidationError()
     {
-        var cultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID;
+        var cultureInfoId = CultureInfo.GetCultureInfo("en-US").LCID;
         var serialAttributeCreateRequest = new SerialAttributeConfigurationCreateRequest
         {
             MachineName = "serialAttr",
@@ -1534,7 +1534,7 @@ public class Tests
         AggregateRepository<SerialAttributeConfiguration> serialAttributeRepository =
             _aggregateRepositoryFactory.GetAggregateRepository<SerialAttributeConfiguration>();
 
-        var cultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID;
+        var cultureInfoId = CultureInfo.GetCultureInfo("en-US").LCID;
         var serialAttributeCreateRequest = new SerialAttributeConfigurationCreateRequest
         {
             MachineName = "serialAttr",
@@ -1610,7 +1610,7 @@ public class Tests
             _aggregateRepositoryFactory.GetAggregateRepository<EntityInstance>();
 
         // create entity configuration and instance with serial attribute
-        var cultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID;
+        var cultureInfoId = CultureInfo.GetCultureInfo("en-US").LCID;
         var serialAttributeCreateRequest = new SerialAttributeConfigurationCreateRequest
         {
             MachineName = "serialAttr",
@@ -1722,7 +1722,7 @@ public class Tests
     [TestMethod]
     public async Task AddAttributeToEntityConfiguration_Success()
     {
-        var cultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID;
+        var cultureInfoId = CultureInfo.GetCultureInfo("en-US").LCID;
 
         var configCreateRequest = new EntityConfigurationCreateRequest
         {
@@ -1778,7 +1778,7 @@ public class Tests
     [TestMethod]
     public async Task AddAttributeToEntityConfiguration_MachineNamesAreNotUnique()
     {
-        var cultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID;
+        var cultureInfoId = CultureInfo.GetCultureInfo("en-US").LCID;
 
         EntityConfigurationCreateRequest configCreateRequest =
             EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
@@ -2146,7 +2146,7 @@ public class Tests
     [TestMethod]
     public async Task CreateNumberAttributeAsReference_Success()
     {
-        var cultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID;
+        var cultureInfoId = CultureInfo.GetCultureInfo("en-US").LCID;
         var priceAttribute = new NumberAttributeConfigurationCreateUpdateRequest
         {
             MachineName = "price",
@@ -2321,7 +2321,7 @@ public class Tests
     [TestMethod]
     public async Task AddAttributeMetadata_Success()
     {
-        var cultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID;
+        var cultureInfoId = CultureInfo.GetCultureInfo("en-US").LCID;
         var priceAttribute = new NumberAttributeConfigurationCreateUpdateRequest
         {
             MachineName = "price",
@@ -2371,7 +2371,7 @@ public class Tests
     [TestMethod]
     public async Task UpdateAttributeMetadata_Success()
     {
-        var cultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID;
+        var cultureInfoId = CultureInfo.GetCultureInfo("en-US").LCID;
         var priceAttribute = new NumberAttributeConfigurationCreateUpdateRequest
         {
             MachineName = "price",

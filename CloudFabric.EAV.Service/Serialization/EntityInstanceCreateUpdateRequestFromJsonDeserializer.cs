@@ -184,7 +184,7 @@ public class EntityInstanceCreateUpdateRequestFromJsonDeserializer
                                 localizedText.Value.Add(
                                     new LocalizedStringCreateRequest()
                                     {
-                                        CultureInfoId = cultureInfo.LCID, String = attributeValue.GetString()!
+                                        CultureInfoId = cultureInfo.LCID, String = element.Value.GetString()!
                                     }
                                 );
                             }
@@ -195,7 +195,7 @@ public class EntityInstanceCreateUpdateRequestFromJsonDeserializer
                                     new List<string>()
                                     {
                                         $"{element.Name} culture is not supported. " +
-                                        $"Example: EN-us. " +
+                                        $"Example: en-US. " +
                                         $"Please use following page to find out available cultures: " +
                                         $"https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-lcid/" +
                                         $"a9eac961-e77d-41a6-90a5-ce1a8b0cdb9c?redirectedfrom=MSDN"
@@ -210,7 +210,7 @@ public class EntityInstanceCreateUpdateRequestFromJsonDeserializer
                     localizedText.Value.Add(
                         new LocalizedStringCreateRequest()
                         {
-                            CultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID,
+                            CultureInfoId = CultureInfo.GetCultureInfo("en-US").LCID,
                             String = attributeValue.GetString()!
                         }
                     );

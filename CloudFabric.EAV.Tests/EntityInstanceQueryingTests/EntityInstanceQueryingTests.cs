@@ -14,6 +14,8 @@ using FluentAssertions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
+using System.Text.Json;
+
 // ReSharper disable AsyncConverter.ConfigureAwaitHighlighting
 
 namespace CloudFabric.EAV.Tests.EntityInstanceQueryingTests;
@@ -112,8 +114,8 @@ public abstract class EntityInstanceQueryingTests : BaseQueryTests.BaseQueryTest
             .First(a => a.ConfigurationAttributeMachineName == "name");
         nameAttributeValue.Value = new List<LocalizedStringCreateRequest>
         {
-            new() { CultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID, String = "Azul 2" },
-            new() { CultureInfoId = CultureInfo.GetCultureInfo("RU-ru").LCID, String = "Азул 2" }
+            new() { CultureInfoId = CultureInfo.GetCultureInfo("en-US").LCID, String = "Azul 2" },
+            new() { CultureInfoId = CultureInfo.GetCultureInfo("ru-RU").LCID, String = "Азул 2" }
         };
 
         (EntityInstanceViewModel updateResult, ProblemDetails updateErrors) =
@@ -140,13 +142,20 @@ public abstract class EntityInstanceQueryingTests : BaseQueryTests.BaseQueryTest
             .Select(r => r.Document).First()
             ?.Attributes.First(a => a.ConfigurationAttributeMachineName == "name")!;
 
-        nameAttributeAfterUpdate.Value.First(v => v.CultureInfoId == CultureInfo.GetCultureInfo("EN-us").LCID)
+        nameAttributeAfterUpdate.Value.First(v => v.CultureInfoId == CultureInfo.GetCultureInfo("en-US").LCID)
             .String.Should()
             .Be("Azul 2");
 
-        nameAttributeAfterUpdate.Value.First(v => v.CultureInfoId == CultureInfo.GetCultureInfo("RU-ru").LCID)
+        nameAttributeAfterUpdate.Value.First(v => v.CultureInfoId == CultureInfo.GetCultureInfo("ru-RU").LCID)
             .String.Should()
             .Be("Азул 2");
+
+        var resultsJson = await _eavService
+            .QueryInstancesJsonMultiLanguage(createdConfiguration.Id, query);
+
+        var resultString = JsonSerializer.Serialize(resultsJson);
+
+        resultsJson.Records.Count.Should().BeGreaterThan(0);
     }
 
     //[TestMethod]

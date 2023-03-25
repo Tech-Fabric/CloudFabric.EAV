@@ -70,14 +70,14 @@ public class EntityInstanceFactory
                 ""entityConfigurationId"": """ + entityConfigurationId + @""",
                 ""name"": [
                     {
-                        ""EN-us"": ""Azul"",
-                        ""RU-ru"": ""Азул""
+                        ""en-US"": ""Azul"",
+                        ""ru-RU"": ""Азул""
                     }
                 ],
                 ""description"": [
                     {
-                         ""EN-us"": ""In the game Azul, players take turns drafting colored tiles from suppliers to their player board. Later in the round, players score points based on how they've placed their tiles to decorate the palace. Extra points are scored for specific patterns and completing sets; wasted supplies harm the player's score. The player with the most points at the end of the game wins."",
-                         ""RU-ru"": ""Представьте, что вы попали в красивый дворец, все стены которого выложены изящной разноцветной плиткой. Вы понимаете, что не один мастер тут потрудился, это была целая команда художников и ремесленников, которая работала не покладая рук много лет, чтобы вы смогли сегодня восхититься красотой узоров. В ней нет и кусочка повторения, как будто бы в каждой плитке свой особый сюжет, пропитанный духом времени.""
+                         ""en-US"": ""In the game Azul, players take turns drafting colored tiles from suppliers to their player board. Later in the round, players score points based on how they've placed their tiles to decorate the palace. Extra points are scored for specific patterns and completing sets; wasted supplies harm the player's score. The player with the most points at the end of the game wins."",
+                         ""ru-RU"": ""Представьте, что вы попали в красивый дворец, все стены которого выложены изящной разноцветной плиткой. Вы понимаете, что не один мастер тут потрудился, это была целая команда художников и ремесленников, которая работала не покладая рук много лет, чтобы вы смогли сегодня восхититься красотой узоров. В ней нет и кусочка повторения, как будто бы в каждой плитке свой особый сюжет, пропитанный духом времени.""
                     }
                 ],
                 ""brand"": ""HobbyGames"",
@@ -98,7 +98,7 @@ public class EntityInstanceFactory
                         ""alt"": ""A photo of Azul board game rulebook, page 1""
                     }
                 ]
-            }}
+            }
         ";
     }
 
@@ -118,12 +118,12 @@ public class EntityInstanceFactory
                     {
                         new()
                         {
-                            CultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID,
+                            CultureInfoId = CultureInfo.GetCultureInfo("en-US").LCID,
                             String = "Azul"
                         },
                         new()
                         {
-                            CultureInfoId = CultureInfo.GetCultureInfo("RU-ru").LCID,
+                            CultureInfoId = CultureInfo.GetCultureInfo("ru-RU").LCID,
                             String = "Азул"
                         }
                     }
@@ -135,12 +135,12 @@ public class EntityInstanceFactory
                     {
                         new()
                         {
-                            CultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID,
+                            CultureInfoId = CultureInfo.GetCultureInfo("en-US").LCID,
                             String = "BlahBlahBlah"
                         },
                         new()
                         {
-                            CultureInfoId = CultureInfo.GetCultureInfo("RU-ru").LCID,
+                            CultureInfoId = CultureInfo.GetCultureInfo("ru-RU").LCID,
                             String = "БлаБлаБла"
                         }
                     }

@@ -43,7 +43,7 @@ public class JsonSerializationTests : BaseQueryTests.BaseQueryTests
     }
 
     [TestMethod]
-    public async Task TestCreateInstanceUpdateAndQuery()
+    public async Task TestCreateInstanceMultiLangAndQuery()
     {
         EntityConfigurationCreateRequest configurationCreateRequest =
             EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
@@ -54,50 +54,204 @@ public class JsonSerializationTests : BaseQueryTests.BaseQueryTests
         );
 
         EntityConfigurationViewModel configuration = await _eavService.GetEntityConfiguration(
-            createdConfiguration.Id
+            createdConfiguration!.Id
         );
 
         configuration.Should().BeEquivalentTo(createdConfiguration);
 
-        string instanceCreateRequest =
-            EntityInstanceFactory.CreateValidBoardGameEntityInstanceCreateRequestJsonSingleLanguage(createdConfiguration.Id);
+        string instanceCreateRequest = EntityInstanceFactory
+            .CreateValidBoardGameEntityInstanceCreateRequestJsonMultiLanguage(createdConfiguration.Id);
 
-        (EntityInstanceViewModel createdInstance, ProblemDetails createProblemDetails) =
+        (JsonDocument createdInstance, ProblemDetails createProblemDetails) =
             await _eavService.CreateEntityInstance(
                 instanceCreateRequest,
                 configuration.Id,
                 configuration.TenantId.Value
             );
 
-        createdInstance.EntityConfigurationId.Should().Be(createdConfiguration.Id);
-        createdInstance.TenantId.Should().Be(createdConfiguration.TenantId);
+        createdInstance.RootElement.GetProperty("entityConfigurationId").GetString()
+            .Should().Be(createdConfiguration.Id.ToString());
+
+        createdInstance.RootElement.GetProperty("tenantId").GetString()
+            .Should().Be(createdConfiguration.TenantId.ToString());
 
         var query = new ProjectionQuery
         {
-            Filters = new List<Filter> { new("Id", FilterOperator.Equal, createdInstance.Id) }
+            Filters = new List<Filter>
+            {
+                new("Id", FilterOperator.Equal, Guid.Parse(createdInstance.RootElement.GetProperty("id").GetString()!))
+            }
         };
 
         await Task.Delay(ProjectionsUpdateDelay);
 
-        ProjectionQueryResult<EntityInstanceViewModel>? results = await _eavService
-            .QueryInstances(createdConfiguration.Id, query);
-
-        results?.TotalRecordsFound.Should().BeGreaterThan(0);
-
-        results?.Records.Select(r => r.Document).First().Should().BeEquivalentTo(createdInstance);
-
-        ProjectionQueryResult<JsonDocument>? resultsJsonMultiLanguage = await _eavService
+        ProjectionQueryResult<JsonDocument>? results = await _eavService
             .QueryInstancesJsonMultiLanguage(createdConfiguration.Id, query);
 
-        ProjectionQueryResult<JsonDocument>? resultsJsonSingleLanguage = await _eavService.QueryInstancesJsonSingleLanguage(
-            createdConfiguration.Id, query, "EN-us"
-        );
+        results?.TotalRecordsFound.Should().BeGreaterThan(0);
 
-        string resultJsonMultiLanguageString = JsonSerializer.Serialize(
-            resultsJsonMultiLanguage, new JsonSerializerOptions() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase }
-        );
+        var resultDocument = results?.Records.Select(r => r.Document).First();
+
+        // Query result documents may not have some of the values, so we only compare few basic properties
+        // FluentAssertions library is very bad at comparing JsonElements, so we have to do everything manually here.
+        resultDocument.RootElement.GetProperty("id").GetString()
+            .Should()
+            .BeEquivalentTo(createdInstance.RootElement.GetProperty("id").GetString());
+
+        resultDocument.RootElement.GetProperty("entityConfigurationId").GetString()
+            .Should()
+            .BeEquivalentTo(createdInstance.RootElement.GetProperty("entityConfigurationId").GetString());
+
+        resultDocument.RootElement.GetProperty("tenantId").GetString()
+            .Should()
+            .BeEquivalentTo(createdInstance.RootElement.GetProperty("tenantId").GetString());
+
+        resultDocument.RootElement.GetProperty("name").GetProperty("en-US").GetString()
+            .Should()
+            .BeEquivalentTo(createdInstance.RootElement.GetProperty("name").GetProperty("en-US").GetString());
+
+        resultDocument.RootElement.GetProperty("players_min").GetInt16()
+            .Should()
+            .Be(createdInstance.RootElement.GetProperty("players_min").GetInt16());
+
+        resultDocument.RootElement.GetProperty("price").GetDecimal()
+            .Should()
+            .Be(createdInstance.RootElement.GetProperty("price").GetDecimal());
+
+        resultDocument.RootElement.GetProperty("release_date").GetProperty("from").GetDateTime()
+            .Should()
+            .Be(createdInstance.RootElement.GetProperty("release_date").GetProperty("from").GetDateTime());
+
+        ProjectionQueryResult<JsonDocument> resultsJsonMultiLanguage = await _eavService
+            .QueryInstancesJsonMultiLanguage(createdConfiguration.Id, query);
+
+        resultsJsonMultiLanguage.Records.First().Document.RootElement.GetProperty("name")
+            .GetProperty("en-US").GetString().Should().Be("Azul");
+        resultsJsonMultiLanguage.Records.First().Document.RootElement.GetProperty("name")
+            .GetProperty("ru-RU").GetString().Should().Be("Азул");
+
+        ProjectionQueryResult<JsonDocument> resultsJsonSingleLanguage = await _eavService
+            .QueryInstancesJsonSingleLanguage(
+                createdConfiguration.Id, query, "en-US"
+            );
+
+        resultsJsonSingleLanguage.Records.First().Document.RootElement.GetProperty("name")
+            .GetString().Should().Be("Azul");
+
+        ProjectionQueryResult<JsonDocument>? resultsJsonSingleLanguageRu = await _eavService
+            .QueryInstancesJsonSingleLanguage(
+                createdConfiguration.Id, query, "ru-RU"
+            );
+
+        resultsJsonSingleLanguageRu.Records.First().Document.RootElement.GetProperty("name")
+            .GetString().Should().Be("Азул");
 
         results?.TotalRecordsFound.Should().BeGreaterThan(0);
+
+        // -- one instance test
+
+        var firstDocumentId = resultsJsonMultiLanguage.Records[0]?.Document!.RootElement.GetProperty("id").GetString();
+
+        var oneInstanceJsonMultiLang = await _eavService.GetEntityInstanceJsonMultiLanguage(
+            Guid.Parse(firstDocumentId!),
+            createdInstance.RootElement.GetProperty("entityConfigurationId").GetString()!
+        );
+
+        oneInstanceJsonMultiLang.RootElement.GetProperty("name").GetProperty("en-US").GetString().Should().Be("Azul");
+
+        var oneInstanceJsonSingleLang = await _eavService.GetEntityInstanceJsonSingleLanguage(
+            Guid.Parse(firstDocumentId!),
+            createdInstance.RootElement.GetProperty("entityConfigurationId").GetString()!,
+            "en-US"
+        );
+
+        oneInstanceJsonSingleLang.RootElement.GetProperty("name").GetString().Should().Be("Azul");
     }
 
+    [TestMethod]
+    public async Task TestCreateInstanceSingleLangAndQuery()
+    {
+        EntityConfigurationCreateRequest configurationCreateRequest =
+            EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
+
+        (EntityConfigurationViewModel? createdConfiguration, _) = await _eavService.CreateEntityConfiguration(
+            configurationCreateRequest,
+            CancellationToken.None
+        );
+
+        EntityConfigurationViewModel configuration = await _eavService.GetEntityConfiguration(
+            createdConfiguration!.Id
+        );
+
+        configuration.Should().BeEquivalentTo(createdConfiguration);
+
+        string instanceCreateRequest = EntityInstanceFactory
+            .CreateValidBoardGameEntityInstanceCreateRequestJsonSingleLanguage(createdConfiguration.Id);
+
+        (JsonDocument createdInstance, ProblemDetails createProblemDetails) =
+            await _eavService.CreateEntityInstance(
+                instanceCreateRequest,
+                configuration.Id,
+                configuration.TenantId.Value
+            );
+
+        createdInstance.RootElement.GetProperty("entityConfigurationId").GetString()
+            .Should().Be(createdConfiguration.Id.ToString());
+
+        createdInstance.RootElement.GetProperty("tenantId").GetString()
+            .Should().Be(createdConfiguration.TenantId.ToString());
+
+        var query = new ProjectionQuery
+        {
+            Filters = new List<Filter>
+            {
+                new("Id", FilterOperator.Equal, Guid.Parse(createdInstance.RootElement.GetProperty("id").GetString()!))
+            }
+        };
+
+        await Task.Delay(ProjectionsUpdateDelay);
+
+        ProjectionQueryResult<JsonDocument>? results = await _eavService
+            .QueryInstancesJsonMultiLanguage(createdConfiguration.Id, query);
+
+        results?.TotalRecordsFound.Should().BeGreaterThan(0);
+
+        var resultDocument = results?.Records.Select(r => r.Document).First();
+
+        // Query result documents may not have some of the values, so we only compare few basic properties
+        // FluentAssertions library is very bad at comparing JsonElements, so we have to do everything manually here.
+        resultDocument.RootElement.GetProperty("id").GetString()
+            .Should()
+            .BeEquivalentTo(createdInstance.RootElement.GetProperty("id").GetString());
+
+        resultDocument.RootElement.GetProperty("entityConfigurationId").GetString()
+            .Should()
+            .BeEquivalentTo(createdInstance.RootElement.GetProperty("entityConfigurationId").GetString());
+
+        resultDocument.RootElement.GetProperty("tenantId").GetString()
+            .Should()
+            .BeEquivalentTo(createdInstance.RootElement.GetProperty("tenantId").GetString());
+
+        resultDocument.RootElement.GetProperty("name").GetProperty("en-US").GetString()
+            .Should()
+            .BeEquivalentTo(createdInstance.RootElement.GetProperty("name").GetProperty("en-US").GetString());
+
+        resultDocument.RootElement.GetProperty("players_min").GetInt16()
+            .Should()
+            .Be(createdInstance.RootElement.GetProperty("players_min").GetInt16());
+
+        resultDocument.RootElement.GetProperty("price").GetDecimal()
+            .Should()
+            .Be(createdInstance.RootElement.GetProperty("price").GetDecimal());
+
+        resultDocument.RootElement.GetProperty("release_date").GetProperty("from").GetDateTime()
+            .Should()
+            .Be(createdInstance.RootElement.GetProperty("release_date").GetProperty("from").GetDateTime());
+
+        ProjectionQueryResult<JsonDocument> resultsJsonMultiLanguage = await _eavService
+            .QueryInstancesJsonMultiLanguage(createdConfiguration.Id, query);
+
+        resultsJsonMultiLanguage.Records.First().Document.RootElement.GetProperty("name")
+            .GetProperty("en-US").GetString().Should().Be("Azul");
+    }
 }

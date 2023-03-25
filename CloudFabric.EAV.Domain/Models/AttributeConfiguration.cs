@@ -93,7 +93,7 @@ public abstract class AttributeConfiguration : AggregateBase
     {
         Apply(new AttributeConfigurationNameUpdated(Id,
                 newName,
-                CultureInfo.GetCultureInfo("EN-us").LCID
+                CultureInfo.GetCultureInfo("en-US").LCID
             )
         );
     }
@@ -107,7 +107,7 @@ public abstract class AttributeConfiguration : AggregateBase
     {
         Apply(new AttributeConfigurationDescriptionUpdated(Id,
                 newDescription,
-                CultureInfo.GetCultureInfo("EN-us").LCID
+                CultureInfo.GetCultureInfo("en-US").LCID
             )
         );
     }

@@ -16,7 +16,7 @@ public class LocalizedStringSingleLanguageSerializer : JsonConverter<List<Locali
 
     public LocalizedStringSingleLanguageSerializer(
         string language,
-        string fallbackLanguage = "EN-us"
+        string fallbackLanguage = "en-US"
     )
     {
         _language = language;

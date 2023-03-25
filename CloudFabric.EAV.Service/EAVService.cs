@@ -103,7 +103,7 @@ public class EAVService : IEAVService
         {
             var machineName =
                 attributeRequest.Name
-                    .FirstOrDefault(x => x.CultureInfoId == new CultureInfo("EN-us").LCID)
+                    .FirstOrDefault(x => x.CultureInfoId == new CultureInfo("en-US").LCID)
                     ?.String
                 ?? attributeRequest.Name.First().String;
 
@@ -378,7 +378,7 @@ public class EAVService : IEAVService
                 {
                     new LocalizedStringCreateRequest()
                     {
-                        CultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID,
+                        CultureInfoId = CultureInfo.GetCultureInfo("en-US").LCID,
                         String = $"This attribute was created for {array.MachineName} attribute. " +
                                  $"Since that attribute is an array and has it's own configuration, a separate attribute " +
                                  $"is required to configure array elements."
@@ -1169,7 +1169,7 @@ public class EAVService : IEAVService
     /// </param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    public Task<(EntityInstanceViewModel?, ProblemDetails?)> CreateEntityInstance(
+    public Task<(JsonDocument?, ProblemDetails?)> CreateEntityInstance(
         string entityJsonString,
         Func<EntityInstanceCreateRequest, Task<EntityInstanceCreateRequest>>? requestDeserializedCallback = null,
         CancellationToken cancellationToken = default
@@ -1210,7 +1210,7 @@ public class EAVService : IEAVService
     /// </param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    public Task<(EntityInstanceViewModel?, ProblemDetails?)> CreateEntityInstance(
+    public Task<(JsonDocument?, ProblemDetails?)> CreateEntityInstance(
         string entityJsonString,
         Guid entityConfigurationId,
         Guid tenantId,
@@ -1256,7 +1256,7 @@ public class EAVService : IEAVService
     /// </param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    public async Task<(EntityInstanceViewModel?, ProblemDetails?)> CreateEntityInstance(
+    public async Task<(JsonDocument?, ProblemDetails?)> CreateEntityInstance(
         JsonDocument entityJson,
         Func<EntityInstanceCreateRequest, Task<EntityInstanceCreateRequest>>? requestDeserializedCallback = null,
         CancellationToken cancellationToken = default
@@ -1331,7 +1331,7 @@ public class EAVService : IEAVService
     /// </param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    public async Task<(EntityInstanceViewModel?, ProblemDetails?)> CreateEntityInstance(
+    public async Task<(JsonDocument?, ProblemDetails?)> CreateEntityInstance(
         JsonDocument entityJson,
         Guid entityConfigurationId,
         Guid tenantId,
@@ -1371,7 +1371,7 @@ public class EAVService : IEAVService
             entityInstanceCreateRequest = await requestDeserializedCallback(entityInstanceCreateRequest!);
         }
 
-        var (createdEntity, validationErrors) = await CreateEntityInstance(
+        var (createdEntity, validationErrors) = await CreateEntityInstanceInternal(
             entityInstanceCreateRequest!, cancellationToken
         );
 
@@ -1380,10 +1380,18 @@ public class EAVService : IEAVService
             return (null, validationErrors);
         }
 
-        return (createdEntity, null);
+        return (SerializeEntityInstanceToJsonMultiLanguage(createdEntity), null);
     }
 
     public async Task<(EntityInstanceViewModel?, ProblemDetails?)> CreateEntityInstance(
+        EntityInstanceCreateRequest entity, CancellationToken cancellationToken = default
+    )
+    {
+        var (entityInstanceCreated, errors) = await CreateEntityInstanceInternal(entity, cancellationToken);
+        return (_mapper.Map<EntityInstanceViewModel>(entityInstanceCreated), errors);
+    }
+
+    private async Task<(EntityInstance?, ProblemDetails?)> CreateEntityInstanceInternal(
         EntityInstanceCreateRequest entity, CancellationToken cancellationToken = default
     )
     {
@@ -1458,7 +1466,7 @@ public class EAVService : IEAVService
             throw new Exception("Entity was not saved");
         }
 
-        return (_mapper.Map<EntityInstanceViewModel>(entityInstance), null);
+        return (entityInstance, null);
     }
 
     public async Task<EntityInstanceViewModel> GetEntityInstance(Guid id, string partitionKey)
@@ -1472,6 +1480,22 @@ public class EAVService : IEAVService
     {
         EntityInstance? entityInstance = await _entityInstanceRepository.LoadAsync(id, partitionKey);
 
+        return SerializeEntityInstanceToJsonMultiLanguage(entityInstance);
+    }
+
+    public async Task<JsonDocument> GetEntityInstanceJsonSingleLanguage(
+        Guid id,
+        string partitionKey,
+        string language,
+        string fallbackLanguage = "en-US")
+    {
+        EntityInstance? entityInstance = await _entityInstanceRepository.LoadAsync(id, partitionKey);
+
+        return SerializeEntityInstanceToJsonSingleLanguage(entityInstance, language, fallbackLanguage);
+    }
+
+    private JsonDocument SerializeEntityInstanceToJsonMultiLanguage(EntityInstance? entityInstance)
+    {
         var serializerOptions = new JsonSerializerOptions(_jsonSerializerOptions);
         serializerOptions.Converters.Add(new LocalizedStringMultiLanguageSerializer());
         serializerOptions.Converters.Add(new EntityInstanceToJsonSerializer());
@@ -1479,14 +1503,10 @@ public class EAVService : IEAVService
         return JsonSerializer.SerializeToDocument(entityInstance, serializerOptions);
     }
 
-    public async Task<JsonDocument> GetEntityInstanceJsonSingleLanguage(
-        Guid id,
-        string partitionKey,
-        string language,
-        string fallbackLanguage = "EN-us")
+    private JsonDocument SerializeEntityInstanceToJsonSingleLanguage(
+        EntityInstance? entityInstance, string language, string fallbackLanguage = "en-US"
+    )
     {
-        EntityInstance? entityInstance = await _entityInstanceRepository.LoadAsync(id, partitionKey);
-
         var serializerOptions = new JsonSerializerOptions(_jsonSerializerOptions);
         serializerOptions.Converters.Add(new LocalizedStringSingleLanguageSerializer(language, fallbackLanguage));
         serializerOptions.Converters.Add(new EntityInstanceToJsonSerializer());
@@ -1687,8 +1707,8 @@ public class EAVService : IEAVService
     /// ```
     /// {
     ///   "productName": {
-    ///     "EN-us": "Terraforming Mars",
-    ///     "RU-ru": "Покорение Марса"
+    ///     "en-US": "Terraforming Mars",
+    ///     "ru-RU": "Покорение Марса"
     ///   },
     ///   "price": 100
     /// }
@@ -1739,14 +1759,14 @@ public class EAVService : IEAVService
     /// <param name="entityConfigurationId"></param>
     /// <param name="query"></param>
     /// <param name="language">Language to use from all localized strings. Only this language strings will be returned.</param>
-    /// <param name="fallbackLanguage">If main language will not be found, this language will be tried. Defaults to EN-us.</param>
+    /// <param name="fallbackLanguage">If main language will not be found, this language will be tried. Defaults to en-US.</param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
     public async Task<ProjectionQueryResult<JsonDocument>> QueryInstancesJsonSingleLanguage(
         Guid entityConfigurationId,
         ProjectionQuery query,
-        string language = "EN-us",
-        string fallbackLanguage = "EN-us",
+        string language = "en-US",
+        string fallbackLanguage = "en-US",
         CancellationToken cancellationToken = default
     )
     {

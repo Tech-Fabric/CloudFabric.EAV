@@ -29,12 +29,12 @@ public class LocalizedString : IEquatable<LocalizedString>
 
     public static LocalizedString Russian(string stringRu)
     {
-        return new LocalizedString { String = stringRu, CultureInfoId = CultureInfo.GetCultureInfo("RU-ru").LCID };
+        return new LocalizedString { String = stringRu, CultureInfoId = CultureInfo.GetCultureInfo("ru-RU").LCID };
     }
 
     public static LocalizedString English(string stringEn)
     {
-        return new LocalizedString { String = stringEn, CultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID };
+        return new LocalizedString { String = stringEn, CultureInfoId = CultureInfo.GetCultureInfo("en-US").LCID };
     }
 
     public override bool Equals(object obj)

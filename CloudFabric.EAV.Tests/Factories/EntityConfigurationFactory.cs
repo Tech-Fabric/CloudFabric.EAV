@@ -70,8 +70,8 @@ public static class EntityConfigurationFactory
             Name =
                 new List<LocalizedStringCreateRequest>
                 {
-                    new() { CultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID, String = "Board Game" },
-                    new() { CultureInfoId = CultureInfo.GetCultureInfo("RU-ru").LCID, String = "Настольная Игра" }
+                    new() { CultureInfoId = CultureInfo.GetCultureInfo("en-US").LCID, String = "Board Game" },
+                    new() { CultureInfoId = CultureInfo.GetCultureInfo("ru-RU").LCID, String = "Настольная Игра" }
                 },
             MachineName = "BoardGame",
             TenantId = tenantId,
@@ -82,8 +82,8 @@ public static class EntityConfigurationFactory
                     MachineName = "name",
                     Name = new List<LocalizedStringCreateRequest>
                     {
-                        new() { CultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID, String = "Name" },
-                        new() { CultureInfoId = CultureInfo.GetCultureInfo("RU-ru").LCID, String = "Название" }
+                        new() { CultureInfoId = CultureInfo.GetCultureInfo("en-US").LCID, String = "Name" },
+                        new() { CultureInfoId = CultureInfo.GetCultureInfo("ru-RU").LCID, String = "Название" }
                     },
                     TenantId = tenantId
                 },
@@ -94,9 +94,9 @@ public static class EntityConfigurationFactory
                     {
                         new()
                         {
-                            CultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID, String = "Description"
+                            CultureInfoId = CultureInfo.GetCultureInfo("en-US").LCID, String = "Description"
                         },
-                        new() { CultureInfoId = CultureInfo.GetCultureInfo("RU-ru").LCID, String = "Описание" }
+                        new() { CultureInfoId = CultureInfo.GetCultureInfo("ru-RU").LCID, String = "Описание" }
                     },
                     TenantId = tenantId
                 },
@@ -105,8 +105,8 @@ public static class EntityConfigurationFactory
                     MachineName = "brand",
                     Name = new List<LocalizedStringCreateRequest>
                     {
-                        new() { CultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID, String = "Brand" },
-                        new() { CultureInfoId = CultureInfo.GetCultureInfo("RU-ru").LCID, String = "Бренд" }
+                        new() { CultureInfoId = CultureInfo.GetCultureInfo("en-US").LCID, String = "Brand" },
+                        new() { CultureInfoId = CultureInfo.GetCultureInfo("ru-RU").LCID, String = "Бренд" }
                     },
                     IsRequired = true,
                     IsSearchable = true,
@@ -121,12 +121,12 @@ public static class EntityConfigurationFactory
                     {
                         new()
                         {
-                            CultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID,
+                            CultureInfoId = CultureInfo.GetCultureInfo("en-US").LCID,
                             String = "Number of players min"
                         },
                         new()
                         {
-                            CultureInfoId = CultureInfo.GetCultureInfo("RU-ru").LCID,
+                            CultureInfoId = CultureInfo.GetCultureInfo("ru-RU").LCID,
                             String = "Количество игроков, от"
                         }
                     },
@@ -142,12 +142,12 @@ public static class EntityConfigurationFactory
                     {
                         new()
                         {
-                            CultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID,
+                            CultureInfoId = CultureInfo.GetCultureInfo("en-US").LCID,
                             String = "Number of players max"
                         },
                         new()
                         {
-                            CultureInfoId = CultureInfo.GetCultureInfo("RU-ru").LCID,
+                            CultureInfoId = CultureInfo.GetCultureInfo("ru-RU").LCID,
                             String = "Количество игроков, до"
                         }
                     },
@@ -163,12 +163,12 @@ public static class EntityConfigurationFactory
                     {
                         new()
                         {
-                            CultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID,
+                            CultureInfoId = CultureInfo.GetCultureInfo("en-US").LCID,
                             String = "Average playtime in minutes"
                         },
                         new()
                         {
-                            CultureInfoId = CultureInfo.GetCultureInfo("RU-ru").LCID,
+                            CultureInfoId = CultureInfo.GetCultureInfo("ru-RU").LCID,
                             String = "Средняя продолжительность игры"
                         }
                     },
@@ -179,7 +179,7 @@ public static class EntityConfigurationFactory
                     MachineName = "price",
                     Name = new List<LocalizedStringCreateRequest>
                     {
-                        new() { CultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID, String = "Price" }
+                        new() { CultureInfoId = CultureInfo.GetCultureInfo("en-US").LCID, String = "Price" }
                     },
                     DefaultValue = 1,
                     MinimumValue = 1,
@@ -194,7 +194,7 @@ public static class EntityConfigurationFactory
                     {
                         new()
                         {
-                            CultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID,
+                            CultureInfoId = CultureInfo.GetCultureInfo("en-US").LCID,
                             String = "Release date"
                         }
                     },
@@ -206,10 +206,10 @@ public static class EntityConfigurationFactory
                     MachineName = "images",
                     Name = new List<LocalizedStringCreateRequest>
                     {
-                        new() { CultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID, String = "Images" },
+                        new() { CultureInfoId = CultureInfo.GetCultureInfo("en-US").LCID, String = "Images" },
                         new()
                         {
-                            CultureInfoId = CultureInfo.GetCultureInfo("RU-ru").LCID, String = "Изображения"
+                            CultureInfoId = CultureInfo.GetCultureInfo("ru-RU").LCID, String = "Изображения"
                         }
                     },
                     ItemsType = EavAttributeType.Image,
@@ -229,7 +229,7 @@ public static class EntityConfigurationFactory
                 //     {
                 //         new LocalizedStringCreateRequest
                 //         {
-                //             CultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID,
+                //             CultureInfoId = CultureInfo.GetCultureInfo("en-US").LCID,
                 //             String = "Version"
                 //         }
                 //     },
@@ -252,8 +252,8 @@ public static class EntityConfigurationFactory
             Name =
                 new List<LocalizedStringCreateRequest>
                 {
-                    new() { CultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID, String = "Tire" },
-                    new() { CultureInfoId = CultureInfo.GetCultureInfo("RU-ru").LCID, String = "Шина" }
+                    new() { CultureInfoId = CultureInfo.GetCultureInfo("en-US").LCID, String = "Tire" },
+                    new() { CultureInfoId = CultureInfo.GetCultureInfo("ru-RU").LCID, String = "Шина" }
                 },
             MachineName = "CarTire",
             Attributes = new List<EntityAttributeConfigurationCreateUpdateRequest>
@@ -265,9 +265,9 @@ public static class EntityConfigurationFactory
                     {
                         new()
                         {
-                            CultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID, String = "Brand"
+                            CultureInfoId = CultureInfo.GetCultureInfo("en-US").LCID, String = "Brand"
                         },
-                        new() { CultureInfoId = CultureInfo.GetCultureInfo("RU-ru").LCID, String = "Бренд" }
+                        new() { CultureInfoId = CultureInfo.GetCultureInfo("ru-RU").LCID, String = "Бренд" }
                     }
                 },
                 new NumberAttributeConfigurationCreateUpdateRequest
@@ -277,11 +277,11 @@ public static class EntityConfigurationFactory
                     {
                         new()
                         {
-                            CultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID, String = "Width"
+                            CultureInfoId = CultureInfo.GetCultureInfo("en-US").LCID, String = "Width"
                         },
                         new()
                         {
-                            CultureInfoId = CultureInfo.GetCultureInfo("RU-ru").LCID, String = "Ширина"
+                            CultureInfoId = CultureInfo.GetCultureInfo("ru-RU").LCID, String = "Ширина"
                         }
                     },
                     DefaultValue = 0,
@@ -289,12 +289,12 @@ public static class EntityConfigurationFactory
                     {
                         new()
                         {
-                            CultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID,
+                            CultureInfoId = CultureInfo.GetCultureInfo("en-US").LCID,
                             String = "Tire width"
                         },
                         new()
                         {
-                            CultureInfoId = CultureInfo.GetCultureInfo("RU-ru").LCID,
+                            CultureInfoId = CultureInfo.GetCultureInfo("ru-RU").LCID,
                             String = "Ширина шины"
                         }
                     }
@@ -306,12 +306,12 @@ public static class EntityConfigurationFactory
                     {
                         new()
                         {
-                            CultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID,
+                            CultureInfoId = CultureInfo.GetCultureInfo("en-US").LCID,
                             String = "Diameter"
                         },
                         new()
                         {
-                            CultureInfoId = CultureInfo.GetCultureInfo("RU-ru").LCID, String = "Диаметр"
+                            CultureInfoId = CultureInfo.GetCultureInfo("ru-RU").LCID, String = "Диаметр"
                         }
                     },
                     DefaultValue = 0,
@@ -319,12 +319,12 @@ public static class EntityConfigurationFactory
                     {
                         new()
                         {
-                            CultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID,
+                            CultureInfoId = CultureInfo.GetCultureInfo("en-US").LCID,
                             String = "Tire diameter"
                         },
                         new()
                         {
-                            CultureInfoId = CultureInfo.GetCultureInfo("RU-ru").LCID,
+                            CultureInfoId = CultureInfo.GetCultureInfo("ru-RU").LCID,
                             String = "Диаметр шины"
                         }
                     }
@@ -336,11 +336,11 @@ public static class EntityConfigurationFactory
                     {
                         new()
                         {
-                            CultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID, String = "Height"
+                            CultureInfoId = CultureInfo.GetCultureInfo("en-US").LCID, String = "Height"
                         },
                         new()
                         {
-                            CultureInfoId = CultureInfo.GetCultureInfo("RU-ru").LCID, String = "Высота"
+                            CultureInfoId = CultureInfo.GetCultureInfo("ru-RU").LCID, String = "Высота"
                         }
                     },
                     DefaultValue = 0,
@@ -348,12 +348,12 @@ public static class EntityConfigurationFactory
                     {
                         new()
                         {
-                            CultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID,
+                            CultureInfoId = CultureInfo.GetCultureInfo("en-US").LCID,
                             String = "Tire height"
                         },
                         new()
                         {
-                            CultureInfoId = CultureInfo.GetCultureInfo("RU-ru").LCID,
+                            CultureInfoId = CultureInfo.GetCultureInfo("ru-RU").LCID,
                             String = "Высота шины"
                         }
                     }
@@ -365,12 +365,12 @@ public static class EntityConfigurationFactory
                     {
                         new()
                         {
-                            CultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID,
+                            CultureInfoId = CultureInfo.GetCultureInfo("en-US").LCID,
                             String = "Vehicle makes"
                         },
                         new()
                         {
-                            CultureInfoId = CultureInfo.GetCultureInfo("RU-ru").LCID,
+                            CultureInfoId = CultureInfo.GetCultureInfo("ru-RU").LCID,
                             String = "Марки автомобилей"
                         }
                     },
@@ -382,12 +382,12 @@ public static class EntityConfigurationFactory
                         {
                             new()
                             {
-                                CultureInfoId = CultureInfo.GetCultureInfo("EN-us").LCID,
+                                CultureInfoId = CultureInfo.GetCultureInfo("en-US").LCID,
                                 String = "Vehicle make"
                             },
                             new()
                             {
-                                CultureInfoId = CultureInfo.GetCultureInfo("RU-ru").LCID,
+                                CultureInfoId = CultureInfo.GetCultureInfo("ru-RU").LCID,
                                 String = "Марка автомобиля"
                             }
                         },
