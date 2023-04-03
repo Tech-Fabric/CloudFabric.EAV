@@ -1851,7 +1851,7 @@ public class Tests
         };
         var updateRequest = new EntityInstanceUpdateRequest
         {
-            EntityConfigurationId = createdConfiguration.Id, Attributes = attributesRequest, Id = createdInstance.Id
+            EntityConfigurationId = createdConfiguration.Id, AttributesToAddOrUpdate = attributesRequest, Id = createdInstance.Id
         };
 
         (EntityInstanceViewModel updatedInstance, _) =
@@ -1890,7 +1890,7 @@ public class Tests
         };
         var updateRequest = new EntityInstanceUpdateRequest
         {
-            EntityConfigurationId = createdConfiguration.Id, Attributes = attributesRequest, Id = createdInstance.Id
+            EntityConfigurationId = createdConfiguration.Id, AttributesToAddOrUpdate = attributesRequest, Id = createdInstance.Id
         };
 
         (EntityInstanceViewModel updatedInstance, ProblemDetails validationErrors) =
@@ -1929,7 +1929,7 @@ public class Tests
 
         var updateRequest = new EntityInstanceUpdateRequest
         {
-            EntityConfigurationId = createdConfiguration.Id, Attributes = attributesRequest, Id = createdInstance.Id
+            EntityConfigurationId = createdConfiguration.Id, AttributesToAddOrUpdate = attributesRequest, Id = createdInstance.Id
         };
 
         (EntityInstanceViewModel updatedInstance, _) =
@@ -1968,7 +1968,7 @@ public class Tests
 
         var updateRequest = new EntityInstanceUpdateRequest
         {
-            EntityConfigurationId = createdConfiguration.Id, Attributes = attributesRequest, Id = createdInstance.Id
+            EntityConfigurationId = createdConfiguration.Id, AttributesToAddOrUpdate = attributesRequest, Id = createdInstance.Id
         };
 
         await _eavService.UpdateEntityInstance(createdConfiguration.Id.ToString(),
@@ -2061,7 +2061,7 @@ public class Tests
 
         var updateRequest = new EntityInstanceUpdateRequest
         {
-            EntityConfigurationId = createdConfiguration.Id, Attributes = attributesRequest, Id = createdInstance.Id
+            EntityConfigurationId = createdConfiguration.Id, AttributesToAddOrUpdate = attributesRequest, Id = createdInstance.Id
         };
 
         (EntityInstanceViewModel updatedInstance, _) =
@@ -2092,11 +2092,12 @@ public class Tests
         (EntityInstanceViewModel createdInstance, _) =
             await _eavService.CreateEntityInstance(entityInstanceCreateRequest);
 
-        attributesRequest = attributesRequest
-            .Where(a => a.ConfigurationAttributeMachineName != changedAttributeName).ToList();
         var updateRequest = new EntityInstanceUpdateRequest
         {
-            EntityConfigurationId = createdConfiguration.Id, Attributes = attributesRequest, Id = createdInstance.Id
+            EntityConfigurationId = createdConfiguration.Id, AttributesToAddOrUpdate = attributesRequest, Id = createdInstance.Id, AttributesMachineNamesToRemove = new List<string>
+            {
+                changedAttributeName
+            }
         };
 
         (EntityInstanceViewModel updatedInstance, _) =
@@ -2131,7 +2132,10 @@ public class Tests
             .Where(a => a.ConfigurationAttributeMachineName != changedAttributeName).ToList();
         var updateRequest = new EntityInstanceUpdateRequest
         {
-            EntityConfigurationId = createdConfiguration.Id, Attributes = attributesRequest, Id = createdInstance.Id
+            EntityConfigurationId = createdConfiguration.Id, AttributesToAddOrUpdate = attributesRequest, Id = createdInstance.Id, AttributesMachineNamesToRemove = new List<string>
+            {
+                changedAttributeName
+            }
         };
 
         (EntityInstanceViewModel updatedInstance, ProblemDetails errors) =

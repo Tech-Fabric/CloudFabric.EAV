@@ -1547,33 +1547,30 @@ public class EAVService : IEAVService
 
         var validationErrors = new Dictionary<string, string[]>();
 
-        // Remove attributes
-        IEnumerable<AttributeInstance> attributesToRemove = entityInstance.Attributes
-            .ExceptBy(
-                updateRequest.Attributes.Select(x => x.ConfigurationAttributeMachineName),
-                x => x.ConfigurationAttributeMachineName
-            );
-
-        foreach (AttributeInstance? attribute in attributesToRemove)
+        if (updateRequest.AttributesMachineNamesToRemove != null)
         {
-            AttributeConfiguration? attrConfiguration = entityConfigurationAttributeConfigurations
-                .First(c => c.MachineName == attribute.ConfigurationAttributeMachineName);
-
-            // validation against null will check if the attribute is required
-            List<string> errors = attrConfiguration.ValidateInstance(null);
-
-            if (errors.Count == 0)
+            foreach (var attributeMachineNameToRemove in updateRequest.AttributesMachineNamesToRemove)
             {
-                entityInstance.RemoveAttributeInstance(attribute.ConfigurationAttributeMachineName);
-            }
-            else
-            {
-                validationErrors.Add(attribute.ConfigurationAttributeMachineName, errors.ToArray());
+                AttributeConfiguration? attrConfiguration = entityConfigurationAttributeConfigurations
+                    .First(c => c.MachineName == attributeMachineNameToRemove);
+                updateRequest.AttributesToAddOrUpdate.RemoveAll(a =>
+                    a.ConfigurationAttributeMachineName == attributeMachineNameToRemove);
+                // validation against null will check if the attribute is required
+                List<string> errors = attrConfiguration.ValidateInstance(null);
+
+                if (errors.Count == 0)
+                {
+                    entityInstance.RemoveAttributeInstance(attributeMachineNameToRemove);
+                }
+                else
+                {
+                    validationErrors.Add(attributeMachineNameToRemove, errors.ToArray());
+                }
             }
         }
 
         // Add or update attributes
-        foreach (AttributeInstanceCreateUpdateRequest? newAttributeRequest in updateRequest.Attributes)
+        foreach (AttributeInstanceCreateUpdateRequest? newAttributeRequest in updateRequest.AttributesToAddOrUpdate)
         {
             AttributeConfiguration? attrConfig = entityConfigurationAttributeConfigurations
                 .FirstOrDefault(c => c.MachineName == newAttributeRequest.ConfigurationAttributeMachineName);

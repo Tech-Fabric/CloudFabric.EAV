@@ -124,7 +124,7 @@ public abstract class EntityInstanceQueryingTests : BaseQueryTests.BaseQueryTest
                 {
                     Id = createdInstance.Id,
                     EntityConfigurationId = createdInstance.EntityConfigurationId,
-                    Attributes = updatedAttributes
+                    AttributesToAddOrUpdate = updatedAttributes
                 },
                 CancellationToken.None
             );
