@@ -1784,14 +1784,14 @@ public class EAVService : IEAVService
         );
     }
 
-    public async Task<(EntityInstanceViewModel, ProblemDetails)> UpdateCategoryPathAsync(Guid itemId,
-        string itemPartitionKey, Guid treeId, Guid newParentId, CancellationToken cancellationToken)
+    public async Task<(EntityInstanceViewModel, ProblemDetails)> UpdateCategoryPathAsync(Guid entityInstanceId,
+        string entityInstancePartitionKey, Guid treeId, Guid? newParentId, CancellationToken cancellationToken = default)
     {
-        EntityInstance? item = await _entityInstanceRepository
-            .LoadAsync(itemId, itemPartitionKey, cancellationToken).ConfigureAwait(false);
-        if (item == null)
+        EntityInstance? entityInstance = await _entityInstanceRepository
+            .LoadAsync(entityInstanceId, entityInstancePartitionKey, cancellationToken).ConfigureAwait(false);
+        if (entityInstance == null)
         {
-            return (null, new ValidationErrorResponse(nameof(itemId), "Item not found"))!;
+            return (null, new ValidationErrorResponse(nameof(entityInstanceId), "Item not found"))!;
         }
 
         (var newCategoryPath, ProblemDetails? errors) =
@@ -1801,9 +1801,9 @@ public class EAVService : IEAVService
             return (null, errors)!;
         }
 
-        CategoryPath? itemCategoryPath = item.CategoryPaths.FirstOrDefault(x => x.TreeId == treeId);
-        item.ChangeCategoryPath(treeId, newCategoryPath ?? "");
-        var saved = await _entityInstanceRepository.SaveAsync(_userInfo, item, cancellationToken)
+        CategoryPath? instanceCategoryPath = entityInstance.CategoryPaths.FirstOrDefault(x => x.TreeId == treeId);
+        entityInstance.ChangeCategoryPath(treeId, newCategoryPath ?? "");
+        var saved = await _entityInstanceRepository.SaveAsync(_userInfo, entityInstance, cancellationToken)
             .ConfigureAwait(false);
         if (!saved)
         {
@@ -1811,7 +1811,7 @@ public class EAVService : IEAVService
             throw new Exception("Entity was not saved");
         }
 
-        return (_mapper.Map<EntityInstanceViewModel>(item), null)!;
+        return (_mapper.Map<EntityInstanceViewModel>(entityInstance), null)!;
     }
 
     private async Task<List<AttributeConfiguration>> GetAttributeConfigurationsForEntityConfiguration(
