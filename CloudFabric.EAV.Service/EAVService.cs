@@ -2102,7 +2102,7 @@ public class EAVService : IEAVService
             .LoadAsync(entityInstanceId, entityInstancePartitionKey, cancellationToken).ConfigureAwait(false);
         if (entityInstance == null)
         {
-            return (null, new ValidationErrorResponse(nameof(entityInstanceId), "Item not found"))!;
+            return (null, new ValidationErrorResponse(nameof(entityInstanceId), "Instance not found"))!;
         }
 
         (var newCategoryPath, ProblemDetails? errors) =
