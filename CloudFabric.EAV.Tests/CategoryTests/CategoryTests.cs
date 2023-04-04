@@ -79,6 +79,8 @@ public abstract class CategoryTests : BaseQueryTests.BaseQueryTests
     [TestMethod]
     public async Task CreateCategory_Success()
     {
+        _eavService.CreateCategoryInstanceAsync
+
         (_, CategoryViewModel laptopsCategory, CategoryViewModel gamingLaptopsCategory, _, _, _) =
             await BuildTestTreeAsync();
 
