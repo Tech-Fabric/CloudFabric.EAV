@@ -1,5 +1,6 @@
 using System.Text.Json;
 
+using CloudFabric.EAV.Domain.Models;
 using CloudFabric.EAV.Models.RequestModels;
 using CloudFabric.EAV.Models.ViewModels;
 using CloudFabric.EAV.Tests.Factories;
@@ -253,5 +254,72 @@ public class JsonSerializationTests : BaseQueryTests.BaseQueryTests
 
         resultsJsonMultiLanguage.Records.First().Document.RootElement.GetProperty("name")
             .GetProperty("en-US").GetString().Should().Be("Azul");
+    }
+
+    [TestMethod]
+    public async Task CreateCategoryInstance()
+    {
+        JsonSerializerOptions _serializerOptions = new JsonSerializerOptions();
+        _serializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+
+        EntityConfigurationCreateRequest categoryConfigurationRequest =
+            EntityConfigurationFactory.CreateBoardGameCategoryConfigurationCreateRequest();
+
+        (EntityConfigurationViewModel? createdCategoryConfiguration, _) =
+            await _eavService.CreateEntityConfiguration(categoryConfigurationRequest, CancellationToken.None);
+
+        (HierarchyViewModel hierarchy, _) = await _eavService.CreateCategoryTreeAsync(
+            new CategoryTreeCreateRequest
+            {
+                EntityConfigurationId = createdCategoryConfiguration!.Id,
+                MachineName = "main",
+                TenantId = categoryConfigurationRequest.TenantId
+            },
+            categoryConfigurationRequest.TenantId);
+
+        EntityConfigurationViewModel configuration = await _eavService.GetEntityConfiguration(
+            createdCategoryConfiguration!.Id
+        );
+
+        configuration.Should().BeEquivalentTo(createdCategoryConfiguration);
+
+        string categoryJsonStringCreateRequest =
+            EntityInstanceFactory.CreateValidBoardGameCategoryCreateRequestJson(
+                createdCategoryConfiguration!.Id, hierarchy.Id, createdCategoryConfiguration.TenantId!.Value
+            );
+
+        (JsonDocument? createdCategory, _) = await _eavService.CreateCategoryInstance(categoryJsonStringCreateRequest);
+
+        var query = new ProjectionQuery
+        {
+            Filters = new List<Filter>
+            {
+                new("Id", FilterOperator.Equal, Guid.Parse(createdCategory!.RootElement.GetProperty("id").GetString()!))
+            }
+        };
+
+        var results = await _eavService.QueryInstancesJsonSingleLanguage(createdCategoryConfiguration.Id, query);
+
+        var resultDocument = results?.Records.Select(r => r.Document).First();
+
+        resultDocument!.RootElement.GetProperty("entityConfigurationId").GetString().Should().Be(createdCategoryConfiguration.Id.ToString());
+        resultDocument!.RootElement.GetProperty("tenantId").GetString().Should().Be(createdCategoryConfiguration.TenantId.ToString());
+
+        JsonSerializer.Deserialize<List<CategoryPath>>(resultDocument!.RootElement.GetProperty("categoryPaths"), _serializerOptions)!
+            .First().TreeId.Should().Be(hierarchy.Id);
+
+        (createdCategory, _) = await _eavService.CreateCategoryInstance(
+            categoryJsonStringCreateRequest,
+            createdCategoryConfiguration.Id,
+            hierarchy.Id,
+            null,
+            createdCategoryConfiguration.TenantId.Value
+        );
+
+        createdCategory.RootElement.GetProperty("entityConfigurationId").GetString().Should().Be(createdCategoryConfiguration.Id.ToString());
+        createdCategory.RootElement.GetProperty("tenantId").GetString().Should().Be(createdCategoryConfiguration.TenantId.ToString());
+
+        JsonSerializer.Deserialize<List<CategoryPath>>(resultDocument!.RootElement.GetProperty("categoryPaths"), _serializerOptions)!
+            .First().TreeId.Should().Be(hierarchy.Id);
     }
 }
