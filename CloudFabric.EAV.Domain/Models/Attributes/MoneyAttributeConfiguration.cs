@@ -39,16 +39,12 @@ public class MoneyAttributeConfiguration: AttributeConfiguration
     public override List<string> Validate()
     {
         var errors = base.Validate();
-        if (Currencies.Count < 1)
-        {
-            errors.Add("Must contain at least 1 currency");
-        }
         if (string.IsNullOrEmpty(DefaultCurrencyId))
         {
             errors.Add("Default currency cannot be empty");
         }
-
-        if (!Currencies.Select(c => c.MachineName).Contains(DefaultCurrencyId))
+        var currencyListToValidate = (Currencies == null || Currencies.Count == 0) ? DefaultListOfCurrencies() : Currencies;
+        if (!currencyListToValidate.Select(c => c.MachineName).Contains(DefaultCurrencyId))
         {
             errors.Add("Default currency must be one of the Currencies list");
         }
