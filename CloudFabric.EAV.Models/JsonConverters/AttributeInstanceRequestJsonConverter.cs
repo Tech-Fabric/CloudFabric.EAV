@@ -55,6 +55,8 @@ public class AttributeInstanceRequestJsonConverter<T> : JsonConverter<T>
                 return typeof(ValueFromListAttributeInstanceCreateUpdateRequest);
             case EavAttributeType.Serial:
                 return typeof(SerialAttributeInstanceCreateUpdateRequest);
+            case EavAttributeType.Image:
+                return typeof(ImageAttributeInstanceCreateUpdateRequest);
             default:
                 throw new InvalidOperationException();
         }
