@@ -34,6 +34,19 @@ public class EntityInstanceFactory
         };
     }
 
+    public static string CreateValidBoardGameCategoryCreateRequestJson(Guid categoryConfigurationId, Guid categoryTreeId, Guid tenantId)
+    {
+        return @"
+            {
+                ""categoryConfigurationId"": """ + categoryConfigurationId + @""",
+                ""categoryTreeId"": """ + categoryTreeId + @""",
+                ""parentId"": null,
+                ""tenantId"": """ + tenantId + @""",
+                ""category_attribute_0"": 10
+            }
+        ";
+    }
+
     public static string CreateValidBoardGameEntityInstanceCreateRequestJsonSingleLanguage(Guid entityConfigurationId)
     {
         return @"

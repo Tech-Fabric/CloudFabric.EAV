@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Globalization;
 using System.Text.Json;
 
@@ -34,14 +35,59 @@ public class EntityInstanceCreateUpdateRequestFromJsonDeserializer
         JsonDocument record
     )
     {
-        var validationErrors = new Dictionary<string, string[]>();
+        (List<AttributeInstanceCreateUpdateRequest> attributes, ValidationErrorResponse? validationErrors) = await DeserializeAttributes(attributesConfigurations, record);
 
         var entityInstance = new EntityInstanceCreateRequest
         {
             TenantId = tenantId,
             EntityConfigurationId = entityConfigurationId,
+            Attributes = attributes
+        };
+
+        if (validationErrors != null)
+        {
+            return (null, validationErrors);
+        }
+
+        return (entityInstance, null);
+    }
+
+    public async Task<(CategoryInstanceCreateRequest?, ValidationErrorResponse?)> DeserializeCategoryInstanceCreateRequest(
+        Guid categoryConfigurationId,
+        Guid? tenantId,
+        Guid categoryTreeId,
+        Guid? parentId,
+        List<AttributeConfiguration> attributesConfigurations,
+        JsonDocument record
+    )
+    {
+        (List<AttributeInstanceCreateUpdateRequest> attributes, ValidationErrorResponse? validationErrors) = await DeserializeAttributes(attributesConfigurations, record);
+
+        if (validationErrors != null)
+        {
+            return (null, validationErrors);
+        }
+
+        CategoryInstanceCreateRequest categoryInstanceCreateRequest = new CategoryInstanceCreateRequest
+        {
+            CategoryConfigurationId = categoryConfigurationId,
+            CategoryTreeId = categoryTreeId,
+            ParentId = parentId,
+            TenantId = tenantId,
             Attributes = new List<AttributeInstanceCreateUpdateRequest>()
         };
+
+        categoryInstanceCreateRequest.Attributes = attributes;
+
+        return (categoryInstanceCreateRequest, null);
+    }
+
+    private async Task<(List<AttributeInstanceCreateUpdateRequest>, ValidationErrorResponse?)> DeserializeAttributes(
+        List<AttributeConfiguration> attributesConfigurations, JsonDocument record
+    )
+    {
+        List<AttributeInstanceCreateUpdateRequest> attributes = new List<AttributeInstanceCreateUpdateRequest>();
+        Dictionary<string, string[]> validationErrors = new Dictionary<string, string[]>();
 
         foreach (var attribute in attributesConfigurations)
         {
@@ -56,17 +102,17 @@ public class EntityInstanceCreateUpdateRequestFromJsonDeserializer
                 }
                 else if (deserializedAttribute != null)
                 {
-                    entityInstance.Attributes.Add(deserializedAttribute);
+                    attributes.Add(deserializedAttribute);
                 }
             }
         }
 
         if (validationErrors.Count > 0)
         {
-            return (null, new ValidationErrorResponse(validationErrors));
+            return (attributes, new ValidationErrorResponse(validationErrors));
         }
 
-        return (entityInstance, null);
+        return (attributes, null);
     }
 
     private async Task<(AttributeInstanceCreateUpdateRequest?, List<string>?)> DeserializeAttribute(

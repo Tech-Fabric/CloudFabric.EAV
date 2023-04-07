@@ -52,23 +52,23 @@ public abstract class CategoryTests : BaseQueryTests.BaseQueryTests
 
 
         (CategoryViewModel laptopsCategory, _) =
-            await _eavService.CreateCategoryInstanceAsync(categoryInstanceRequest);
+            await _eavService.CreateCategoryInstance(categoryInstanceRequest);
 
         categoryInstanceRequest.ParentId = laptopsCategory.Id;
         (CategoryViewModel gamingLaptopsCategory, _) =
-            await _eavService.CreateCategoryInstanceAsync(categoryInstanceRequest);
+            await _eavService.CreateCategoryInstance(categoryInstanceRequest);
 
         categoryInstanceRequest.ParentId = laptopsCategory.Id;
         (CategoryViewModel officeLaptopsCategory, _) =
-            await _eavService.CreateCategoryInstanceAsync(categoryInstanceRequest);
+            await _eavService.CreateCategoryInstance(categoryInstanceRequest);
 
         categoryInstanceRequest.ParentId = gamingLaptopsCategory.Id;
         (CategoryViewModel asusGamingLaptopsCategory, _) =
-            await _eavService.CreateCategoryInstanceAsync(categoryInstanceRequest);
+            await _eavService.CreateCategoryInstance(categoryInstanceRequest);
 
         categoryInstanceRequest.ParentId = asusGamingLaptopsCategory.Id;
         (CategoryViewModel rogAsusGamingLaptopsCategory, _) =
-            await _eavService.CreateCategoryInstanceAsync(categoryInstanceRequest);
+            await _eavService.CreateCategoryInstance(categoryInstanceRequest);
 
         await Task.Delay(ProjectionsUpdateDelay);
 
@@ -159,7 +159,7 @@ public abstract class CategoryTests : BaseQueryTests.BaseQueryTests
 
         (EntityInstanceViewModel createdItemInstance2, _) =
             await _eavService.CreateEntityInstance(itemInstanceRequest);
-        (createdItemInstance2, _) = await _eavService.UpdateCategoryPathAsync(createdItemInstance2.Id,
+        (createdItemInstance2, _) = await _eavService.UpdateCategoryPath(createdItemInstance2.Id,
             createdItemInstance2.PartitionKey,
             createdTree.Id,
             asusGamingLaptops.Id,
@@ -168,7 +168,7 @@ public abstract class CategoryTests : BaseQueryTests.BaseQueryTests
 
         (EntityInstanceViewModel createdItemInstance3, _) =
             await _eavService.CreateEntityInstance(itemInstanceRequest);
-        (_, _) = await _eavService.UpdateCategoryPathAsync(createdItemInstance3.Id,
+        (_, _) = await _eavService.UpdateCategoryPath(createdItemInstance3.Id,
             createdItemInstance2.PartitionKey,
             createdTree.Id,
             rogAsusGamingLaptops.Id,

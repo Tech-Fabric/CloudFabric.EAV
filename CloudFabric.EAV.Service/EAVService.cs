@@ -262,7 +262,7 @@ public class EAVService : IEAVService
         return attributes;
     }
 
-    private async Task<(string?, ProblemDetails?)> BuildCategoryPathAsync(Guid treeId, Guid? parentId,
+    private async Task<(string?, ProblemDetails?)> BuildCategoryPath(Guid treeId, Guid? parentId,
         CancellationToken cancellationToken)
     {
         CategoryTree? tree = await _categoryTreeRepository.LoadAsync(treeId, treeId.ToString(), cancellationToken)
@@ -976,7 +976,322 @@ public class EAVService : IEAVService
         return (_mapper.Map<HierarchyViewModel>(tree), null)!;
     }
 
-    public async Task<(CategoryViewModel, ProblemDetails)> CreateCategoryInstanceAsync(
+    /// <summary>
+    /// Create new category from provided json string.
+    /// </summary>
+    /// <remarks>
+    /// Use following json format:
+    ///
+    /// ```
+    /// {
+    ///     "name": "Main Category",
+    ///     "desprition": "Main Category description",
+    ///     "entityConfigurationId": "fb80cb74-6f47-4d38-bb87-25bd820efee7",
+    ///     "categoryTreeId": "65053391-9f0e-4b86-959e-2fe342e705d4",
+    ///     "parentId": "3e302832-ce6b-4c41-9cf8-e2b3fdd7b01c",
+    ///     "tenantId": "b6842a71-162b-411d-86e9-3ec01f909c82"
+    /// }
+    /// ```
+    /// 
+    /// Where "name" and "description" are attributes machine names,
+    /// "entityConfigurationId" - obviously the id of entity configuration which has all category attributes,
+    /// "categoryTreeId" - guid of category tree, which represents separated hirerarchy with relations between categories
+    /// "parentId" - id guid of category from which new branch of hierarchy will be built.
+    /// Can be null if placed at the root of category tree.
+    /// "tenantId" - tenant id guid. A guid which uniquely identifies and isolates the data. For single tenant
+    /// application this should be one hardcoded guid for whole app.
+    /// 
+    /// </remarks>
+    /// <param name="categoryJsonString"></param>
+    /// <param name="requestDeserializedCallback">This function will be called after deserializing the request from json
+    /// to CategoryInstanceCreateRequest and allows adding additional validation or any other pre-processing logic.
+    /// </param>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    public Task<(JsonDocument?, ProblemDetails?)> CreateCategoryInstance(
+        string categoryJsonString,
+        Func<CategoryInstanceCreateRequest, Task<CategoryInstanceCreateRequest>>? requestDeserializedCallback = null,
+        CancellationToken cancellationToken = default
+    )
+    {
+        JsonDocument categoryJson = JsonDocument.Parse(categoryJsonString);
+
+        return CreateCategoryInstance(
+            categoryJson,
+            requestDeserializedCallback,
+            cancellationToken
+        );
+    }
+
+    /// <summary>
+    /// Create new category from provided json string.
+    /// </summary>
+    /// <remarks>
+    /// Use following json format:
+    ///
+    /// ```
+    /// {
+    ///     "name": "Main Category",
+    ///     "desprition": "Main Category description"
+    /// }
+    /// ```
+    /// 
+    /// Where "name" and "description" are attributes machine names.
+    /// Note that this overload accepts "entityConfigurationId" and "tenantId" via method arguments,
+    /// so they should not be in json.
+    /// 
+    /// </remarks>
+    /// <param name="categoryJsonString"></param>
+    /// <param name="categoryConfigurationId">id of entity configuration which has all category attributes</param>
+    /// <param name="categoryTreeId">id of category tree, which represents separated hirerarchy with relations between categories</param>
+    /// <param name="parentId">id of category from which new branch of hierarchy will be built. Can be null if placed at the root of category tree.</param>
+    /// <param name="tenantId">Tenant id guid. A guid which uniquely identifies and isolates the data. For single
+    /// tenant application this should be one hardcoded guid for whole app.</param>
+    /// <param name="requestDeserializedCallback">This function will be called after deserializing the request from json
+    /// to CategoryInstanceCreateRequest and allows adding additional validation or any other pre-processing logic.
+    /// </param>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    public Task<(JsonDocument?, ProblemDetails?)> CreateCategoryInstance(
+        string categoryJsonString,
+        Guid categoryConfigurationId,
+        Guid categoryTreeId,
+        Guid? parentId,
+        Guid? tenantId,
+        Func<CategoryInstanceCreateRequest, Task<CategoryInstanceCreateRequest>>? requestDeserializedCallback = null,
+        CancellationToken cancellationToken = default
+    )
+    {
+        JsonDocument categoryJson = JsonDocument.Parse(categoryJsonString);
+
+        return CreateCategoryInstance(
+            categoryJson,
+            categoryConfigurationId,
+            categoryTreeId,
+            parentId,
+            tenantId,
+            requestDeserializedCallback,
+            cancellationToken
+        );
+    }
+
+    /// <summary>
+    /// Create new category from provided json document.
+    /// </summary>
+    /// <remarks>
+    /// Use following json format:
+    ///
+    /// ```
+    /// {
+    ///     "name": "Main Category",
+    ///     "desprition": "Main Category description",
+    ///     "entityConfigurationId": "fb80cb74-6f47-4d38-bb87-25bd820efee7",
+    ///     "categoryTreeId": "65053391-9f0e-4b86-959e-2fe342e705d4",
+    ///     "parentId": "3e302832-ce6b-4c41-9cf8-e2b3fdd7b01c",
+    ///     "tenantId": "b6842a71-162b-411d-86e9-3ec01f909c82"
+    /// }
+    /// ```
+    ///
+    /// Where "name" and "description" are attributes machine names,
+    /// "entityConfigurationId" - obviously the id of entity configuration which has all category attributes,
+    /// "categoryTreeId" - guid of category tree, which represents separated hirerarchy with relations between categories
+    /// "parentId" - id guid of category from which new branch of hierarchy will be built.
+    /// Can be null if placed at the root of category tree.
+    /// "tenantId" - tenant id guid. A guid which uniquely identifies and isolates the data. For single tenant
+    /// application this should be one hardcoded guid for whole app.
+    /// 
+    /// </remarks>
+    /// <param name="categoryJson"></param>
+    /// <param name="requestDeserializedCallback">This function will be called after deserializing the request from json
+    /// to CategoryInstanceCreateRequest and allows adding additional validation or any other pre-processing logic.
+    /// </param>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    public async Task<(JsonDocument?, ProblemDetails?)> CreateCategoryInstance(
+        JsonDocument categoryJson,
+        Func<CategoryInstanceCreateRequest, Task<CategoryInstanceCreateRequest>>? requestDeserializedCallback = null,
+        CancellationToken cancellationToken = default
+    )
+    {
+        Guid? entityConfigurationId = null;
+        if (categoryJson.RootElement.TryGetProperty("categoryConfigurationId", out var categoryConfigurationIdJsonElement))
+        {
+            if (categoryConfigurationIdJsonElement.TryGetGuid(out var categoryConfigurationIdGuid))
+            {
+                entityConfigurationId = categoryConfigurationIdGuid;
+            }
+            else
+            {
+                return (null, new ValidationErrorResponse("categoryConfigurationId", "Value is not a valid Guid"))!;
+            }
+        }
+        else
+        {
+            return (null, new ValidationErrorResponse("categoryConfigurationId", "Value is missing"));
+        }
+
+        Guid? categoryTreeId = null;
+        if (categoryJson.RootElement.TryGetProperty("categoryTreeId", out var categoryTreeIdJsonElement))
+        {
+            if (categoryTreeIdJsonElement.TryGetGuid(out var categoryTreeIdGuid))
+            {
+                categoryTreeId = categoryTreeIdGuid;
+            }
+            else
+            {
+                return (null, new ValidationErrorResponse("categoryTreeId", "Value is not a valid Guid"))!;
+            }
+        }
+        else
+        {
+            return (null, new ValidationErrorResponse("categoryTreeId", "Value is missing"));
+        }
+
+        Guid? parentId = null;
+        if (categoryJson.RootElement.TryGetProperty("parentId", out var parentIdJsonElement))
+        {
+            if (parentIdJsonElement.ValueKind == JsonValueKind.Null)
+            {
+                parentId = null;
+            }
+            else if (parentIdJsonElement.TryGetGuid(out var parentIdGuid))
+            {
+                parentId = parentIdGuid;
+            }
+            else
+            {
+                return (null, new ValidationErrorResponse("parentId", "Value is not a valid Guid"))!;
+            }
+        }
+        else
+        {
+            return (null, new ValidationErrorResponse("parentId", "Value is missing"));
+        }
+
+        Guid? tenantId = null;
+        if (categoryJson.RootElement.TryGetProperty("tenantId", out var tenantIdJsonElement))
+        {
+            if (tenantIdJsonElement.ValueKind == JsonValueKind.Null)
+            {
+                parentId = null;
+            }
+            else if (tenantIdJsonElement.TryGetGuid(out var tenantIdGuid))
+            {
+                tenantId = tenantIdGuid;
+            }
+            else
+            {
+                return (null, new ValidationErrorResponse("tenantId", "Value is not a valid Guid"))!;
+            }
+        }
+        else
+        {
+            return (null, new ValidationErrorResponse("tenantId", "Value is missing"));
+        }
+
+        return await CreateCategoryInstance(
+            categoryJson,
+            entityConfigurationId.Value,
+            categoryTreeId.Value,
+            parentId,
+            tenantId,
+            requestDeserializedCallback,
+            cancellationToken
+        );
+    }
+
+    /// <summary>
+    /// Create new category from provided json document.
+    /// </summary>
+    /// <remarks>
+    /// Use following json format:
+    ///
+    /// ```
+    /// {
+    ///     "name": "Main Category",
+    ///     "desprition": "Main Category description"
+    /// }
+    /// ```
+    /// 
+    /// Where "name" and "description" are attributes machine names.
+    /// Note that this overload accepts "entityConfigurationId" and "tenantId" via method arguments,
+    /// so they should not be in json.
+    /// 
+    /// </remarks>
+    /// <param name="categoryJson"></param>
+    /// <param name="categoryConfigurationId">id of entity configuration which has all category attributes</param>
+    /// <param name="categoryTreeId">id of category tree, which represents separated hirerarchy with relations between categories</param>
+    /// <param name="parentId">id of category from which new branch of hierarchy will be built. Can be null if placed at the root of category tree.</param>
+    /// <param name="tenantId">Tenant id guid. A guid which uniquely identifies and isolates the data. For single
+    /// tenant application this should be one hardcoded guid for whole app.</param>
+    /// <param name="requestDeserializedCallback">This function will be called after deserializing the request from json
+    /// to CategoryInstanceCreateRequest and allows adding additional validation or any other pre-processing logic.
+    /// </param>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    public async Task<(JsonDocument?, ProblemDetails?)> CreateCategoryInstance(
+        JsonDocument categoryJson,
+        Guid categoryConfigurationId,
+        Guid categoryTreeId,
+        Guid? parentId,
+        Guid? tenantId,
+        Func<CategoryInstanceCreateRequest, Task<CategoryInstanceCreateRequest>>? requestDeserializedCallback = null,
+        CancellationToken cancellationToken = default
+    )
+    {
+        EntityConfiguration? categoryConfiguration = await _entityConfigurationRepository.LoadAsync(
+            categoryConfigurationId,
+            categoryConfigurationId.ToString(),
+            cancellationToken
+        ).ConfigureAwait(false);
+
+        if (categoryConfiguration == null)
+        {
+            return (null, new ValidationErrorResponse("categoryConfigurationId", "CategoryConfiguration not found"))!;
+        }
+
+        List<AttributeConfiguration> attributeConfigurations = await GetAttributeConfigurationsForEntityConfiguration(
+                categoryConfiguration,
+                cancellationToken
+        ).ConfigureAwait(false);
+
+        var (categoryInstanceCreateRequest, deserializationErrors) = await
+            _entityInstanceCreateUpdateRequestFromJsonDeserializer.DeserializeCategoryInstanceCreateRequest(
+                categoryConfigurationId, tenantId, categoryTreeId, parentId, attributeConfigurations, categoryJson
+            );
+
+        if (deserializationErrors != null)
+        {
+            return (null, deserializationErrors);
+        }
+
+        if (requestDeserializedCallback != null)
+        {
+            categoryInstanceCreateRequest = await requestDeserializedCallback(categoryInstanceCreateRequest!);
+        }
+
+        var (createdCategory, validationErrors) = await CreateCategoryInstanceInternal(
+            categoryInstanceCreateRequest!, cancellationToken
+        );
+
+        if (validationErrors != null)
+        {
+            return (null, validationErrors);
+        }
+
+        return (SerializeEntityInstanceToJsonMultiLanguage(_mapper.Map<EntityInstance>(createdCategory)), null);
+    }
+
+    public async Task<(CategoryViewModel, ProblemDetails)> CreateCategoryInstance(
+        CategoryInstanceCreateRequest entity,
+        CancellationToken cancellationToken = default
+    )
+    {
+        (Category category, ProblemDetails errors) = await CreateCategoryInstanceInternal(entity, cancellationToken);
+        return (_mapper.Map<CategoryViewModel>(category), errors);
+    }
+
+    private async Task<(Category, ProblemDetails)> CreateCategoryInstanceInternal(
         CategoryInstanceCreateRequest entity,
         CancellationToken cancellationToken = default
     )
@@ -1020,7 +1335,7 @@ public class EAVService : IEAVService
 
 
         (var categoryPath, ProblemDetails? errors) =
-            await BuildCategoryPathAsync(tree.Id, entity.ParentId, cancellationToken).ConfigureAwait(false);
+            await BuildCategoryPath(tree.Id, entity.ParentId, cancellationToken).ConfigureAwait(false);
 
         if (errors != null)
         {
@@ -1070,7 +1385,7 @@ public class EAVService : IEAVService
             throw new Exception("Entity was not saved");
         }
 
-        return (_mapper.Map<CategoryViewModel>(entityInstance), null)!;
+        return (entityInstance, null)!;
     }
 
     [SuppressMessage("Performance", "CA1806:Do not ignore method results")]
@@ -1155,13 +1470,13 @@ public class EAVService : IEAVService
     ///     "entityConfigurationId": "fb80cb74-6f47-4d38-bb87-25bd820efee7",
     ///     "tenantId": "b6842a71-162b-411d-86e9-3ec01f909c82"
     /// }
+    /// ```
     ///
     /// Where "sku" and "name" are attributes machine names,
     /// "entityConfigurationId" - obviously the id of entity configuration which has all attributes,
     /// "tenantId" - tenant id guid. A guid which uniquely identifies and isolates the data. For single tenant
     /// application this should be one hardcoded guid for whole app.
-    ///
-    /// ```
+    /// 
     /// </remarks>
     /// <param name="entityJsonString"></param>
     /// <param name="requestDeserializedCallback">This function will be called after deserializing the request from json
@@ -1195,11 +1510,11 @@ public class EAVService : IEAVService
     ///     "sku": "123",
     ///     "name": "New Entity"
     /// }
-    ///
+    /// ```
+    /// 
     /// Note that this overload accepts "entityConfigurationId" and "tenantId" via method arguments,
     /// so they should not be in json.
     ///
-    /// ```
     /// </remarks>
     /// <param name="entityJsonString"></param>
     /// <param name="entityConfigurationId">Id of entity configuration which has all attributes</param>
@@ -1242,13 +1557,13 @@ public class EAVService : IEAVService
     ///     "entityConfigurationId": "fb80cb74-6f47-4d38-bb87-25bd820efee7",
     ///     "tenantId": "b6842a71-162b-411d-86e9-3ec01f909c82"
     /// }
-    ///
+    /// ```
+    /// 
     /// Where "sku" and "name" are attributes machine names,
     /// "entityConfigurationId" - obviously the id of entity configuration which has all attributes,
     /// "tenantId" - tenant id guid. A guid which uniquely identifies and isolates the data. For single tenant
     /// application this should be one hardcoded guid for whole app.
     ///
-    /// ```
     /// </remarks>
     /// <param name="entityJson"></param>
     /// <param name="requestDeserializedCallback">This function will be called after deserializing the request from json
@@ -1316,11 +1631,11 @@ public class EAVService : IEAVService
     ///     "sku": "123",
     ///     "name": "New Entity"
     /// }
-    ///
+    /// ```
+    /// 
     /// Note that this overload accepts "entityConfigurationId" and "tenantId" via method arguments,
     /// so they should not be in json.
     ///
-    /// ```
     /// </remarks>
     /// <param name="entityJson"></param>
     /// <param name="entityConfigurationId">Id of entity configuration which has all attributes</param>
@@ -1784,26 +2099,25 @@ public class EAVService : IEAVService
         );
     }
 
-    public async Task<(EntityInstanceViewModel, ProblemDetails)> UpdateCategoryPathAsync(Guid itemId,
-        string itemPartitionKey, Guid treeId, Guid newParentId, CancellationToken cancellationToken)
+    public async Task<(EntityInstanceViewModel, ProblemDetails)> UpdateCategoryPath(Guid entityInstanceId,
+        string entityInstancePartitionKey, Guid treeId, Guid? newParentId, CancellationToken cancellationToken = default)
     {
-        EntityInstance? item = await _entityInstanceRepository
-            .LoadAsync(itemId, itemPartitionKey, cancellationToken).ConfigureAwait(false);
-        if (item == null)
+        EntityInstance? entityInstance = await _entityInstanceRepository
+            .LoadAsync(entityInstanceId, entityInstancePartitionKey, cancellationToken).ConfigureAwait(false);
+        if (entityInstance == null)
         {
-            return (null, new ValidationErrorResponse(nameof(itemId), "Item not found"))!;
+            return (null, new ValidationErrorResponse(nameof(entityInstanceId), "Instance not found"))!;
         }
 
         (var newCategoryPath, ProblemDetails? errors) =
-            await BuildCategoryPathAsync(treeId, newParentId, cancellationToken).ConfigureAwait(false);
+            await BuildCategoryPath(treeId, newParentId, cancellationToken).ConfigureAwait(false);
         if (errors != null)
         {
             return (null, errors)!;
         }
 
-        CategoryPath? itemCategoryPath = item.CategoryPaths.FirstOrDefault(x => x.TreeId == treeId);
-        item.ChangeCategoryPath(treeId, newCategoryPath ?? "");
-        var saved = await _entityInstanceRepository.SaveAsync(_userInfo, item, cancellationToken)
+        entityInstance.ChangeCategoryPath(treeId, newCategoryPath ?? "");
+        var saved = await _entityInstanceRepository.SaveAsync(_userInfo, entityInstance, cancellationToken)
             .ConfigureAwait(false);
         if (!saved)
         {
@@ -1811,7 +2125,7 @@ public class EAVService : IEAVService
             throw new Exception("Entity was not saved");
         }
 
-        return (_mapper.Map<EntityInstanceViewModel>(item), null)!;
+        return (_mapper.Map<EntityInstanceViewModel>(entityInstance), null)!;
     }
 
     private async Task<List<AttributeConfiguration>> GetAttributeConfigurationsForEntityConfiguration(
