@@ -262,7 +262,7 @@ public class EAVService : IEAVService
         return attributes;
     }
 
-    private async Task<(string?, ProblemDetails?)> BuildCategoryPathAsync(Guid treeId, Guid? parentId,
+    private async Task<(string?, ProblemDetails?)> BuildCategoryPath(Guid treeId, Guid? parentId,
         CancellationToken cancellationToken)
     {
         CategoryTree? tree = await _categoryTreeRepository.LoadAsync(treeId, treeId.ToString(), cancellationToken)
@@ -991,7 +991,8 @@ public class EAVService : IEAVService
     ///     "parentId": "3e302832-ce6b-4c41-9cf8-e2b3fdd7b01c",
     ///     "tenantId": "b6842a71-162b-411d-86e9-3ec01f909c82"
     /// }
-    ///
+    /// ```
+    /// 
     /// Where "name" and "description" are attributes machine names,
     /// "entityConfigurationId" - obviously the id of entity configuration which has all category attributes,
     /// "categoryTreeId" - guid of category tree, which represents separated hirerarchy with relations between categories
@@ -999,8 +1000,7 @@ public class EAVService : IEAVService
     /// Can be null if placed at the root of category tree.
     /// "tenantId" - tenant id guid. A guid which uniquely identifies and isolates the data. For single tenant
     /// application this should be one hardcoded guid for whole app.
-    ///
-    /// ```
+    /// 
     /// </remarks>
     /// <param name="categoryJsonString"></param>
     /// <param name="requestDeserializedCallback">This function will be called after deserializing the request from json
@@ -1034,10 +1034,12 @@ public class EAVService : IEAVService
     ///     "name": "Main Category",
     ///     "desprition": "Main Category description"
     /// }
+    /// ```
+    /// 
     /// Where "name" and "description" are attributes machine names.
     /// Note that this overload accepts "entityConfigurationId" and "tenantId" via method arguments,
     /// so they should not be in json.
-    /// ```
+    /// 
     /// </remarks>
     /// <param name="categoryJsonString"></param>
     /// <param name="categoryConfigurationId">id of entity configuration which has all category attributes</param>
@@ -1088,6 +1090,7 @@ public class EAVService : IEAVService
     ///     "parentId": "3e302832-ce6b-4c41-9cf8-e2b3fdd7b01c",
     ///     "tenantId": "b6842a71-162b-411d-86e9-3ec01f909c82"
     /// }
+    /// ```
     ///
     /// Where "name" and "description" are attributes machine names,
     /// "entityConfigurationId" - obviously the id of entity configuration which has all category attributes,
@@ -1096,8 +1099,7 @@ public class EAVService : IEAVService
     /// Can be null if placed at the root of category tree.
     /// "tenantId" - tenant id guid. A guid which uniquely identifies and isolates the data. For single tenant
     /// application this should be one hardcoded guid for whole app.
-    ///
-    /// ```
+    /// 
     /// </remarks>
     /// <param name="categoryJson"></param>
     /// <param name="requestDeserializedCallback">This function will be called after deserializing the request from json
@@ -1209,10 +1211,12 @@ public class EAVService : IEAVService
     ///     "name": "Main Category",
     ///     "desprition": "Main Category description"
     /// }
+    /// ```
+    /// 
     /// Where "name" and "description" are attributes machine names.
     /// Note that this overload accepts "entityConfigurationId" and "tenantId" via method arguments,
     /// so they should not be in json.
-    /// ```
+    /// 
     /// </remarks>
     /// <param name="categoryJson"></param>
     /// <param name="categoryConfigurationId">id of entity configuration which has all category attributes</param>
@@ -1278,7 +1282,7 @@ public class EAVService : IEAVService
         return (SerializeEntityInstanceToJsonMultiLanguage(_mapper.Map<EntityInstance>(createdCategory)), null);
     }
 
-    public async Task<(CategoryViewModel, ProblemDetails)> CreateCategoryInstanceAsync(
+    public async Task<(CategoryViewModel, ProblemDetails)> CreateCategoryInstance(
         CategoryInstanceCreateRequest entity,
         CancellationToken cancellationToken = default
     )
@@ -1331,7 +1335,7 @@ public class EAVService : IEAVService
 
 
         (var categoryPath, ProblemDetails? errors) =
-            await BuildCategoryPathAsync(tree.Id, entity.ParentId, cancellationToken).ConfigureAwait(false);
+            await BuildCategoryPath(tree.Id, entity.ParentId, cancellationToken).ConfigureAwait(false);
 
         if (errors != null)
         {
@@ -1466,13 +1470,13 @@ public class EAVService : IEAVService
     ///     "entityConfigurationId": "fb80cb74-6f47-4d38-bb87-25bd820efee7",
     ///     "tenantId": "b6842a71-162b-411d-86e9-3ec01f909c82"
     /// }
+    /// ```
     ///
     /// Where "sku" and "name" are attributes machine names,
     /// "entityConfigurationId" - obviously the id of entity configuration which has all attributes,
     /// "tenantId" - tenant id guid. A guid which uniquely identifies and isolates the data. For single tenant
     /// application this should be one hardcoded guid for whole app.
-    ///
-    /// ```
+    /// 
     /// </remarks>
     /// <param name="entityJsonString"></param>
     /// <param name="requestDeserializedCallback">This function will be called after deserializing the request from json
@@ -1506,11 +1510,11 @@ public class EAVService : IEAVService
     ///     "sku": "123",
     ///     "name": "New Entity"
     /// }
-    ///
+    /// ```
+    /// 
     /// Note that this overload accepts "entityConfigurationId" and "tenantId" via method arguments,
     /// so they should not be in json.
     ///
-    /// ```
     /// </remarks>
     /// <param name="entityJsonString"></param>
     /// <param name="entityConfigurationId">Id of entity configuration which has all attributes</param>
@@ -1553,13 +1557,13 @@ public class EAVService : IEAVService
     ///     "entityConfigurationId": "fb80cb74-6f47-4d38-bb87-25bd820efee7",
     ///     "tenantId": "b6842a71-162b-411d-86e9-3ec01f909c82"
     /// }
-    ///
+    /// ```
+    /// 
     /// Where "sku" and "name" are attributes machine names,
     /// "entityConfigurationId" - obviously the id of entity configuration which has all attributes,
     /// "tenantId" - tenant id guid. A guid which uniquely identifies and isolates the data. For single tenant
     /// application this should be one hardcoded guid for whole app.
     ///
-    /// ```
     /// </remarks>
     /// <param name="entityJson"></param>
     /// <param name="requestDeserializedCallback">This function will be called after deserializing the request from json
@@ -1627,11 +1631,11 @@ public class EAVService : IEAVService
     ///     "sku": "123",
     ///     "name": "New Entity"
     /// }
-    ///
+    /// ```
+    /// 
     /// Note that this overload accepts "entityConfigurationId" and "tenantId" via method arguments,
     /// so they should not be in json.
     ///
-    /// ```
     /// </remarks>
     /// <param name="entityJson"></param>
     /// <param name="entityConfigurationId">Id of entity configuration which has all attributes</param>
@@ -2095,7 +2099,7 @@ public class EAVService : IEAVService
         );
     }
 
-    public async Task<(EntityInstanceViewModel, ProblemDetails)> UpdateCategoryPathAsync(Guid entityInstanceId,
+    public async Task<(EntityInstanceViewModel, ProblemDetails)> UpdateCategoryPath(Guid entityInstanceId,
         string entityInstancePartitionKey, Guid treeId, Guid? newParentId, CancellationToken cancellationToken = default)
     {
         EntityInstance? entityInstance = await _entityInstanceRepository
@@ -2106,7 +2110,7 @@ public class EAVService : IEAVService
         }
 
         (var newCategoryPath, ProblemDetails? errors) =
-            await BuildCategoryPathAsync(treeId, newParentId, cancellationToken).ConfigureAwait(false);
+            await BuildCategoryPath(treeId, newParentId, cancellationToken).ConfigureAwait(false);
         if (errors != null)
         {
             return (null, errors)!;
