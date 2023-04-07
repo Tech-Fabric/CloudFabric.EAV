@@ -1009,10 +1009,10 @@ public class EAVService : IEAVService
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
     public Task<(JsonDocument?, ProblemDetails?)> CreateCategoryInstance(
-    string categoryJsonString,
-    Func<CategoryInstanceCreateRequest, Task<CategoryInstanceCreateRequest>>? requestDeserializedCallback = null,
-    CancellationToken cancellationToken = default
-)
+        string categoryJsonString,
+        Func<CategoryInstanceCreateRequest, Task<CategoryInstanceCreateRequest>>? requestDeserializedCallback = null,
+        CancellationToken cancellationToken = default
+    )
     {
         JsonDocument categoryJson = JsonDocument.Parse(categoryJsonString);
 
