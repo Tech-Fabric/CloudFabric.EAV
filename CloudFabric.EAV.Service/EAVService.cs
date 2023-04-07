@@ -1547,9 +1547,9 @@ public class EAVService : IEAVService
 
         var validationErrors = new Dictionary<string, string[]>();
 
-        if (updateRequest.AttributesMachineNamesToRemove != null)
+        if (updateRequest.AttributeMachineNamesToRemove != null)
         {
-            foreach (var attributeMachineNameToRemove in updateRequest.AttributesMachineNamesToRemove)
+            foreach (var attributeMachineNameToRemove in updateRequest.AttributeMachineNamesToRemove)
             {
                 AttributeConfiguration? attrConfiguration = entityConfigurationAttributeConfigurations
                     .First(c => c.MachineName == attributeMachineNameToRemove);

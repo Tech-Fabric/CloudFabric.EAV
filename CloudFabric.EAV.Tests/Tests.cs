@@ -2094,7 +2094,7 @@ public class Tests
 
         var updateRequest = new EntityInstanceUpdateRequest
         {
-            EntityConfigurationId = createdConfiguration.Id, AttributesToAddOrUpdate = attributesRequest, Id = createdInstance.Id, AttributesMachineNamesToRemove = new List<string>
+            EntityConfigurationId = createdConfiguration.Id, AttributesToAddOrUpdate = attributesRequest, Id = createdInstance.Id, AttributeMachineNamesToRemove = new List<string>
             {
                 changedAttributeName
             }
@@ -2132,7 +2132,7 @@ public class Tests
             .Where(a => a.ConfigurationAttributeMachineName != changedAttributeName).ToList();
         var updateRequest = new EntityInstanceUpdateRequest
         {
-            EntityConfigurationId = createdConfiguration.Id, AttributesToAddOrUpdate = attributesRequest, Id = createdInstance.Id, AttributesMachineNamesToRemove = new List<string>
+            EntityConfigurationId = createdConfiguration.Id, AttributesToAddOrUpdate = attributesRequest, Id = createdInstance.Id, AttributeMachineNamesToRemove = new List<string>
             {
                 changedAttributeName
             }
