@@ -316,8 +316,8 @@ public class JsonSerializationTests : BaseQueryTests.BaseQueryTests
             createdCategoryConfiguration.TenantId.Value
         );
 
-        createdCategory.RootElement.GetProperty("entityConfigurationId").GetString().Should().Be(createdCategoryConfiguration.Id.ToString());
-        createdCategory.RootElement.GetProperty("tenantId").GetString().Should().Be(createdCategoryConfiguration.TenantId.ToString());
+        createdCategory!.RootElement.GetProperty("entityConfigurationId").GetString().Should().Be(createdCategoryConfiguration.Id.ToString());
+        createdCategory!.RootElement.GetProperty("tenantId").GetString().Should().Be(createdCategoryConfiguration.TenantId.ToString());
 
         JsonSerializer.Deserialize<List<CategoryPath>>(resultDocument!.RootElement.GetProperty("categoryPaths"), _serializerOptions)!
             .First().TreeId.Should().Be(hierarchy.Id);

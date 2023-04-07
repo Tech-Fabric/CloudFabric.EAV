@@ -2116,7 +2116,6 @@ public class EAVService : IEAVService
             return (null, errors)!;
         }
 
-        CategoryPath? instanceCategoryPath = entityInstance.CategoryPaths.FirstOrDefault(x => x.TreeId == treeId);
         entityInstance.ChangeCategoryPath(treeId, newCategoryPath ?? "");
         var saved = await _entityInstanceRepository.SaveAsync(_userInfo, entityInstance, cancellationToken)
             .ConfigureAwait(false);
