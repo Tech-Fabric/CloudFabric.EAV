@@ -109,7 +109,7 @@ public class EAVService : IEAVService
 
             // remove spec symbols
             machineName = machineName.Replace(" ", "_");
-            var specSymbolsRegex = new Regex("[^\\d\\w_]*", RegexOptions.None, TimeSpan.FromMilliseconds(1));
+            var specSymbolsRegex = new Regex("[^\\d\\w_]*", RegexOptions.None, TimeSpan.FromMilliseconds(10));
             attributeRequest.MachineName = specSymbolsRegex.Replace(machineName, "").ToLower();
         }
     }
@@ -992,7 +992,7 @@ public class EAVService : IEAVService
     ///     "tenantId": "b6842a71-162b-411d-86e9-3ec01f909c82"
     /// }
     /// ```
-    /// 
+    ///
     /// Where "name" and "description" are attributes machine names,
     /// "entityConfigurationId" - obviously the id of entity configuration which has all category attributes,
     /// "categoryTreeId" - guid of category tree, which represents separated hirerarchy with relations between categories
@@ -1000,7 +1000,7 @@ public class EAVService : IEAVService
     /// Can be null if placed at the root of category tree.
     /// "tenantId" - tenant id guid. A guid which uniquely identifies and isolates the data. For single tenant
     /// application this should be one hardcoded guid for whole app.
-    /// 
+    ///
     /// </remarks>
     /// <param name="categoryJsonString"></param>
     /// <param name="requestDeserializedCallback">This function will be called after deserializing the request from json
@@ -1035,11 +1035,11 @@ public class EAVService : IEAVService
     ///     "desprition": "Main Category description"
     /// }
     /// ```
-    /// 
+    ///
     /// Where "name" and "description" are attributes machine names.
     /// Note that this overload accepts "entityConfigurationId" and "tenantId" via method arguments,
     /// so they should not be in json.
-    /// 
+    ///
     /// </remarks>
     /// <param name="categoryJsonString"></param>
     /// <param name="categoryConfigurationId">id of entity configuration which has all category attributes</param>
@@ -1099,7 +1099,7 @@ public class EAVService : IEAVService
     /// Can be null if placed at the root of category tree.
     /// "tenantId" - tenant id guid. A guid which uniquely identifies and isolates the data. For single tenant
     /// application this should be one hardcoded guid for whole app.
-    /// 
+    ///
     /// </remarks>
     /// <param name="categoryJson"></param>
     /// <param name="requestDeserializedCallback">This function will be called after deserializing the request from json
@@ -1212,11 +1212,11 @@ public class EAVService : IEAVService
     ///     "desprition": "Main Category description"
     /// }
     /// ```
-    /// 
+    ///
     /// Where "name" and "description" are attributes machine names.
     /// Note that this overload accepts "entityConfigurationId" and "tenantId" via method arguments,
     /// so they should not be in json.
-    /// 
+    ///
     /// </remarks>
     /// <param name="categoryJson"></param>
     /// <param name="categoryConfigurationId">id of entity configuration which has all category attributes</param>
@@ -1476,7 +1476,7 @@ public class EAVService : IEAVService
     /// "entityConfigurationId" - obviously the id of entity configuration which has all attributes,
     /// "tenantId" - tenant id guid. A guid which uniquely identifies and isolates the data. For single tenant
     /// application this should be one hardcoded guid for whole app.
-    /// 
+    ///
     /// </remarks>
     /// <param name="entityJsonString"></param>
     /// <param name="requestDeserializedCallback">This function will be called after deserializing the request from json
@@ -1511,7 +1511,7 @@ public class EAVService : IEAVService
     ///     "name": "New Entity"
     /// }
     /// ```
-    /// 
+    ///
     /// Note that this overload accepts "entityConfigurationId" and "tenantId" via method arguments,
     /// so they should not be in json.
     ///
@@ -1558,7 +1558,7 @@ public class EAVService : IEAVService
     ///     "tenantId": "b6842a71-162b-411d-86e9-3ec01f909c82"
     /// }
     /// ```
-    /// 
+    ///
     /// Where "sku" and "name" are attributes machine names,
     /// "entityConfigurationId" - obviously the id of entity configuration which has all attributes,
     /// "tenantId" - tenant id guid. A guid which uniquely identifies and isolates the data. For single tenant
@@ -1632,7 +1632,7 @@ public class EAVService : IEAVService
     ///     "name": "New Entity"
     /// }
     /// ```
-    /// 
+    ///
     /// Note that this overload accepts "entityConfigurationId" and "tenantId" via method arguments,
     /// so they should not be in json.
     ///
