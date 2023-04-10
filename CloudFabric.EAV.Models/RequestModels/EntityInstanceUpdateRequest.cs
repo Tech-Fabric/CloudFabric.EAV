@@ -6,5 +6,6 @@ public class EntityInstanceUpdateRequest
 
     public Guid EntityConfigurationId { get; set; }
 
-    public List<AttributeInstanceCreateUpdateRequest> Attributes { get; set; }
+    public List<AttributeInstanceCreateUpdateRequest> AttributesToAddOrUpdate { get; set; }
+    public List<string>? AttributeMachineNamesToRemove { get; set; }
 }
