@@ -54,16 +54,11 @@ public class MoneyAttributeConfiguration: AttributeConfiguration
     public override List<string> ValidateInstance(AttributeInstance? instance)
     {
         var errors = base.ValidateInstance(instance);
-        if (instance is not MoneyAttributeInstance moneyInstance)
+        if (instance is MoneyAttributeInstance)
         {
-            errors.Add("Cannot validate attribute. Expected attribute type: Money)");
             return errors;
         }
-
-        if (moneyInstance.Value < 0)
-        {
-            errors.Add("Value cannot be negative");
-        }
+        errors.Add("Cannot validate attribute. Expected attribute type: Money)");
         return errors;
     }
 
