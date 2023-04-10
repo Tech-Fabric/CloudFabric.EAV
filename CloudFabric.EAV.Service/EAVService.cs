@@ -109,7 +109,7 @@ public class EAVService : IEAVService
 
             // remove spec symbols
             machineName = machineName.Replace(" ", "_");
-            var specSymbolsRegex = new Regex("[^\\d\\w_]*", RegexOptions.None, TimeSpan.FromMilliseconds(10));
+            var specSymbolsRegex = new Regex("[^\\d\\w_]*", RegexOptions.None, TimeSpan.FromSeconds(2)); // From example https://learn.microsoft.com/en-us/dotnet/api/system.text.regularexpressions.regex.matchtimeout?view=net-7.0
             attributeRequest.MachineName = specSymbolsRegex.Replace(machineName, "").ToLower();
         }
     }
