@@ -1482,11 +1482,13 @@ public class EAVService : IEAVService
     /// <param name="requestDeserializedCallback">This function will be called after deserializing the request from json
     /// to EntityInstanceCreateRequest and allows adding additional validation or any other pre-processing logic.
     /// </param>
+    /// <param name="dryRun">If true, entity will only be validated but not saved to the database</param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
     public Task<(JsonDocument?, ProblemDetails?)> CreateEntityInstance(
         string entityJsonString,
         Func<EntityInstanceCreateRequest, Task<EntityInstanceCreateRequest>>? requestDeserializedCallback = null,
+        bool dryRun = false,
         CancellationToken cancellationToken = default
     )
     {
@@ -1495,6 +1497,7 @@ public class EAVService : IEAVService
         return CreateEntityInstance(
             entityJson,
             requestDeserializedCallback,
+            dryRun,
             cancellationToken
         );
     }
@@ -1523,6 +1526,7 @@ public class EAVService : IEAVService
     /// <param name="requestDeserializedCallback">This function will be called after deserializing the request from json
     /// to EntityInstanceCreateRequest and allows adding additional validation or any other pre-processing logic.
     /// </param>
+    /// <param name="dryRun">If true, entity will only be validated but not saved to the database</param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
     public Task<(JsonDocument?, ProblemDetails?)> CreateEntityInstance(
@@ -1530,6 +1534,7 @@ public class EAVService : IEAVService
         Guid entityConfigurationId,
         Guid tenantId,
         Func<EntityInstanceCreateRequest, Task<EntityInstanceCreateRequest>>? requestDeserializedCallback = null,
+        bool dryRun = false,
         CancellationToken cancellationToken = default
     )
     {
@@ -1540,6 +1545,7 @@ public class EAVService : IEAVService
             entityConfigurationId,
             tenantId,
             requestDeserializedCallback,
+            dryRun,
             cancellationToken
         );
     }
@@ -1569,11 +1575,13 @@ public class EAVService : IEAVService
     /// <param name="requestDeserializedCallback">This function will be called after deserializing the request from json
     /// to EntityInstanceCreateRequest and allows adding additional validation or any other pre-processing logic.
     /// </param>
+    /// <param name="dryRun">If true, entity will only be validated but not saved to the database</param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
     public async Task<(JsonDocument?, ProblemDetails?)> CreateEntityInstance(
         JsonDocument entityJson,
         Func<EntityInstanceCreateRequest, Task<EntityInstanceCreateRequest>>? requestDeserializedCallback = null,
+        bool dryRun = false,
         CancellationToken cancellationToken = default
     )
     {
@@ -1616,6 +1624,7 @@ public class EAVService : IEAVService
             entityConfigurationId.Value,
             tenantId.Value,
             requestDeserializedCallback,
+            dryRun,
             cancellationToken
         );
     }
@@ -1644,6 +1653,7 @@ public class EAVService : IEAVService
     /// <param name="requestDeserializedCallback">This function will be called after deserializing the request from json
     /// to EntityInstanceCreateRequest and allows adding additional validation or any other pre-processing logic.
     /// </param>
+    /// <param name="dryRun">If true, entity will only be validated but not saved to the database</param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
     public async Task<(JsonDocument?, ProblemDetails?)> CreateEntityInstance(
@@ -1651,6 +1661,7 @@ public class EAVService : IEAVService
         Guid entityConfigurationId,
         Guid tenantId,
         Func<EntityInstanceCreateRequest, Task<EntityInstanceCreateRequest>>? requestDeserializedCallback = null,
+        bool dryRun = false,
         CancellationToken cancellationToken = default
     )
     {
@@ -1687,7 +1698,7 @@ public class EAVService : IEAVService
         }
 
         var (createdEntity, validationErrors) = await CreateEntityInstanceInternal(
-            entityInstanceCreateRequest!, cancellationToken
+            entityInstanceCreateRequest!, dryRun, cancellationToken
         );
 
         if (validationErrors != null)
@@ -1699,15 +1710,21 @@ public class EAVService : IEAVService
     }
 
     public async Task<(EntityInstanceViewModel?, ProblemDetails?)> CreateEntityInstance(
-        EntityInstanceCreateRequest entity, CancellationToken cancellationToken = default
+        EntityInstanceCreateRequest entity, bool dryRun = false, CancellationToken cancellationToken = default
     )
     {
-        var (entityInstanceCreated, errors) = await CreateEntityInstanceInternal(entity, cancellationToken);
+        var (entityInstanceCreated, errors) = await CreateEntityInstanceInternal(entity, dryRun, cancellationToken);
         return (_mapper.Map<EntityInstanceViewModel>(entityInstanceCreated), errors);
     }
 
+    /// <summary>
+    /// Validates new entity instance and stores it to the database.
+    /// </summary>
+    /// <param name="entity">Entity to create</param>
+    /// <param name="dryRun">If true, entity will only be validated but not saved to the database</param>
+    /// <param name="cancellationToken"></param>
     private async Task<(EntityInstance?, ProblemDetails?)> CreateEntityInstanceInternal(
-        EntityInstanceCreateRequest entity, CancellationToken cancellationToken = default
+        EntityInstanceCreateRequest entity, bool dryRun, CancellationToken cancellationToken = default
     )
     {
         EntityConfiguration? entityConfiguration = await _entityConfigurationRepository.LoadAsync(
@@ -1758,27 +1775,31 @@ public class EAVService : IEAVService
             return (null, new ValidationErrorResponse(validationErrors))!;
         }
 
-        var entityConfigurationSaved = await _entityConfigurationRepository
-            .SaveAsync(_userInfo, entityConfiguration, cancellationToken).ConfigureAwait(false);
-
-        if (!entityConfigurationSaved)
+        if (!dryRun)
         {
-            throw new Exception("Entity was not saved");
-        }
+            var entityConfigurationSaved = await _entityConfigurationRepository
+                .SaveAsync(_userInfo, entityConfiguration, cancellationToken)
+                .ConfigureAwait(false);
 
-        ProjectionDocumentSchema schema = ProjectionDocumentSchemaFactory
-            .FromEntityConfiguration(entityConfiguration, attributeConfigurations);
+            if (!entityConfigurationSaved)
+            {
+                throw new Exception("Entity was not saved");
+            }
 
-        IProjectionRepository projectionRepository = _projectionRepositoryFactory.GetProjectionRepository(schema);
-        await projectionRepository.EnsureIndex(cancellationToken).ConfigureAwait(false);
+            ProjectionDocumentSchema schema = ProjectionDocumentSchemaFactory
+                .FromEntityConfiguration(entityConfiguration, attributeConfigurations);
 
-        var entityInstanceSaved =
-            await _entityInstanceRepository.SaveAsync(_userInfo, entityInstance, cancellationToken);
+            IProjectionRepository projectionRepository = _projectionRepositoryFactory.GetProjectionRepository(schema);
+            await projectionRepository.EnsureIndex(cancellationToken).ConfigureAwait(false);
 
-        if (!entityInstanceSaved)
-        {
-            //TODO: What do we want to do with internal exceptions and unsuccessful flow?
-            throw new Exception("Entity was not saved");
+            var entityInstanceSaved =
+                await _entityInstanceRepository.SaveAsync(_userInfo, entityInstance, cancellationToken);
+
+            if (!entityInstanceSaved)
+            {
+                //TODO: What do we want to do with internal exceptions and unsuccessful flow?
+                throw new Exception("Entity was not saved");
+            }
         }
 
         return (entityInstance, null);

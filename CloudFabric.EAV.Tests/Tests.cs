@@ -1131,7 +1131,7 @@ public class Tests
         };
 
         (EntityInstanceViewModel createdInstance, ProblemDetails _) =
-            await _eavService.CreateEntityInstance(instanceRequest, CancellationToken.None);
+            await _eavService.CreateEntityInstance(instanceRequest);
 
         createdInstance.Should().NotBeNull();
 
