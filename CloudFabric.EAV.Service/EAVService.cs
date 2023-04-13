@@ -1479,15 +1479,21 @@ public class EAVService : IEAVService
     ///
     /// </remarks>
     /// <param name="entityJsonString"></param>
-    /// <param name="requestDeserializedCallback">This function will be called after deserializing the request from json
+    /// <param name="requestDeserializedCallback">
+    /// <![CDATA[ Task<EntityInstanceCreateRequest>(EntityInstanceCreateRequest createRequest, bool dryRun); ]]>
+    ///
+    /// This function will be called after deserializing the request from json
     /// to EntityInstanceCreateRequest and allows adding additional validation or any other pre-processing logic.
+    ///
+    /// Note that it's important to check dryRun parameter and not make any changes to persistent store if
+    /// the parameter equals to 'true'.
     /// </param>
     /// <param name="dryRun">If true, entity will only be validated but not saved to the database</param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
     public Task<(JsonDocument?, ProblemDetails?)> CreateEntityInstance(
         string entityJsonString,
-        Func<EntityInstanceCreateRequest, Task<EntityInstanceCreateRequest>>? requestDeserializedCallback = null,
+        Func<EntityInstanceCreateRequest, bool, Task<EntityInstanceCreateRequest>>? requestDeserializedCallback = null,
         bool dryRun = false,
         CancellationToken cancellationToken = default
     )
@@ -1523,8 +1529,14 @@ public class EAVService : IEAVService
     /// <param name="entityConfigurationId">Id of entity configuration which has all attributes</param>
     /// <param name="tenantId">Tenant id guid. A guid which uniquely identifies and isolates the data. For single
     /// tenant application this should be one hardcoded guid for whole app.</param>
-    /// <param name="requestDeserializedCallback">This function will be called after deserializing the request from json
+    /// <param name="requestDeserializedCallback">
+    /// <![CDATA[ Task<EntityInstanceCreateRequest>(EntityInstanceCreateRequest createRequest, bool dryRun); ]]>
+    ///
+    /// This function will be called after deserializing the request from json
     /// to EntityInstanceCreateRequest and allows adding additional validation or any other pre-processing logic.
+    ///
+    /// Note that it's important to check dryRun parameter and not make any changes to persistent store if
+    /// the parameter equals to 'true'.
     /// </param>
     /// <param name="dryRun">If true, entity will only be validated but not saved to the database</param>
     /// <param name="cancellationToken"></param>
@@ -1533,7 +1545,7 @@ public class EAVService : IEAVService
         string entityJsonString,
         Guid entityConfigurationId,
         Guid tenantId,
-        Func<EntityInstanceCreateRequest, Task<EntityInstanceCreateRequest>>? requestDeserializedCallback = null,
+        Func<EntityInstanceCreateRequest, bool, Task<EntityInstanceCreateRequest>>? requestDeserializedCallback = null,
         bool dryRun = false,
         CancellationToken cancellationToken = default
     )
@@ -1572,15 +1584,21 @@ public class EAVService : IEAVService
     ///
     /// </remarks>
     /// <param name="entityJson"></param>
-    /// <param name="requestDeserializedCallback">This function will be called after deserializing the request from json
+    /// <param name="requestDeserializedCallback">
+    /// <![CDATA[ Task<EntityInstanceCreateRequest>(EntityInstanceCreateRequest createRequest, bool dryRun); ]]>
+    ///
+    /// This function will be called after deserializing the request from json
     /// to EntityInstanceCreateRequest and allows adding additional validation or any other pre-processing logic.
+    ///
+    /// Note that it's important to check dryRun parameter and not make any changes to persistent store if
+    /// the parameter equals to 'true'.
     /// </param>
     /// <param name="dryRun">If true, entity will only be validated but not saved to the database</param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
     public async Task<(JsonDocument?, ProblemDetails?)> CreateEntityInstance(
         JsonDocument entityJson,
-        Func<EntityInstanceCreateRequest, Task<EntityInstanceCreateRequest>>? requestDeserializedCallback = null,
+        Func<EntityInstanceCreateRequest, bool, Task<EntityInstanceCreateRequest>>? requestDeserializedCallback = null,
         bool dryRun = false,
         CancellationToken cancellationToken = default
     )
@@ -1650,8 +1668,14 @@ public class EAVService : IEAVService
     /// <param name="entityConfigurationId">Id of entity configuration which has all attributes</param>
     /// <param name="tenantId">Tenant id guid. A guid which uniquely identifies and isolates the data. For single
     /// tenant application this should be one hardcoded guid for whole app.</param>
-    /// <param name="requestDeserializedCallback">This function will be called after deserializing the request from json
+    /// <param name="requestDeserializedCallback">
+    /// <![CDATA[ Task<EntityInstanceCreateRequest>(EntityInstanceCreateRequest createRequest, bool dryRun); ]]>
+    ///
+    /// This function will be called after deserializing the request from json
     /// to EntityInstanceCreateRequest and allows adding additional validation or any other pre-processing logic.
+    ///
+    /// Note that it's important to check dryRun parameter and not make any changes to persistent store if
+    /// the parameter equals to 'true'.
     /// </param>
     /// <param name="dryRun">If true, entity will only be validated but not saved to the database</param>
     /// <param name="cancellationToken"></param>
@@ -1660,7 +1684,7 @@ public class EAVService : IEAVService
         JsonDocument entityJson,
         Guid entityConfigurationId,
         Guid tenantId,
-        Func<EntityInstanceCreateRequest, Task<EntityInstanceCreateRequest>>? requestDeserializedCallback = null,
+        Func<EntityInstanceCreateRequest, bool, Task<EntityInstanceCreateRequest>>? requestDeserializedCallback = null,
         bool dryRun = false,
         CancellationToken cancellationToken = default
     )
@@ -1694,7 +1718,7 @@ public class EAVService : IEAVService
 
         if (requestDeserializedCallback != null)
         {
-            entityInstanceCreateRequest = await requestDeserializedCallback(entityInstanceCreateRequest!);
+            entityInstanceCreateRequest = await requestDeserializedCallback(entityInstanceCreateRequest!, dryRun);
         }
 
         var (createdEntity, validationErrors) = await CreateEntityInstanceInternal(
