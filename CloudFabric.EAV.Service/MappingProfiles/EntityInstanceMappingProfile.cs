@@ -24,6 +24,7 @@ public class EntityInstanceProfile : Profile
 
         CreateMap<CategoryInstanceCreateRequest, Category>();
         CreateMap<Category, CategoryViewModel>();
+        CreateMap<Category, EntityInstanceViewModel>();
 
         CreateMap<EntityInstance, Category>();
         CreateMap<Category, EntityInstance>();

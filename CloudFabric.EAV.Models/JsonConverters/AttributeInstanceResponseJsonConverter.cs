@@ -11,7 +11,7 @@ public class AttributeInstanceResponseJsonConverter<T> : JsonConverter<T>
 {
     public override bool CanConvert(Type type)
     {
-        if (type.GetGenericTypeDefinition() != typeof(List<T>))
+        if (type.IsGenericTypeDefinition && type.GetGenericTypeDefinition() != typeof(List<T>))
         {
             return true;
         }

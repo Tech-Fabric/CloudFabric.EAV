@@ -1279,7 +1279,7 @@ public class EAVService : IEAVService
             return (null, validationErrors);
         }
 
-        return (SerializeEntityInstanceToJsonMultiLanguage(_mapper.Map<EntityInstance>(createdCategory)), null);
+        return (SerializeEntityInstanceToJsonMultiLanguage(_mapper.Map<EntityInstanceViewModel>(createdCategory)), null);
     }
 
     public async Task<(CategoryViewModel, ProblemDetails)> CreateCategoryInstance(
@@ -1603,44 +1603,13 @@ public class EAVService : IEAVService
         CancellationToken cancellationToken = default
     )
     {
-        Guid? entityConfigurationId = null;
-        if (entityJson.TryGetProperty("entityConfigurationId", out var entityConfigurationIdJsonElement))
-        {
-            if (entityConfigurationIdJsonElement.TryGetGuid(out var entityConfigurationIdGuid))
-            {
-                entityConfigurationId = entityConfigurationIdGuid;
-            }
-            else
-            {
-                return (null, new ValidationErrorResponse("entityConfigurationId", "Value is not a valid Guid"))!;
-            }
-        }
-        else
-        {
-            return (null, new ValidationErrorResponse("entityConfigurationId", "Value is missing"));
-        }
-
-        Guid? tenantId = null;
-        if (entityJson.TryGetProperty("tenantId", out var tenantIdJsonElement))
-        {
-            if (tenantIdJsonElement.TryGetGuid(out var tenantIdGuid))
-            {
-                tenantId = tenantIdGuid;
-            }
-            else
-            {
-                return (null, new ValidationErrorResponse("tenantId", "Value is not a valid Guid"))!;
-            }
-        }
-        else
-        {
-            return (null, new ValidationErrorResponse("tenantId", "Value is missing"));
-        }
+        var (entityInstanceCreateRequest, deserializationErrors) =
+            await DeserializeEntityInstanceCreateRequestFromJson(entityJson, cancellationToken);
 
         return await CreateEntityInstance(
             entityJson,
-            entityConfigurationId.Value,
-            tenantId.Value,
+            entityInstanceCreateRequest.EntityConfigurationId,
+            entityInstanceCreateRequest.TenantId.Value,
             requestDeserializedCallback,
             dryRun,
             cancellationToken
@@ -1689,26 +1658,9 @@ public class EAVService : IEAVService
         CancellationToken cancellationToken = default
     )
     {
-        EntityConfiguration? entityConfiguration = await _entityConfigurationRepository.LoadAsync(
-            entityConfigurationId,
-            entityConfigurationId.ToString(),
-            cancellationToken
-        ).ConfigureAwait(false);
-
-        if (entityConfiguration == null)
-        {
-            return (null, new ValidationErrorResponse("EntityConfigurationId", "EntityConfiguration not found"))!;
-        }
-
-        List<AttributeConfiguration> attributeConfigurations =
-            await GetAttributeConfigurationsForEntityConfiguration(
-                entityConfiguration,
-                cancellationToken
-            ).ConfigureAwait(false);
-
         var (entityInstanceCreateRequest, deserializationErrors) = await
-            _entityInstanceCreateUpdateRequestFromJsonDeserializer.DeserializeEntityInstanceCreateRequest(
-                entityConfigurationId, tenantId, attributeConfigurations, entityJson
+            DeserializeEntityInstanceCreateRequestFromJson(
+                entityJson, entityConfigurationId, tenantId, cancellationToken
             );
 
         if (deserializationErrors != null)
@@ -1721,7 +1673,7 @@ public class EAVService : IEAVService
             entityInstanceCreateRequest = await requestDeserializedCallback(entityInstanceCreateRequest!, dryRun);
         }
 
-        var (createdEntity, validationErrors) = await CreateEntityInstanceInternal(
+        var (createdEntity, validationErrors) = await CreateEntityInstance(
             entityInstanceCreateRequest!, dryRun, cancellationToken
         );
 
@@ -1735,20 +1687,6 @@ public class EAVService : IEAVService
 
     public async Task<(EntityInstanceViewModel?, ProblemDetails?)> CreateEntityInstance(
         EntityInstanceCreateRequest entity, bool dryRun = false, CancellationToken cancellationToken = default
-    )
-    {
-        var (entityInstanceCreated, errors) = await CreateEntityInstanceInternal(entity, dryRun, cancellationToken);
-        return (_mapper.Map<EntityInstanceViewModel>(entityInstanceCreated), errors);
-    }
-
-    /// <summary>
-    /// Validates new entity instance and stores it to the database.
-    /// </summary>
-    /// <param name="entity">Entity to create</param>
-    /// <param name="dryRun">If true, entity will only be validated but not saved to the database</param>
-    /// <param name="cancellationToken"></param>
-    private async Task<(EntityInstance?, ProblemDetails?)> CreateEntityInstanceInternal(
-        EntityInstanceCreateRequest entity, bool dryRun, CancellationToken cancellationToken = default
     )
     {
         EntityConfiguration? entityConfiguration = await _entityConfigurationRepository.LoadAsync(
@@ -1824,23 +1762,117 @@ public class EAVService : IEAVService
                 //TODO: What do we want to do with internal exceptions and unsuccessful flow?
                 throw new Exception("Entity was not saved");
             }
+
+            return (_mapper.Map<EntityInstanceViewModel>(entityInstance), null);
         }
 
-        return (entityInstance, null);
+        return (_mapper.Map<EntityInstanceViewModel>(entityInstance), null);
     }
 
-    public async Task<EntityInstanceViewModel> GetEntityInstance(Guid id, string partitionKey)
+    /// <remarks>
+    /// Use following json format:
+    ///
+    /// ```
+    /// {
+    ///     "sku": "123",
+    ///     "name": "New Entity",
+    ///     "entityConfigurationId": "fb80cb74-6f47-4d38-bb87-25bd820efee7",
+    ///     "tenantId": "b6842a71-162b-411d-86e9-3ec01f909c82"
+    /// }
+    /// ```
+    ///
+    /// Where "sku" and "name" are attributes machine names,
+    /// "entityConfigurationId" - obviously the id of entity configuration which has all attributes,
+    /// "tenantId" - tenant id guid. A guid which uniquely identifies and isolates the data. For single tenant
+    /// application this should be one hardcoded guid for whole app.
+    ///
+    /// </remarks>
+    public async Task<(EntityInstanceCreateRequest?, ProblemDetails?)> DeserializeEntityInstanceCreateRequestFromJson(
+        JsonElement entityJson,
+        CancellationToken cancellationToken = default
+    ) {
+        Guid entityConfigurationId;
+        if (entityJson.TryGetProperty("entityConfigurationId", out var entityConfigurationIdJsonElement))
+        {
+            if (entityConfigurationIdJsonElement.TryGetGuid(out var entityConfigurationIdGuid))
+            {
+                entityConfigurationId = entityConfigurationIdGuid;
+            }
+            else
+            {
+                return (null, new ValidationErrorResponse("entityConfigurationId", "Value is not a valid Guid"))!;
+            }
+        }
+        else
+        {
+            return (null, new ValidationErrorResponse("entityConfigurationId", "Value is missing"));
+        }
+
+        Guid tenantId;
+        if (entityJson.TryGetProperty("tenantId", out var tenantIdJsonElement))
+        {
+            if (tenantIdJsonElement.TryGetGuid(out var tenantIdGuid))
+            {
+                tenantId = tenantIdGuid;
+            }
+            else
+            {
+                return (null, new ValidationErrorResponse("tenantId", "Value is not a valid Guid"))!;
+            }
+        }
+        else
+        {
+            return (null, new ValidationErrorResponse("tenantId", "Value is missing"));
+        }
+
+        return await DeserializeEntityInstanceCreateRequestFromJson(
+            entityJson, entityConfigurationId, tenantId, cancellationToken
+        );
+    }
+
+
+    public async Task<(EntityInstanceCreateRequest?, ProblemDetails?)> DeserializeEntityInstanceCreateRequestFromJson(
+        JsonElement entityJson,
+        Guid entityConfigurationId,
+        Guid tenantId,
+        CancellationToken cancellationToken = default
+    ) {
+        EntityConfiguration? entityConfiguration = await _entityConfigurationRepository.LoadAsync(
+                entityConfigurationId,
+                entityConfigurationId.ToString(),
+                cancellationToken
+            )
+            .ConfigureAwait(false);
+
+        if (entityConfiguration == null)
+        {
+            return (null, new ValidationErrorResponse("EntityConfigurationId", "EntityConfiguration not found"))!;
+        }
+
+        List<AttributeConfiguration> attributeConfigurations =
+            await GetAttributeConfigurationsForEntityConfiguration(
+                    entityConfiguration,
+                    cancellationToken
+                )
+                .ConfigureAwait(false);
+
+        return await _entityInstanceCreateUpdateRequestFromJsonDeserializer.DeserializeEntityInstanceCreateRequest(
+            entityConfigurationId, tenantId, attributeConfigurations, entityJson
+        );
+    }
+
+    public async Task<EntityInstanceViewModel?> GetEntityInstance(Guid id, string partitionKey)
     {
         EntityInstance? entityInstance = await _entityInstanceRepository.LoadAsync(id, partitionKey);
 
-        return _mapper.Map<EntityInstanceViewModel>(entityInstance);
+        return _mapper.Map<EntityInstanceViewModel?>(entityInstance);
     }
 
     public async Task<JsonDocument> GetEntityInstanceJsonMultiLanguage(Guid id, string partitionKey)
     {
-        EntityInstance? entityInstance = await _entityInstanceRepository.LoadAsync(id, partitionKey);
+        EntityInstanceViewModel? entityInstanceViewModel = await GetEntityInstance(id, partitionKey);
 
-        return SerializeEntityInstanceToJsonMultiLanguage(entityInstance);
+        return SerializeEntityInstanceToJsonMultiLanguage(entityInstanceViewModel);
     }
 
     public async Task<JsonDocument> GetEntityInstanceJsonSingleLanguage(
@@ -1849,29 +1881,29 @@ public class EAVService : IEAVService
         string language,
         string fallbackLanguage = "en-US")
     {
-        EntityInstance? entityInstance = await _entityInstanceRepository.LoadAsync(id, partitionKey);
+        EntityInstanceViewModel? entityInstanceViewModel = await GetEntityInstance(id, partitionKey);
 
-        return SerializeEntityInstanceToJsonSingleLanguage(entityInstance, language, fallbackLanguage);
+        return SerializeEntityInstanceToJsonSingleLanguage(entityInstanceViewModel, language, fallbackLanguage);
     }
 
-    private JsonDocument SerializeEntityInstanceToJsonMultiLanguage(EntityInstance? entityInstance)
+    public JsonDocument SerializeEntityInstanceToJsonMultiLanguage(EntityInstanceViewModel? entityInstanceViewModel)
     {
         var serializerOptions = new JsonSerializerOptions(_jsonSerializerOptions);
         serializerOptions.Converters.Add(new LocalizedStringMultiLanguageSerializer());
-        serializerOptions.Converters.Add(new EntityInstanceToJsonSerializer());
+        serializerOptions.Converters.Add(new EntityInstanceViewModelToJsonSerializer());
 
-        return JsonSerializer.SerializeToDocument(entityInstance, serializerOptions);
+        return JsonSerializer.SerializeToDocument(entityInstanceViewModel, serializerOptions);
     }
 
-    private JsonDocument SerializeEntityInstanceToJsonSingleLanguage(
-        EntityInstance? entityInstance, string language, string fallbackLanguage = "en-US"
+    public JsonDocument SerializeEntityInstanceToJsonSingleLanguage(
+        EntityInstanceViewModel? entityInstanceViewModel, string language, string fallbackLanguage = "en-US"
     )
     {
         var serializerOptions = new JsonSerializerOptions(_jsonSerializerOptions);
         serializerOptions.Converters.Add(new LocalizedStringSingleLanguageSerializer(language, fallbackLanguage));
-        serializerOptions.Converters.Add(new EntityInstanceToJsonSerializer());
+        serializerOptions.Converters.Add(new EntityInstanceViewModelToJsonSerializer());
 
-        return JsonSerializer.SerializeToDocument(entityInstance, serializerOptions);
+        return JsonSerializer.SerializeToDocument(entityInstanceViewModel, serializerOptions);
     }
 
     public async Task<(EntityInstanceViewModel, ProblemDetails)> UpdateEntityInstance(string partitionKey,
@@ -1982,7 +2014,16 @@ public class EAVService : IEAVService
         return (_mapper.Map<EntityInstanceViewModel>(entityInstance), null)!;
     }
 
-    private async Task<ProjectionQueryResult<Dictionary<string, object?>>> QueryInstancesInternal(
+    /// <summary>
+    /// Returns records in internal EntityInstanceViewModel format - use this is library is used by .net code.
+    /// That way you will have full control over attributes and will be able to convert them to
+    /// create/update request models for updating the entity.
+    /// </summary>
+    /// <param name="entityConfigurationId"></param>
+    /// <param name="query"></param>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    public async Task<ProjectionQueryResult<EntityInstanceViewModel>> QueryInstances(
         Guid entityConfigurationId,
         ProjectionQuery query,
         CancellationToken cancellationToken = default
@@ -2007,42 +2048,6 @@ public class EAVService : IEAVService
         ProjectionQueryResult<Dictionary<string, object?>> results = await projectionRepository
             .Query(query, entityConfiguration.Id.ToString(), cancellationToken)
             .ConfigureAwait(false);
-
-        return results;
-    }
-
-
-    /// <summary>
-    /// Returns records in internal EntityInstanceViewModel format - use this is library is used by .net code.
-    /// That way you will have full control over attributes and will be able to convert them to
-    /// create/update request models for updating the entity.
-    /// </summary>
-    /// <param name="entityConfigurationId"></param>
-    /// <param name="query"></param>
-    /// <param name="cancellationToken"></param>
-    /// <returns></returns>
-    public async Task<ProjectionQueryResult<EntityInstanceViewModel>> QueryInstances(
-        Guid entityConfigurationId,
-        ProjectionQuery query,
-        CancellationToken cancellationToken = default
-    )
-    {
-        var results = await QueryInstancesInternal(
-            entityConfigurationId,
-            query,
-            cancellationToken
-        );
-
-        EntityConfiguration entityConfiguration = await _entityConfigurationRepository.LoadAsyncOrThrowNotFound(
-            entityConfigurationId,
-            entityConfigurationId.ToString(),
-            cancellationToken
-        ).ConfigureAwait(false);
-
-        List<AttributeConfiguration> attributes = await GetAttributeConfigurationsForEntityConfiguration(
-            entityConfiguration,
-            cancellationToken
-        ).ConfigureAwait(false);
 
         return results.TransformResultDocuments(
             r => _entityInstanceFromDictionaryDeserializer.Deserialize(attributes, r)
@@ -2081,13 +2086,14 @@ public class EAVService : IEAVService
         CancellationToken cancellationToken = default
     )
     {
-        var results = await QueryInstancesInternal(
+        var results = await QueryInstances(
             entityConfigurationId,
             query,
             cancellationToken
         );
 
         var serializerOptions = new JsonSerializerOptions(_jsonSerializerOptions);
+        serializerOptions.Converters.Add(new EntityInstanceViewModelToJsonSerializer());
         serializerOptions.Converters.Add(new LocalizedStringMultiLanguageSerializer());
 
         return results.TransformResultDocuments(
@@ -2127,13 +2133,14 @@ public class EAVService : IEAVService
         CancellationToken cancellationToken = default
     )
     {
-        var results = await QueryInstancesInternal(
+        var results = await QueryInstances(
             entityConfigurationId,
             query,
             cancellationToken
         );
 
         var serializerOptions = new JsonSerializerOptions(_jsonSerializerOptions);
+        serializerOptions.Converters.Add(new EntityInstanceViewModelToJsonSerializer());
         serializerOptions.Converters.Add(new LocalizedStringSingleLanguageSerializer(language, fallbackLanguage));
 
         return results.TransformResultDocuments(

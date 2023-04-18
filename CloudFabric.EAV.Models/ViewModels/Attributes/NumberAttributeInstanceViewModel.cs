@@ -3,4 +3,9 @@
 public class NumberAttributeInstanceViewModel : AttributeInstanceViewModel
 {
     public decimal? Value { get; set; }
+
+    public override object? GetValue()
+    {
+        return Value;
+    }
 }

@@ -3,4 +3,9 @@
 public class TextAttributeInstanceViewModel : AttributeInstanceViewModel
 {
     public string Value { get; set; }
+
+    public override object? GetValue()
+    {
+        return Value;
+    }
 }

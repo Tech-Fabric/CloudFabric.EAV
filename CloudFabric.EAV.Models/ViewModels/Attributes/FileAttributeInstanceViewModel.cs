@@ -3,6 +3,11 @@
 public class FileAttributeInstanceViewModel : AttributeInstanceViewModel
 {
     public FileAttributeValueViewModel Value { get; set; }
+
+    public override object? GetValue()
+    {
+        return Value;
+    }
 }
 
 public class FileAttributeValueViewModel
