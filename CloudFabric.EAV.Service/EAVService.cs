@@ -1529,7 +1529,7 @@ public class EAVService : IEAVService
         if (categoryTree == null)
         {
             throw new NotFoundException("Category tree not found");
-    }
+        }
 
         var query = await GetSubcategoriesPrepareQuery(categoryTreeId, parentId, cancellationToken);
 
@@ -1542,28 +1542,6 @@ public class EAVService : IEAVService
             ParentId = parentId,
             Children = queryResult.Records.Select(x => x.Document).ToList() ?? new List<CategoryViewModel?>()
         };
-    }
-
-    private async Task<List<Dictionary<string, object?>?>> GetSubcategoriesInternal(
-        Guid categoryTreeId,
-        Guid? parentId,
-        CancellationToken cancellationToken = default
-    )
-    {
-        var categoryTree = await _categoryTreeRepository.LoadAsync(
-            categoryTreeId, categoryTreeId.ToString(), cancellationToken
-        ).ConfigureAwait(false);
-
-        if (categoryTree == null)
-        {
-            throw new NotFoundException("Category tree not found");
-        }
-
-        var query = await GetSubcategoriesPrepareQuery(categoryTreeId, parentId, cancellationToken);
-
-        var queryResult = await QueryInstancesInternal(categoryTree.EntityConfigurationId, query, cancellationToken);
-
-        return queryResult.Records.Select(x => x.Document)?.ToList();
     }
 
     private async Task<ProjectionQuery> GetSubcategoriesPrepareQuery(

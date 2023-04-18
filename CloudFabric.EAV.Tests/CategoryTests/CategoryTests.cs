@@ -1,6 +1,7 @@
 using CloudFabric.EAV.Models.RequestModels;
 using CloudFabric.EAV.Models.ViewModels;
 using CloudFabric.EAV.Tests.Factories;
+using CloudFabric.EventSourcing.EventStore;
 using CloudFabric.Projections;
 using CloudFabric.Projections.Queries;
 
@@ -160,6 +161,30 @@ public abstract class CategoryTests : BaseQueryTests.BaseQueryTests
 
         subcategories = await _eavService.GetSubcategories(createdTree.Id, officeLaptopsCategory.Id);
         subcategories.Children.Count.Should().Be(0);
+    }
+
+    [TestMethod]
+    public async Task GetSubcategories_TreeNotFound()
+    {
+        (HierarchyViewModel createdTree, CategoryViewModel _,
+            CategoryViewModel _, CategoryViewModel _,
+            CategoryViewModel _, CategoryViewModel _) = await BuildTestTreeAsync();
+
+        Func<Task> action = async () => await _eavService.GetSubcategories(Guid.NewGuid(), null);
+
+        await action.Should().ThrowAsync<NotFoundException>().WithMessage("Category tree not found");
+    }
+
+    [TestMethod]
+    public async Task GetSubcategories_ParentNotFound()
+    {
+        (HierarchyViewModel createdTree, CategoryViewModel _,
+            CategoryViewModel _, CategoryViewModel _,
+            CategoryViewModel _, CategoryViewModel _) = await BuildTestTreeAsync();
+
+        Func<Task> action = async () => await _eavService.GetSubcategories(createdTree.Id, Guid.NewGuid());
+
+        await action.Should().ThrowAsync<NotFoundException>().WithMessage("Category not found");
     }
 
     [TestMethod]
