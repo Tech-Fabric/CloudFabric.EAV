@@ -995,6 +995,170 @@ public class Tests
     }
 
     [TestMethod]
+    public async Task CreateMoneyAttribute_Success()
+    {
+        var cultureInfoId = CultureInfo.GetCultureInfo("en-US").LCID;
+        var moneyAttribute = new MoneyAttributeConfigurationCreateUpdateRequest
+        {
+            MachineName = "testAttr",
+            Description =
+                new List<LocalizedStringCreateRequest>
+                {
+                    new() { CultureInfoId = cultureInfoId, String = "testAttrDesc" }
+                },
+            Name = new List<LocalizedStringCreateRequest>
+            {
+                new() { CultureInfoId = cultureInfoId, String = "testAttrName" }
+            },
+            DefaultCurrencyId = "usd",
+            IsRequired = true,
+        };
+
+        var configCreateRequest = new EntityConfigurationCreateRequest
+        {
+            MachineName = "test",
+            Name = new List<LocalizedStringCreateRequest>
+            {
+                new() { CultureInfoId = cultureInfoId, String = "test" }
+            },
+            Attributes = new List<EntityAttributeConfigurationCreateUpdateRequest> { moneyAttribute }
+        };
+
+        (EntityConfigurationViewModel? created, _) =
+            await _eavService.CreateEntityConfiguration(configCreateRequest, CancellationToken.None);
+        created.Attributes.Count.Should().Be(1);
+
+        ProjectionQueryResult<AttributeConfigurationListItemViewModel> allAttributes =
+            await _eavService.ListAttributes(new ProjectionQuery { Limit = 100 });
+
+        allAttributes.Records.First().As<QueryResultDocument<AttributeConfigurationListItemViewModel>>()
+            .Document?.Name.Should().BeEquivalentTo(moneyAttribute.Name);
+    }
+
+    [TestMethod]
+    public async Task CreateMoneyAttributeCustomCurrency_Success()
+    {
+        var cultureInfoId = CultureInfo.GetCultureInfo("en-US").LCID;
+        var moneyAttribute = new MoneyAttributeConfigurationCreateUpdateRequest
+        {
+            MachineName = "testAttr",
+            Description =
+                new List<LocalizedStringCreateRequest>
+                {
+                    new() { CultureInfoId = cultureInfoId, String = "testAttrDesc" }
+                },
+            Name = new List<LocalizedStringCreateRequest>
+            {
+                new() { CultureInfoId = cultureInfoId, String = "testAttrName" }
+            },
+            DefaultCurrencyId = "uah",
+            IsRequired = true,
+            Currencies = new List<CurrencyRequestModel>()
+            {
+                new CurrencyRequestModel()
+                {
+                    MachineName = "uah",
+                    Name = "Ukrainian Hryvna",
+                    Prefix = "UAH"
+                }
+            }
+        };
+
+        var configCreateRequest = new EntityConfigurationCreateRequest
+        {
+            MachineName = "test",
+            Name = new List<LocalizedStringCreateRequest>
+            {
+                new() { CultureInfoId = cultureInfoId, String = "test" }
+            },
+            Attributes = new List<EntityAttributeConfigurationCreateUpdateRequest> { moneyAttribute }
+        };
+
+        (EntityConfigurationViewModel? created, _) =
+            await _eavService.CreateEntityConfiguration(configCreateRequest, CancellationToken.None);
+        created.Attributes.Count.Should().Be(1);
+
+        ProjectionQueryResult<AttributeConfigurationListItemViewModel> allAttributes =
+            await _eavService.ListAttributes(new ProjectionQuery { Limit = 100 });
+
+        allAttributes.Records.First().As<QueryResultDocument<AttributeConfigurationListItemViewModel>>()
+            .Document?.Name.Should().BeEquivalentTo(moneyAttribute.Name);
+    }
+
+    [TestMethod]
+    public async Task CreateMoneyAttribute_InvalidDefaultId()
+    {
+        var cultureInfoId = CultureInfo.GetCultureInfo("en-US").LCID;
+        var moneyAttribute = new MoneyAttributeConfigurationCreateUpdateRequest
+        {
+            MachineName = "testAttr",
+            Description =
+                new List<LocalizedStringCreateRequest>
+                {
+                    new() { CultureInfoId = cultureInfoId, String = "testAttrDesc" }
+                },
+            Name = new List<LocalizedStringCreateRequest>
+            {
+                new() { CultureInfoId = cultureInfoId, String = "testAttrName" }
+            },
+            DefaultCurrencyId = "uah",
+            IsRequired = true,
+        };
+
+        var configCreateRequest = new EntityConfigurationCreateRequest
+        {
+            MachineName = "test",
+            Name = new List<LocalizedStringCreateRequest>
+            {
+                new() { CultureInfoId = cultureInfoId, String = "test" }
+            },
+            Attributes = new List<EntityAttributeConfigurationCreateUpdateRequest> { moneyAttribute }
+        };
+
+        (EntityConfigurationViewModel? created, ProblemDetails? errors) =
+            await _eavService.CreateEntityConfiguration(configCreateRequest, CancellationToken.None);
+        created.Should().BeNull();
+        errors.Should().NotBeNull();
+    }
+
+    [TestMethod]
+    public async Task CreateMoneyAttribute_EmptyList()
+    {
+        var cultureInfoId = CultureInfo.GetCultureInfo("en-US").LCID;
+        var moneyAttribute = new MoneyAttributeConfigurationCreateUpdateRequest
+        {
+            MachineName = "testAttr",
+            Description =
+                new List<LocalizedStringCreateRequest>
+                {
+                    new() { CultureInfoId = cultureInfoId, String = "testAttrDesc" }
+                },
+            Name = new List<LocalizedStringCreateRequest>
+            {
+                new() { CultureInfoId = cultureInfoId, String = "testAttrName" }
+            },
+            DefaultCurrencyId = "uah",
+            Currencies = new List<CurrencyRequestModel>(),
+            IsRequired = true,
+        };
+
+        var configCreateRequest = new EntityConfigurationCreateRequest
+        {
+            MachineName = "test",
+            Name = new List<LocalizedStringCreateRequest>
+            {
+                new() { CultureInfoId = cultureInfoId, String = "test" }
+            },
+            Attributes = new List<EntityAttributeConfigurationCreateUpdateRequest> { moneyAttribute }
+        };
+
+        (EntityConfigurationViewModel? created, ProblemDetails? errors) =
+            await _eavService.CreateEntityConfiguration(configCreateRequest, CancellationToken.None);
+        created.Should().BeNull();
+        errors.Should().NotBeNull();
+    }
+
+    [TestMethod]
     public async Task CreateFileAttribute_Success()
     {
         var cultureInfoId = CultureInfo.GetCultureInfo("en-US").LCID;
