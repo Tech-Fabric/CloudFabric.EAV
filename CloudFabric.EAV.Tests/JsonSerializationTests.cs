@@ -305,21 +305,21 @@ public class JsonSerializationTests : BaseQueryTests.BaseQueryTests
         resultDocument!.RootElement.GetProperty("entityConfigurationId").GetString().Should().Be(createdCategoryConfiguration.Id.ToString());
         resultDocument!.RootElement.GetProperty("tenantId").GetString().Should().Be(createdCategoryConfiguration.TenantId.ToString());
 
-        // JsonSerializer.Deserialize<List<CategoryPath>>(resultDocument!.RootElement.GetProperty("categoryPaths"), _serializerOptions)!
-        //     .First().TreeId.Should().Be(hierarchy.Id);
-        //
-        // (createdCategory, _) = await _eavService.CreateCategoryInstance(
-        //     categoryJsonStringCreateRequest,
-        //     createdCategoryConfiguration.Id,
-        //     hierarchy.Id,
-        //     null,
-        //     createdCategoryConfiguration.TenantId.Value
-        // );
-        //
-        // createdCategory!.RootElement.GetProperty("entityConfigurationId").GetString().Should().Be(createdCategoryConfiguration.Id.ToString());
-        // createdCategory!.RootElement.GetProperty("tenantId").GetString().Should().Be(createdCategoryConfiguration.TenantId.ToString());
-        //
-        // JsonSerializer.Deserialize<List<CategoryPath>>(resultDocument!.RootElement.GetProperty("categoryPaths"), _serializerOptions)!
-        //     .First().TreeId.Should().Be(hierarchy.Id);
+        JsonSerializer.Deserialize<List<CategoryPath>>(resultDocument!.RootElement.GetProperty("categoryPaths"), _serializerOptions)!
+            .First().TreeId.Should().Be(hierarchy.Id);
+
+        (createdCategory, _) = await _eavService.CreateCategoryInstance(
+            categoryJsonStringCreateRequest,
+            createdCategoryConfiguration.Id,
+            hierarchy.Id,
+            null,
+            createdCategoryConfiguration.TenantId.Value
+        );
+
+        createdCategory!.RootElement.GetProperty("entityConfigurationId").GetString().Should().Be(createdCategoryConfiguration.Id.ToString());
+        createdCategory!.RootElement.GetProperty("tenantId").GetString().Should().Be(createdCategoryConfiguration.TenantId.ToString());
+
+        JsonSerializer.Deserialize<List<CategoryPath>>(resultDocument!.RootElement.GetProperty("categoryPaths"), _serializerOptions)!
+            .First().TreeId.Should().Be(hierarchy.Id);
     }
 }

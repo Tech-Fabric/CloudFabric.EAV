@@ -91,9 +91,13 @@ public class EntityInstanceFromDictionaryDeserializer
                 }
             }
         }
-        else if (paths is List<CategoryPathViewModel> pathsListOriginal)
+        else if (paths is List<CategoryPathViewModel> pathsListViewModel)
         {
-            categoryPaths = pathsListOriginal;
+            categoryPaths = pathsListViewModel;
+        }
+        else if (paths is List<CategoryPath> pathsListModel)
+        {
+            categoryPaths = _mapper.Map<List<CategoryPathViewModel>>(pathsListModel);
         }
 
         return categoryPaths;
