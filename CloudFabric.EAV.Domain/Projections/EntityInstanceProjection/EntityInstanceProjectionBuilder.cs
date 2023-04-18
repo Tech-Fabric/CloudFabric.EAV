@@ -6,6 +6,28 @@ using CloudFabric.Projections;
 
 namespace CloudFabric.EAV.Domain.Projections.EntityInstanceProjection;
 
+/// <summary>
+/// Entities are stored as c# dictionaries in projections - something similar to json.
+/// That is required to not overload search engines with additional complexity of entity instances and attributes
+/// allowing us to simply store
+/// photo.likes = 4 instead of photo.attributes.where(a => a.machineName == "likes").value = 4
+///
+/// That comes with a price though - we now have to decode json-like dictionary back to entity instance view model.
+/// Also it becomes not clear where is a serialization part and where is a deserializer.
+///
+/// The following structure seems logical, not very understandable from the first sight however:
+///
+///
+/// Serialization happens in <see cref="CloudFabric.EAV.Domain/Projections/EntityInstanceProjection/EntityInstanceProjectionBuilder.cs"/>
+/// Projection builder creates dictionaries from EntityInstances and is responsible for storing projections data in
+/// the best way suitable for search engines like elasticsearch.
+///
+/// The segregation of reads and writes moves our decoding code out of ProjectionBuilder
+/// and even out of CloudFabric.EAV.Domain because our ViewModels are on another layer - same layer as a service.
+/// That means it's a service concern to decode dictionary into a ViewModel.
+///
+/// <see cref="CloudFabric.EAV.Service/Serialization/EntityInstanceFromDictionaryDeserializer.cs"/>
+/// </summary>
 public class EntityInstanceProjectionBuilder : ProjectionBuilder,
     IHandleEvent<EntityInstanceCreated>,
     // IHandleEvent<AttributeInstanceAdded>,

@@ -1017,7 +1017,7 @@ public class EAVService : IEAVService
         JsonDocument categoryJson = JsonDocument.Parse(categoryJsonString);
 
         return CreateCategoryInstance(
-            categoryJson,
+            categoryJson.RootElement,
             requestDeserializedCallback,
             cancellationToken
         );
@@ -1065,7 +1065,7 @@ public class EAVService : IEAVService
         JsonDocument categoryJson = JsonDocument.Parse(categoryJsonString);
 
         return CreateCategoryInstance(
-            categoryJson,
+            categoryJson.RootElement,
             categoryConfigurationId,
             categoryTreeId,
             parentId,
@@ -1108,13 +1108,13 @@ public class EAVService : IEAVService
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
     public async Task<(JsonDocument?, ProblemDetails?)> CreateCategoryInstance(
-        JsonDocument categoryJson,
+        JsonElement categoryJson,
         Func<CategoryInstanceCreateRequest, Task<CategoryInstanceCreateRequest>>? requestDeserializedCallback = null,
         CancellationToken cancellationToken = default
     )
     {
         Guid? entityConfigurationId = null;
-        if (categoryJson.RootElement.TryGetProperty("categoryConfigurationId", out var categoryConfigurationIdJsonElement))
+        if (categoryJson.TryGetProperty("categoryConfigurationId", out var categoryConfigurationIdJsonElement))
         {
             if (categoryConfigurationIdJsonElement.TryGetGuid(out var categoryConfigurationIdGuid))
             {
@@ -1131,7 +1131,7 @@ public class EAVService : IEAVService
         }
 
         Guid? categoryTreeId = null;
-        if (categoryJson.RootElement.TryGetProperty("categoryTreeId", out var categoryTreeIdJsonElement))
+        if (categoryJson.TryGetProperty("categoryTreeId", out var categoryTreeIdJsonElement))
         {
             if (categoryTreeIdJsonElement.TryGetGuid(out var categoryTreeIdGuid))
             {
@@ -1148,7 +1148,7 @@ public class EAVService : IEAVService
         }
 
         Guid? parentId = null;
-        if (categoryJson.RootElement.TryGetProperty("parentId", out var parentIdJsonElement))
+        if (categoryJson.TryGetProperty("parentId", out var parentIdJsonElement))
         {
             if (parentIdJsonElement.ValueKind == JsonValueKind.Null)
             {
@@ -1169,7 +1169,7 @@ public class EAVService : IEAVService
         }
 
         Guid? tenantId = null;
-        if (categoryJson.RootElement.TryGetProperty("tenantId", out var tenantIdJsonElement))
+        if (categoryJson.TryGetProperty("tenantId", out var tenantIdJsonElement))
         {
             if (tenantIdJsonElement.ValueKind == JsonValueKind.Null)
             {
@@ -1230,7 +1230,7 @@ public class EAVService : IEAVService
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
     public async Task<(JsonDocument?, ProblemDetails?)> CreateCategoryInstance(
-        JsonDocument categoryJson,
+        JsonElement categoryJson,
         Guid categoryConfigurationId,
         Guid categoryTreeId,
         Guid? parentId,
@@ -1501,7 +1501,7 @@ public class EAVService : IEAVService
         JsonDocument entityJson = JsonDocument.Parse(entityJsonString);
 
         return CreateEntityInstance(
-            entityJson,
+            entityJson.RootElement,
             requestDeserializedCallback,
             dryRun,
             cancellationToken
@@ -1553,7 +1553,7 @@ public class EAVService : IEAVService
         JsonDocument entityJson = JsonDocument.Parse(entityJsonString);
 
         return CreateEntityInstance(
-            entityJson,
+            entityJson.RootElement,
             entityConfigurationId,
             tenantId,
             requestDeserializedCallback,
@@ -1597,14 +1597,14 @@ public class EAVService : IEAVService
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
     public async Task<(JsonDocument?, ProblemDetails?)> CreateEntityInstance(
-        JsonDocument entityJson,
+        JsonElement entityJson,
         Func<EntityInstanceCreateRequest, bool, Task<EntityInstanceCreateRequest>>? requestDeserializedCallback = null,
         bool dryRun = false,
         CancellationToken cancellationToken = default
     )
     {
         Guid? entityConfigurationId = null;
-        if (entityJson.RootElement.TryGetProperty("entityConfigurationId", out var entityConfigurationIdJsonElement))
+        if (entityJson.TryGetProperty("entityConfigurationId", out var entityConfigurationIdJsonElement))
         {
             if (entityConfigurationIdJsonElement.TryGetGuid(out var entityConfigurationIdGuid))
             {
@@ -1621,7 +1621,7 @@ public class EAVService : IEAVService
         }
 
         Guid? tenantId = null;
-        if (entityJson.RootElement.TryGetProperty("tenantId", out var tenantIdJsonElement))
+        if (entityJson.TryGetProperty("tenantId", out var tenantIdJsonElement))
         {
             if (tenantIdJsonElement.TryGetGuid(out var tenantIdGuid))
             {
@@ -1681,7 +1681,7 @@ public class EAVService : IEAVService
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
     public async Task<(JsonDocument?, ProblemDetails?)> CreateEntityInstance(
-        JsonDocument entityJson,
+        JsonElement entityJson,
         Guid entityConfigurationId,
         Guid tenantId,
         Func<EntityInstanceCreateRequest, bool, Task<EntityInstanceCreateRequest>>? requestDeserializedCallback = null,
@@ -2153,6 +2153,7 @@ public class EAVService : IEAVService
 
         (var newCategoryPath, ProblemDetails? errors) =
             await BuildCategoryPath(treeId, newParentId, cancellationToken).ConfigureAwait(false);
+
         if (errors != null)
         {
             return (null, errors)!;

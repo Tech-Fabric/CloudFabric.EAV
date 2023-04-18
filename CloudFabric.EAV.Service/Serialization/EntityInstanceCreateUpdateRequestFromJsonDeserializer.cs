@@ -32,10 +32,11 @@ public class EntityInstanceCreateUpdateRequestFromJsonDeserializer
         Guid entityConfigurationId,
         Guid tenantId,
         List<AttributeConfiguration> attributesConfigurations,
-        JsonDocument record
+        JsonElement record
     )
     {
-        (List<AttributeInstanceCreateUpdateRequest> attributes, ValidationErrorResponse? validationErrors) = await DeserializeAttributes(attributesConfigurations, record);
+        (List<AttributeInstanceCreateUpdateRequest> attributes, ValidationErrorResponse? validationErrors) =
+            await DeserializeAttributes(attributesConfigurations, record);
 
         var entityInstance = new EntityInstanceCreateRequest
         {
@@ -58,10 +59,11 @@ public class EntityInstanceCreateUpdateRequestFromJsonDeserializer
         Guid categoryTreeId,
         Guid? parentId,
         List<AttributeConfiguration> attributesConfigurations,
-        JsonDocument record
+        JsonElement record
     )
     {
-        (List<AttributeInstanceCreateUpdateRequest> attributes, ValidationErrorResponse? validationErrors) = await DeserializeAttributes(attributesConfigurations, record);
+        (List<AttributeInstanceCreateUpdateRequest> attributes, ValidationErrorResponse? validationErrors) =
+            await DeserializeAttributes(attributesConfigurations, record);
 
         if (validationErrors != null)
         {
@@ -83,7 +85,7 @@ public class EntityInstanceCreateUpdateRequestFromJsonDeserializer
     }
 
     private async Task<(List<AttributeInstanceCreateUpdateRequest>, ValidationErrorResponse?)> DeserializeAttributes(
-        List<AttributeConfiguration> attributesConfigurations, JsonDocument record
+        List<AttributeConfiguration> attributesConfigurations, JsonElement record
     )
     {
         List<AttributeInstanceCreateUpdateRequest> attributes = new List<AttributeInstanceCreateUpdateRequest>();
@@ -91,7 +93,7 @@ public class EntityInstanceCreateUpdateRequestFromJsonDeserializer
 
         foreach (var attribute in attributesConfigurations)
         {
-            if (record.RootElement.TryGetProperty(attribute.MachineName, out var attributeValue))
+            if (record.TryGetProperty(attribute.MachineName, out var attributeValue))
             {
                 var (deserializedAttribute, deserializationErrors) =
                     await DeserializeAttribute(attribute, attributeValue);
