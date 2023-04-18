@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using AutoMapper;
 
 using CloudFabric.EAV.Domain.Models;
 using CloudFabric.EAV.Models.RequestModels;
@@ -28,6 +28,9 @@ public class EntityInstanceProfile : Profile
         CreateMap<EntityInstance, Category>();
         CreateMap<Category, EntityInstance>();
 
+        CreateMap<EntityInstanceViewModel, CategoryViewModel>();
+
         CreateMap<CategoryPath, CategoryPathViewModel>();
+        CreateMap<CategoryPathViewModel, CategoryPath>();
     }
 }

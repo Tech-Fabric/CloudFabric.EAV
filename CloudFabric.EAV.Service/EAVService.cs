@@ -1037,7 +1037,7 @@ public class EAVService : IEAVService
     /// ```
     ///
     /// Where "name" and "description" are attributes machine names.
-    /// Note that this overload accepts "entityConfigurationId" and "tenantId" via method arguments,
+    /// Note that this overload accepts "entityConfigurationId", "categoryTreeId", "parentId" and "tenantId" via method arguments,
     /// so they should not be in json.
     ///
     /// </remarks>
@@ -1045,7 +1045,7 @@ public class EAVService : IEAVService
     /// <param name="categoryConfigurationId">id of entity configuration which has all category attributes</param>
     /// <param name="categoryTreeId">id of category tree, which represents separated hirerarchy with relations between categories</param>
     /// <param name="parentId">id of category from which new branch of hierarchy will be built. Can be null if placed at the root of category tree.</param>
-    /// <param name="tenantId">Tenant id guid. A guid which uniquely identifies and isolates the data. For single
+    /// <param name="tenantId">tenant id guid. A guid which uniquely identifies and isolates the data. For single
     /// tenant application this should be one hardcoded guid for whole app.</param>
     /// <param name="requestDeserializedCallback">This function will be called after deserializing the request from json
     /// to CategoryInstanceCreateRequest and allows adding additional validation or any other pre-processing logic.
@@ -1163,17 +1163,13 @@ public class EAVService : IEAVService
                 return (null, new ValidationErrorResponse("parentId", "Value is not a valid Guid"))!;
             }
         }
-        else
-        {
-            return (null, new ValidationErrorResponse("parentId", "Value is missing"));
-        }
 
         Guid? tenantId = null;
         if (categoryJson.RootElement.TryGetProperty("tenantId", out var tenantIdJsonElement))
         {
             if (tenantIdJsonElement.ValueKind == JsonValueKind.Null)
             {
-                parentId = null;
+                tenantId = null;
             }
             else if (tenantIdJsonElement.TryGetGuid(out var tenantIdGuid))
             {
@@ -1183,10 +1179,6 @@ public class EAVService : IEAVService
             {
                 return (null, new ValidationErrorResponse("tenantId", "Value is not a valid Guid"))!;
             }
-        }
-        else
-        {
-            return (null, new ValidationErrorResponse("tenantId", "Value is missing"));
         }
 
         return await CreateCategoryInstance(
@@ -1209,12 +1201,78 @@ public class EAVService : IEAVService
     /// ```
     /// {
     ///     "name": "Main Category",
+    ///     "desprition": "Main Category description",
+    ///     "parentId": "3e302832-ce6b-4c41-9cf8-e2b3fdd7b01c"
+    /// }
+    /// ```
+    ///
+    /// Where "name" and "description" are attributes machine names, and "parentId" is id guid of category from which new branch of hierarchy will be built.
+    /// Note that this overload accepts "entityConfigurationId", "categoryTreeId" and "tenantId" via method arguments,
+    /// so they should not be in json.
+    ///
+    /// </remarks>
+    /// <param name="categoryJson"></param>
+    /// <param name="categoryConfigurationId">id of entity configuration which has all category attributes</param>
+    /// <param name="categoryTreeId">id of category tree, which represents separated hirerarchy with relations between categories</param>
+    /// <param name="tenantId">tenant id guid. A guid which uniquely identifies and isolates the data. For single
+    /// tenant application this should be one hardcoded guid for whole app.</param>
+    /// <param name="requestDeserializedCallback">This function will be called after deserializing the request from json
+    /// to CategoryInstanceCreateRequest and allows adding additional validation or any other pre-processing logic.
+    /// </param>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    public async Task<(JsonDocument?, ProblemDetails?)> CreateCategoryInstance(
+        JsonDocument categoryJson,
+        Guid categoryConfigurationId,
+        Guid categoryTreeId,
+        Guid? tenantId,
+        Func<CategoryInstanceCreateRequest, Task<CategoryInstanceCreateRequest>>? requestDeserializedCallback = null,
+        CancellationToken cancellationToken = default
+    )
+    {
+        Guid? parentId = null;
+        if (categoryJson.RootElement.TryGetProperty("parentId", out var parentIdJsonElement))
+        {
+            if (parentIdJsonElement.ValueKind == JsonValueKind.Null)
+            {
+                parentId = null;
+            }
+            else if (parentIdJsonElement.TryGetGuid(out var parentIdGuid))
+            {
+                parentId = parentIdGuid;
+            }
+        else
+        {
+                return (null, new ValidationErrorResponse("parentId", "Value is not a valid Guid"))!;
+        }
+        }
+
+        return await CreateCategoryInstance(
+            categoryJson,
+            categoryConfigurationId,
+            categoryTreeId,
+            parentId,
+            tenantId,
+            requestDeserializedCallback,
+            cancellationToken
+        );
+    }
+
+    /// <summary>
+    /// Create new category from provided json document.
+    /// </summary>
+    /// <remarks>
+    /// Use following json format:
+    ///
+    /// ```
+    /// {
+    ///     "name": "Main Category",
     ///     "desprition": "Main Category description"
     /// }
     /// ```
     ///
     /// Where "name" and "description" are attributes machine names.
-    /// Note that this overload accepts "entityConfigurationId" and "tenantId" via method arguments,
+    /// Note that this overload accepts "entityConfigurationId", "categoryTreeId", "parentId" and "tenantId" via method arguments,
     /// so they should not be in json.
     ///
     /// </remarks>
@@ -1347,7 +1405,7 @@ public class EAVService : IEAVService
             entity.CategoryConfigurationId,
             _mapper.Map<List<AttributeInstance>>(entity.Attributes),
             entity.TenantId,
-            categoryPath,
+            categoryPath!,
             entity.CategoryTreeId
         );
 
@@ -1451,6 +1509,136 @@ public class EAVService : IEAVService
         }
 
         return treeViewModel;
+    }
+
+    /// <summary>
+    /// Returns children at one level below of the parent category in internal CategoryParentChildrenViewModel format - use this is library is used by .net code.
+    /// <param name="categoryTreeId"></param>
+    /// <param name="parentId"></param>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    public async Task<CategoryParentChildrenViewModel> GetSubcategories(Guid categoryTreeId,
+        Guid? parentId,
+        CancellationToken cancellationToken = default
+    )
+    {
+        var categoryTree = await _categoryTreeRepository.LoadAsync(
+            categoryTreeId, categoryTreeId.ToString(), cancellationToken
+        ).ConfigureAwait(false);
+
+        if (categoryTree == null)
+        {
+            throw new NotFoundException("Category tree not found");
+    }
+
+        var query = await GetSubcategoriesPrepareQuery(categoryTreeId, parentId, cancellationToken);
+
+        var queryResult = _mapper.Map<ProjectionQueryResult<CategoryViewModel>>(
+            await QueryInstances(categoryTree.EntityConfigurationId, query, cancellationToken)
+        );
+
+        return new CategoryParentChildrenViewModel
+        {
+            ParentId = parentId,
+            Children = queryResult.Records.Select(x => x.Document).ToList() ?? new List<CategoryViewModel?>()
+        };
+    }
+
+    private async Task<List<Dictionary<string, object?>?>> GetSubcategoriesInternal(
+        Guid categoryTreeId,
+        Guid? parentId,
+        CancellationToken cancellationToken = default
+    )
+    {
+        var categoryTree = await _categoryTreeRepository.LoadAsync(
+            categoryTreeId, categoryTreeId.ToString(), cancellationToken
+        ).ConfigureAwait(false);
+
+        if (categoryTree == null)
+        {
+            throw new NotFoundException("Category tree not found");
+        }
+
+        var query = await GetSubcategoriesPrepareQuery(categoryTreeId, parentId, cancellationToken);
+
+        var queryResult = await QueryInstancesInternal(categoryTree.EntityConfigurationId, query, cancellationToken);
+
+        return queryResult.Records.Select(x => x.Document)?.ToList();
+    }
+
+    private async Task<ProjectionQuery> GetSubcategoriesPrepareQuery(
+        Guid categoryTreeId,
+        Guid? parentId,
+        CancellationToken cancellationToken = default
+    )
+    {
+        var categoryTree = await _categoryTreeRepository.LoadAsync(
+            categoryTreeId, categoryTreeId.ToString(), cancellationToken
+        ).ConfigureAwait(false);
+
+        if (categoryTree == null)
+        {
+            throw new NotFoundException("Category tree not found");
+        }
+
+        ProjectionQuery query = new ProjectionQuery();
+
+        if (parentId == null)
+        {
+            query.Filters.AddRange(
+
+                new List<Filter>
+                {
+                    new Filter
+                    {
+                        PropertyName = $"{nameof(CategoryViewModel.CategoryPaths)}.{nameof(CategoryPath.TreeId)}",
+                        Operator = FilterOperator.Equal,
+                        Value = categoryTree.Id.ToString(),
+                    },
+                    new Filter
+                    {
+                        PropertyName = $"{nameof(CategoryViewModel.CategoryPaths)}.{nameof(CategoryPath.Path)}",
+                        Operator = FilterOperator.Equal,
+                        Value = string.Empty
+                    }
+                }
+            );
+
+            return query;
+        }
+
+        var category = await _entityInstanceRepository.LoadAsync(
+            parentId.Value, categoryTree.EntityConfigurationId.ToString(), cancellationToken
+        ).ConfigureAwait(false);
+
+        if (category == null)
+        {
+            throw new NotFoundException("Category not found");
+        }
+
+        string categoryPath = category.CategoryPaths.Where(x => x.TreeId == categoryTree.Id)
+            .Select(p => p.Path).FirstOrDefault()!;
+
+        query = new ProjectionQuery
+        {
+            Filters = new List<Filter>
+            {
+                new Filter
+                {
+                    PropertyName = $"{nameof(CategoryViewModel.CategoryPaths)}.{nameof(CategoryPath.TreeId)}",
+                    Operator = FilterOperator.Equal,
+                    Value = categoryTree.Id.ToString(),
+                },
+                new Filter
+                {
+                    PropertyName = $"{nameof(CategoryViewModel.CategoryPaths)}.{nameof(CategoryPath.Path)}",
+                    Operator = FilterOperator.Equal,
+                    Value = categoryPath + $"/{category.Id}"
+                }
+            }
+        };
+
+        return query;
     }
 
     #endregion

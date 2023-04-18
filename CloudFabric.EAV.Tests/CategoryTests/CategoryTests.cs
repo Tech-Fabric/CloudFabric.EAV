@@ -33,7 +33,8 @@ public abstract class CategoryTests : BaseQueryTests.BaseQueryTests
         // Create a tree
         var treeRequest = new CategoryTreeCreateRequest
         {
-            MachineName = "Main", EntityConfigurationId = categoryConfiguration!.Id
+            MachineName = "Main",
+            EntityConfigurationId = categoryConfiguration!.Id
         };
 
         (HierarchyViewModel createdTree, _) = await _eavService.CreateCategoryTreeAsync(treeRequest,
@@ -116,7 +117,7 @@ public abstract class CategoryTests : BaseQueryTests.BaseQueryTests
     }
 
     [TestMethod]
-    public async Task GetSubcategories_Success()
+    public async Task GetSubcategoriesBranch_Success()
     {
         (HierarchyViewModel createdTree, CategoryViewModel laptopsCategory, CategoryViewModel gamingLaptopsCategory,
             _, _, _) = await BuildTestTreeAsync();
@@ -136,6 +137,29 @@ public abstract class CategoryTests : BaseQueryTests.BaseQueryTests
         );
 
         subcategories12.TotalRecordsFound.Should().Be(2);
+    }
+
+    [TestMethod]
+    public async Task GetSubcategories_Success()
+    {
+        (HierarchyViewModel createdTree, CategoryViewModel laptopsCategory,
+                    CategoryViewModel gamingLaptopsCategory, CategoryViewModel officeLaptopsCategory,
+                    CategoryViewModel asusGamingLaptops, CategoryViewModel _) = await BuildTestTreeAsync();
+
+        var subcategories = await _eavService.GetSubcategories(createdTree.Id, null);
+        subcategories.Children.Count.Should().Be(1);
+
+        subcategories = await _eavService.GetSubcategories(createdTree.Id, laptopsCategory.Id);
+        subcategories.Children.Count.Should().Be(2);
+
+        subcategories = await _eavService.GetSubcategories(createdTree.Id, gamingLaptopsCategory.Id);
+        subcategories.Children.Count.Should().Be(1);
+
+        subcategories = await _eavService.GetSubcategories(createdTree.Id, asusGamingLaptops.Id);
+        subcategories.Children.Count.Should().Be(1);
+
+        subcategories = await _eavService.GetSubcategories(createdTree.Id, officeLaptopsCategory.Id);
+        subcategories.Children.Count.Should().Be(0);
     }
 
     [TestMethod]
