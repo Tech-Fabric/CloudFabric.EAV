@@ -9,10 +9,8 @@ namespace CloudFabric.EAV.Service.Serialization;
 
 public class LocalizedStringSingleLanguageSerializer : JsonConverter<List<LocalizedStringViewModel>>
 {
-    private readonly string _language;
     private readonly CultureInfo _languageCultureInfo;
 
-    private readonly string _fallbackLanguage;
     private readonly CultureInfo _fallbackLanguageCultureInfo;
 
     public LocalizedStringSingleLanguageSerializer(
@@ -20,11 +18,9 @@ public class LocalizedStringSingleLanguageSerializer : JsonConverter<List<Locali
         string fallbackLanguage = "en-US"
     )
     {
-        _language = language;
-        _languageCultureInfo = CultureInfo.GetCultureInfo(_language);
+        _languageCultureInfo = CultureInfo.GetCultureInfo(language);
 
-        _fallbackLanguage = fallbackLanguage;
-        _fallbackLanguageCultureInfo = CultureInfo.GetCultureInfo(_fallbackLanguage);
+        _fallbackLanguageCultureInfo = CultureInfo.GetCultureInfo(fallbackLanguage);
     }
 
     public override List<LocalizedStringViewModel>? Read(

@@ -1703,10 +1703,17 @@ public class EAVService : IEAVService
         var (entityInstanceCreateRequest, deserializationErrors) =
             await DeserializeEntityInstanceCreateRequestFromJson(entityJson, cancellationToken);
 
+        if (deserializationErrors != null)
+        {
+            return (null, deserializationErrors);
+        }
+
         return await CreateEntityInstance(
             entityJson,
-            entityInstanceCreateRequest.EntityConfigurationId,
-            entityInstanceCreateRequest.TenantId.Value,
+            // Deserialization method ensures that EntityConfigurationId and TenantId exist and returns errors if not
+            // so it's safe to use ! here
+            entityInstanceCreateRequest!.EntityConfigurationId,
+            entityInstanceCreateRequest.TenantId!.Value,
             requestDeserializedCallback,
             dryRun,
             cancellationToken
