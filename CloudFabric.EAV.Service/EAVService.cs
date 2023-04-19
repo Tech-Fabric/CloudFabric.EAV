@@ -1446,12 +1446,13 @@ public class EAVService : IEAVService
     }
 
     /// <summary>
-    /// Returns children at one level below of the parent category in internal CategoryParentChildrenViewModel format - use this is library is used by .net code.
+    /// Returns children at one level below of the parent category in internal CategoryParentChildrenViewModel format.
     /// <param name="categoryTreeId"></param>
     /// <param name="parentId"></param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    public async Task<CategoryParentChildrenViewModel> GetSubcategories(Guid categoryTreeId,
+    public async Task<List<CategoryViewModel?>> GetSubcategories(
+        Guid categoryTreeId,
         Guid? parentId,
         CancellationToken cancellationToken = default
     )
@@ -1471,11 +1472,7 @@ public class EAVService : IEAVService
             await QueryInstances(categoryTree.EntityConfigurationId, query, cancellationToken)
         );
 
-        return new CategoryParentChildrenViewModel
-        {
-            ParentId = parentId,
-            Children = queryResult.Records.Select(x => x.Document).ToList() ?? new List<CategoryViewModel?>()
-        };
+        return queryResult.Records.Select(x => x.Document).ToList() ?? new List<CategoryViewModel?>();
     }
 
     private async Task<ProjectionQuery> GetSubcategoriesPrepareQuery(

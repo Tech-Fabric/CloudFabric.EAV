@@ -148,19 +148,19 @@ public abstract class CategoryTests : BaseQueryTests.BaseQueryTests
                     CategoryViewModel asusGamingLaptops, CategoryViewModel _) = await BuildTestTreeAsync();
 
         var subcategories = await _eavService.GetSubcategories(createdTree.Id, null);
-        subcategories.Children.Count.Should().Be(1);
+        subcategories.Count.Should().Be(1);
 
         subcategories = await _eavService.GetSubcategories(createdTree.Id, laptopsCategory.Id);
-        subcategories.Children.Count.Should().Be(2);
+        subcategories.Count.Should().Be(2);
 
         subcategories = await _eavService.GetSubcategories(createdTree.Id, gamingLaptopsCategory.Id);
-        subcategories.Children.Count.Should().Be(1);
+        subcategories.Count.Should().Be(1);
 
         subcategories = await _eavService.GetSubcategories(createdTree.Id, asusGamingLaptops.Id);
-        subcategories.Children.Count.Should().Be(1);
+        subcategories.Count.Should().Be(1);
 
         subcategories = await _eavService.GetSubcategories(createdTree.Id, officeLaptopsCategory.Id);
-        subcategories.Children.Count.Should().Be(0);
+        subcategories.Count.Should().Be(0);
     }
 
     [TestMethod]
