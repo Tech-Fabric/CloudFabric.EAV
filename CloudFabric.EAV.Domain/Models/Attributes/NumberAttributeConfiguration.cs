@@ -7,6 +7,15 @@ namespace CloudFabric.EAV.Domain.Models.Attributes;
 
 public class NumberAttributeConfiguration : AttributeConfiguration
 {
+    public decimal DefaultValue { get; set; }
+    public decimal? MinimumValue { get; set; }
+    public decimal? MaximumValue { get; set; }
+
+    public NumberAttributeType NumberType { get; set; } = NumberAttributeType.Integer;
+
+    public override EavAttributeType ValueType { get; } = EavAttributeType.Number;
+
+    #region Init
     public NumberAttributeConfiguration(IEnumerable<IEvent> events) : base(events)
     {
     }
@@ -28,14 +37,25 @@ public class NumberAttributeConfiguration : AttributeConfiguration
         Apply(new NumberAttributeConfigurationUpdated(id, defaultValue, minimumValue, maximumValue, numberType));
     }
 
-    public decimal DefaultValue { get; set; }
-    public decimal? MinimumValue { get; set; }
-    public decimal? MaximumValue { get; set; }
+    public NumberAttributeConfiguration(string machineName, Guid? tenantId) : this(Guid.NewGuid(),
+        machineName,
+        new List<LocalizedString>
+        {
+            LocalizedString.English("Number")
+        },
+        0,
+        NumberAttributeType.Integer,
+        new List<LocalizedString>
+        {
+            LocalizedString.English("Price")
+        },
+        tenantId: tenantId)
+    {
 
-    public NumberAttributeType NumberType { get; set; } = NumberAttributeType.Integer;
+    }
+    #endregion
 
-    public override EavAttributeType ValueType { get; } = EavAttributeType.Number;
-
+    #region Validation
     public override List<string> Validate()
     {
         List<string> errors = base.Validate();
@@ -92,6 +112,8 @@ public class NumberAttributeConfiguration : AttributeConfiguration
         return errors;
     }
 
+    #endregion
+
     public override void UpdateAttribute(AttributeConfiguration updatedAttribute)
     {
         var updated = updatedAttribute as NumberAttributeConfiguration;
@@ -120,6 +142,7 @@ public class NumberAttributeConfiguration : AttributeConfiguration
         }
     }
 
+    #region Equality
     public override bool Equals(object obj)
     {
         return Equals(obj as NumberAttributeConfiguration);
@@ -139,6 +162,8 @@ public class NumberAttributeConfiguration : AttributeConfiguration
     {
         return HashCode.Combine(DefaultValue, MinimumValue, MaximumValue, NumberType, (int)ValueType);
     }
+
+    #endregion
 
     #region EventHandlers
 

@@ -8,5 +8,5 @@ public class ArrayAttributeConfigurationCreateUpdateRequest : AttributeConfigura
 
     public EavAttributeType ItemsType { get; set; }
 
-    public AttributeConfigurationCreateUpdateRequest ItemsAttributeConfiguration { get; set; }
+    public AttributeConfigurationCreateUpdateRequest? ItemsAttributeConfiguration { get; set; }
 }

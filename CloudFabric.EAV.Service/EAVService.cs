@@ -359,52 +359,31 @@ public class EAVService : IEAVService
         // a projection builder will be triggered to create a projection of this attribute.
         await _attributeConfigurationProjectionRepository.EnsureIndex(cancellationToken).ConfigureAwait(false);
 
+        // Create and add array element configuration
         if (attributeConfigurationCreateUpdateRequest is ArrayAttributeConfigurationCreateUpdateRequest array)
         {
-            array.ItemsAttributeConfiguration.TenantId = array.TenantId;
-
-            if (array.ItemsAttributeConfiguration.Name == null || array.ItemsAttributeConfiguration.Name.Count < 1)
+            var arrayItemConfigurationId =
+                await CreateArrayElementConfiguration(array.ItemsType,
+                    array.MachineName ?? "array",
+                    array.ItemsAttributeConfiguration,
+                    array.TenantId,
+                    cancellationToken);
+            if (arrayItemConfigurationId != null)
             {
-                array.ItemsAttributeConfiguration.Name = array.Name.Select(n => new LocalizedStringCreateRequest()
-                {
-                    CultureInfoId = n.CultureInfoId,
-                    String = $"Items configuration of {array.MachineName} - {n.String}"
-                }).ToList();
+                ((attribute as ArrayAttributeConfiguration)!).UpdateItemsAttributeConfigurationId(
+                    arrayItemConfigurationId.Value
+                );
             }
 
-            if (array.ItemsAttributeConfiguration.Description == null || array.ItemsAttributeConfiguration.Description.Count < 1)
-            {
-                array.ItemsAttributeConfiguration.Description = new List<LocalizedStringCreateRequest>()
-                {
-                    new LocalizedStringCreateRequest()
-                    {
-                        CultureInfoId = CultureInfo.GetCultureInfo("en-US").LCID,
-                        String = $"This attribute was created for {array.MachineName} attribute. " +
-                                 $"Since that attribute is an array and has it's own configuration, a separate attribute " +
-                                 $"is required to configure array elements."
-                    }
-                };
-            }
-
-            var (createdArrayItemsConfiguration, arrayItemsConfigurationErrors) = await
-                CreateAttribute(array.ItemsAttributeConfiguration);
-
-            if (arrayItemsConfigurationErrors != null)
-            {
-                return (null, arrayItemsConfigurationErrors);
-            }
-
-            ((attribute as ArrayAttributeConfiguration)!).UpdateItemsAttributeConfigurationId(
-                createdArrayItemsConfiguration!.Id
-            );
         }
 
         await _attributeConfigurationRepository.SaveAsync(_userInfo, attribute, cancellationToken)
             .ConfigureAwait(false);
 
-
         return (_mapper.Map<AttributeConfigurationViewModel>(attribute), null);
     }
+
+
 
     public async Task<AttributeConfigurationViewModel> GetAttribute(
         Guid id,
@@ -919,7 +898,66 @@ public class EAVService : IEAVService
             }
         }
     }
+private async Task<Guid?> CreateArrayElementConfiguration(EavAttributeType type, string machineName, AttributeConfigurationCreateUpdateRequest? attributeConfigurationCreateUpdateRequest, Guid? tenantId, CancellationToken cancellationToken)
+    {
+        Guid? resultGuid = null;
 
+        if (attributeConfigurationCreateUpdateRequest == null)
+        {
+            var defaultTypeConfig = DefaultAttributeConfigurationFactory.GetDefaultConfiguration(type, $"element_config_{machineName}", tenantId);
+            if (defaultTypeConfig != null)
+            {
+                var saved = await _attributeConfigurationRepository.SaveAsync(_userInfo, defaultTypeConfig, cancellationToken).ConfigureAwait(false);
+                resultGuid = saved ? defaultTypeConfig.Id : null;
+            }
+        }
+        else
+        {
+            FillMissedValuesInConfiguration(attributeConfigurationCreateUpdateRequest, machineName, tenantId);
+            (AttributeConfigurationViewModel? childItemConfig, ValidationErrorResponse? arrayItemsConfigurationErrors) = await
+                CreateAttribute(attributeConfigurationCreateUpdateRequest, cancellationToken);
+
+            if (arrayItemsConfigurationErrors != null || childItemConfig == null)
+            {
+                return null;
+            }
+            resultGuid = childItemConfig.Id;
+        }
+        return resultGuid;
+    }
+
+    private void FillMissedValuesInConfiguration(AttributeConfigurationCreateUpdateRequest attributeConfigurationCreateUpdateRequest, string machineName, Guid? tenantId)
+    {
+        attributeConfigurationCreateUpdateRequest.TenantId = tenantId;
+
+        if (attributeConfigurationCreateUpdateRequest.Name == null
+            || attributeConfigurationCreateUpdateRequest.Name.Count < 1)
+        {
+            attributeConfigurationCreateUpdateRequest.Name = new List<LocalizedStringCreateRequest>
+            {
+                new LocalizedStringCreateRequest()
+                {
+                    CultureInfoId = CultureInfo.GetCultureInfo("en-US").LCID,
+                    String = $"Items configuration of {machineName}"
+                }
+            };
+
+        }
+        if (attributeConfigurationCreateUpdateRequest.Description == null ||
+            attributeConfigurationCreateUpdateRequest.Description.Count < 1)
+        {
+            attributeConfigurationCreateUpdateRequest.Description = new List<LocalizedStringCreateRequest>()
+            {
+                new LocalizedStringCreateRequest()
+                {
+                    CultureInfoId = CultureInfo.GetCultureInfo("en-US").LCID,
+                    String = $"This attribute was created for {machineName} attribute. " +
+                             $"Since that attribute is an array and has it's own configuration, a separate attribute " +
+                             $"is required to configure array elements."
+                }
+            };
+        }
+    }
     #endregion
 
     // public async Task<List<EntityInstanceViewModel>> ListEntityInstances(string entityConfigurationMachineName, int take, int skip = 0)

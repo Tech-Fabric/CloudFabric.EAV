@@ -27,6 +27,12 @@ public record ImageAttributeValue
 
 public class ImageAttributeConfiguration : AttributeConfiguration, IEquatable<ImageAttributeConfiguration>
 {
+    public IReadOnlyCollection<ImageThumbnailDefinition> ThumbnailsConfiguration { get; set; }
+
+    public override EavAttributeType ValueType => EavAttributeType.Image;
+    public static new string DefaultMachineName => "image_default";
+
+    #region Init
     public ImageAttributeConfiguration(IEnumerable<IEvent> events) : base(events)
     {
     }
@@ -45,9 +51,30 @@ public class ImageAttributeConfiguration : AttributeConfiguration, IEquatable<Im
         Apply(new ImageAttributeConfigurationUpdated(id, thumbnailsConfiguration.ToImmutableList()));
     }
 
-    public IReadOnlyCollection<ImageThumbnailDefinition> ThumbnailsConfiguration { get; set; }
+    public ImageAttributeConfiguration(string machineName, Guid? tenantId) : this(Guid.NewGuid(),
+        machineName,
+        new List<LocalizedString>
+        {
+            LocalizedString.English("Image")
+        },
+        new List<ImageThumbnailDefinition>()
+        {
+            new ImageThumbnailDefinition()
+            {
+                MaxHeight = 1000,
+                MaxWidth = 1000,
+                Name = "thumbnail"
+            }
+        },
+        new List<LocalizedString>
+        {
+            LocalizedString.English("Image")
+        },
+        tenantId: tenantId)
+    {
 
-    public override EavAttributeType ValueType => EavAttributeType.Image;
+    }
+    #endregion
 
     public override void UpdateAttribute(AttributeConfiguration updatedAttribute)
     {
@@ -67,6 +94,7 @@ public class ImageAttributeConfiguration : AttributeConfiguration, IEquatable<Im
         }
     }
 
+    #region Validation
     public override List<string> Validate()
     {
         List<string> errors = base.Validate();
@@ -120,7 +148,9 @@ public class ImageAttributeConfiguration : AttributeConfiguration, IEquatable<Im
 
         return errors;
     }
+    #endregion
 
+    #region Equality
     public override bool Equals(object obj)
     {
         return Equals(obj as ImageAttributeConfiguration);
@@ -149,7 +179,7 @@ public class ImageAttributeConfiguration : AttributeConfiguration, IEquatable<Im
                && ThumbnailsConfiguration.Equals(other.ThumbnailsConfiguration)
                && ValueType == other.ValueType;
     }
-
+    #endregion
 
     #region EventHandlers
 

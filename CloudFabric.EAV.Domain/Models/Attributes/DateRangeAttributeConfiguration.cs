@@ -8,6 +8,10 @@ namespace CloudFabric.EAV.Domain.Models.Attributes;
 public class DateRangeAttributeConfiguration : AttributeConfiguration
 
 {
+    public DateRangeAttributeType DateRangeAttributeType { get; set; }
+
+    public override EavAttributeType ValueType => EavAttributeType.DateRange;
+    #region Init
     public DateRangeAttributeConfiguration(IEnumerable<IEvent> events) : base(events)
     {
     }
@@ -15,21 +19,34 @@ public class DateRangeAttributeConfiguration : AttributeConfiguration
     public DateRangeAttributeConfiguration(Guid id,
         string machineName,
         List<LocalizedString> name,
-        EavAttributeType valueType,
         DateRangeAttributeType dateRangeAttributeType,
         List<LocalizedString> description = null,
         bool isRequired = false,
         Guid? tenantId = null,
         string? metadata = null
-    ) : base(id, machineName, name, valueType, description, isRequired, tenantId, metadata)
+    ) : base(id, machineName, name, EavAttributeType.DateRange, description, isRequired, tenantId, metadata)
     {
         Apply(new DateRangeAttributeConfigurationUpdated(id, dateRangeAttributeType));
     }
 
-    public DateRangeAttributeType DateRangeAttributeType { get; set; }
+    public DateRangeAttributeConfiguration(string machineName, Guid? tenantId) : this(Guid.NewGuid(),
+        machineName,
+        new List<LocalizedString>
+        {
+            LocalizedString.English("Date")
+        },
+        DateRangeAttributeType.SingleDate,
+        new List<LocalizedString>
+        {
+            LocalizedString.English("Date")
+        },
+        tenantId: tenantId)
+    {
 
-    public override EavAttributeType ValueType => EavAttributeType.DateRange;
+    }
+    #endregion
 
+    #region Validation
     public override List<string> Validate()
     {
         List<string> errors = base.Validate();
@@ -58,6 +75,7 @@ public class DateRangeAttributeConfiguration : AttributeConfiguration
 
         return errors;
     }
+    #endregion
 
     public override void UpdateAttribute(AttributeConfiguration updatedAttribute)
     {

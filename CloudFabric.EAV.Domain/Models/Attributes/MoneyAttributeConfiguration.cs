@@ -1,3 +1,5 @@
+using System.Collections.ObjectModel;
+
 using CloudFabric.EAV.Domain.Events.Configuration.Attributes;
 using CloudFabric.EAV.Domain.Models.Base;
 using CloudFabric.EAV.Enums;
@@ -11,6 +13,9 @@ public class MoneyAttributeConfiguration: AttributeConfiguration
     public override EavAttributeType ValueType => EavAttributeType.Money;
     public List<Currency> Currencies { get; set; }
     public string DefaultCurrencyId { get; set; }
+
+    #region Init
+
     public MoneyAttributeConfiguration(IEnumerable<IEvent> events) : base(events)
     {
     }
@@ -29,11 +34,24 @@ public class MoneyAttributeConfiguration: AttributeConfiguration
         Apply(new MoneyAttributeConfigurationUpdated(id, defaultCurrencyId, currencies));
     }
 
-    private List<Currency> DefaultListOfCurrencies() => new List<Currency>
+    public MoneyAttributeConfiguration(string machineName, Guid? tenantId) : this(Guid.NewGuid(),
+        machineName,
+        new List<LocalizedString>
+        {
+            LocalizedString.English("Price")
+        },
+        defaultCurrencyId: "usd",
+        currencies: null,
+        new List<LocalizedString>
+        {
+            LocalizedString.English("Price")
+        },
+        tenantId: tenantId)
     {
-        new Currency("Euro", "eur", "€"),
-        new Currency("US Dollar", "usd", "$")
-    };
+
+    }
+
+    #endregion
     #region Validation
 
     public override List<string> Validate()
@@ -63,7 +81,6 @@ public class MoneyAttributeConfiguration: AttributeConfiguration
     }
 
     #endregion
-
     #region Equality
 
     public override bool Equals(object obj)
@@ -99,4 +116,10 @@ public class MoneyAttributeConfiguration: AttributeConfiguration
     }
 
     #endregion
+
+    private List<Currency> DefaultListOfCurrencies() => new List<Currency>
+    {
+        new Currency("Euro", "eur", "€"),
+        new Currency("US Dollar", "usd", "$")
+    };
 }
