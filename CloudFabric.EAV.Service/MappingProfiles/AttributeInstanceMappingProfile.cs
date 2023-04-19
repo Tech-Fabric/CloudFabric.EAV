@@ -30,6 +30,7 @@ public class AttributeInstanceProfile : Profile
         CreateMap<FileAttributeValueCreateUpdateRequest, FileAttributeValue>();
         CreateMap<FileAttributeInstanceCreateUpdateRequest, FileAttributeInstance>();
         CreateMap<SerialAttributeInstanceCreateUpdateRequest, SerialAttributeInstance>();
+        CreateMap<MoneyAttributeInstanceCreateUpdateRequest, MoneyAttributeInstance>();
 
         CreateMap<AttributeInstance, AttributeInstanceViewModel>().IncludeAllDerived();
         CreateMap<ArrayAttributeInstance, ArrayAttributeInstanceViewModel>();
@@ -49,5 +50,6 @@ public class AttributeInstanceProfile : Profile
         CreateMap<FileAttributeInstance, FileAttributeInstanceViewModel>();
         CreateMap<FileAttributeValue, FileAttributeValueViewModel>();
         CreateMap<SerialAttributeInstance, SerialAttributeInstanceViewModel>();
+        CreateMap<MoneyAttributeInstance, MoneyAttributeConfigurationViewModel>();
     }
 }

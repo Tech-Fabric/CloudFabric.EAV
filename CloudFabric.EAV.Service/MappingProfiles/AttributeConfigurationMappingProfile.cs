@@ -185,6 +185,21 @@ public class AttributeConfigurationProfile : Profile
                 )
             );
 
+        CreateMap<CurrencyRequestModel, Currency>();
+        CreateMap<MoneyAttributeConfigurationCreateUpdateRequest, MoneyAttributeConfiguration>()
+            .ConvertUsing((o, dst, ctx) => new MoneyAttributeConfiguration(
+                    Guid.NewGuid(),
+                    o.MachineName,
+                    ctx.Mapper.Map<List<LocalizedString>>(o.Name),
+                    o.DefaultCurrencyId,
+                    ctx.Mapper.Map<List<Currency>>(o.Currencies),
+                    ctx.Mapper.Map<List<LocalizedString>>(o.Description),
+                    o.IsRequired,
+                    o.TenantId,
+                    o.Metadata
+                )
+            );
+
         CreateMap<ValueFromListOptionCreateUpdateRequest, ValueFromListOptionConfiguration>();
 
         CreateMap<EntityConfigurationAttributeReference, EntityConfigurationAttributeReferenceViewModel>();
@@ -206,7 +221,8 @@ public class AttributeConfigurationProfile : Profile
         CreateMap<SerialAttributeConfiguration, SerialAttributeConfigurationViewModel>();
         CreateMap<ValueFromListAttributeConfiguration, ValueFromListAttributeConfigurationViewModel>();
         CreateMap<ValueFromListOptionConfiguration, ValueFromListOptionViewModel>();
-
+        CreateMap<Currency, CurrencyViewModel>();
+        CreateMap<MoneyAttributeConfiguration, MoneyAttributeConfigurationViewModel>();
         #region Projections
 
         CreateMap<AttributeConfigurationProjectionDocument, AttributeConfigurationListItemViewModel>();

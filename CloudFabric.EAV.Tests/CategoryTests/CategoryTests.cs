@@ -1,6 +1,7 @@
 using CloudFabric.EAV.Models.RequestModels;
 using CloudFabric.EAV.Models.ViewModels;
 using CloudFabric.EAV.Tests.Factories;
+using CloudFabric.EventSourcing.EventStore;
 using CloudFabric.Projections;
 using CloudFabric.Projections.Queries;
 
@@ -33,7 +34,8 @@ public abstract class CategoryTests : BaseQueryTests.BaseQueryTests
         // Create a tree
         var treeRequest = new CategoryTreeCreateRequest
         {
-            MachineName = "Main", EntityConfigurationId = categoryConfiguration!.Id
+            MachineName = "Main",
+            EntityConfigurationId = categoryConfiguration!.Id
         };
 
         (HierarchyViewModel createdTree, _) = await _eavService.CreateCategoryTreeAsync(treeRequest,
@@ -116,7 +118,7 @@ public abstract class CategoryTests : BaseQueryTests.BaseQueryTests
     }
 
     [TestMethod]
-    public async Task GetSubcategories_Success()
+    public async Task GetSubcategoriesBranch_Success()
     {
         (HierarchyViewModel createdTree, CategoryViewModel laptopsCategory, CategoryViewModel gamingLaptopsCategory,
             _, _, _) = await BuildTestTreeAsync();
@@ -136,6 +138,53 @@ public abstract class CategoryTests : BaseQueryTests.BaseQueryTests
         );
 
         subcategories12.TotalRecordsFound.Should().Be(2);
+    }
+
+    [TestMethod]
+    public async Task GetSubcategories_Success()
+    {
+        (HierarchyViewModel createdTree, CategoryViewModel laptopsCategory,
+                    CategoryViewModel gamingLaptopsCategory, CategoryViewModel officeLaptopsCategory,
+                    CategoryViewModel asusGamingLaptops, CategoryViewModel _) = await BuildTestTreeAsync();
+
+        var subcategories = await _eavService.GetSubcategories(createdTree.Id, null);
+        subcategories.Count.Should().Be(1);
+
+        subcategories = await _eavService.GetSubcategories(createdTree.Id, laptopsCategory.Id);
+        subcategories.Count.Should().Be(2);
+
+        subcategories = await _eavService.GetSubcategories(createdTree.Id, gamingLaptopsCategory.Id);
+        subcategories.Count.Should().Be(1);
+
+        subcategories = await _eavService.GetSubcategories(createdTree.Id, asusGamingLaptops.Id);
+        subcategories.Count.Should().Be(1);
+
+        subcategories = await _eavService.GetSubcategories(createdTree.Id, officeLaptopsCategory.Id);
+        subcategories.Count.Should().Be(0);
+    }
+
+    [TestMethod]
+    public async Task GetSubcategories_TreeNotFound()
+    {
+        (HierarchyViewModel createdTree, CategoryViewModel _,
+            CategoryViewModel _, CategoryViewModel _,
+            CategoryViewModel _, CategoryViewModel _) = await BuildTestTreeAsync();
+
+        Func<Task> action = async () => await _eavService.GetSubcategories(Guid.NewGuid(), null);
+
+        await action.Should().ThrowAsync<NotFoundException>().WithMessage("Category tree not found");
+    }
+
+    [TestMethod]
+    public async Task GetSubcategories_ParentNotFound()
+    {
+        (HierarchyViewModel createdTree, CategoryViewModel _,
+            CategoryViewModel _, CategoryViewModel _,
+            CategoryViewModel _, CategoryViewModel _) = await BuildTestTreeAsync();
+
+        Func<Task> action = async () => await _eavService.GetSubcategories(createdTree.Id, Guid.NewGuid());
+
+        await action.Should().ThrowAsync<NotFoundException>().WithMessage("Category not found");
     }
 
     [TestMethod]
