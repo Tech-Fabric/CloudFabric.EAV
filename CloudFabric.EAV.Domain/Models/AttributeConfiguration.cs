@@ -18,11 +18,6 @@ public abstract class AttributeConfiguration : AggregateBase
     {
     }
 
-    public AttributeConfiguration()
-    {
-
-    }
-
     public AttributeConfiguration(
         Guid id,
         string machineName,
