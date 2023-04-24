@@ -45,6 +45,8 @@ public abstract class AttributeConfiguration : AggregateBase
 
     public string MachineName { get; protected set; }
 
+    public static string DefaultMachineName { get; }
+
     public ReadOnlyCollection<LocalizedString> Name { get; protected set; }
 
     public ReadOnlyCollection<LocalizedString> Description { get; protected set; }
@@ -58,6 +60,8 @@ public abstract class AttributeConfiguration : AggregateBase
     public bool IsDeleted { get; protected set; }
 
     public string? Metadata { get; protected set; }
+
+    # region Validation
 
     public virtual List<string> Validate()
     {
@@ -88,6 +92,8 @@ public abstract class AttributeConfiguration : AggregateBase
         }
         return instance?.GetValue() == null ? new List<string> { "Attribute is Required" } : new List<string>();
     }
+
+    #endregion
 
     public void UpdateName(string newName)
     {
@@ -144,6 +150,8 @@ public abstract class AttributeConfiguration : AggregateBase
         Apply(new AttributeConfigurationDeleted(Id));
     }
 
+    #region Equality
+
     public override bool Equals(object obj)
     {
         if (ReferenceEquals(null, obj))
@@ -175,6 +183,10 @@ public abstract class AttributeConfiguration : AggregateBase
                && TenantId == obj.TenantId
                && Metadata == obj.Metadata;
     }
+
+    #endregion
+
+
 
     #region EventHandlers
 

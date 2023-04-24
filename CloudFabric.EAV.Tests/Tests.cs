@@ -2594,6 +2594,114 @@ public class Tests
         attributesList.Records.First().Document!.Metadata.Should().Be(priceAttribute.Metadata);
     }
 
+    [TestMethod]
+    public async Task CreateSimpleArrayOfFilesAttribute_Success()
+    {
+        await CreateSimpleArrayOfTypesAttribute_Success(EavAttributeType.File);
+    }
+
+    [TestMethod]
+    public async Task CreateSimpleArrayOfImagesAttribute_Success()
+    {
+        await CreateSimpleArrayOfTypesAttribute_Success(EavAttributeType.Image);
+    }
+
+    [TestMethod]
+    public async Task CreateSimpleArrayOfNumbersAttribute_Success()
+    {
+        await CreateSimpleArrayOfTypesAttribute_Success(EavAttributeType.Number);
+    }
+
+    [TestMethod]
+    public async Task CreateSimpleArrayOfBooleansAttribute_Success()
+    {
+        await CreateSimpleArrayOfTypesAttribute_Success(EavAttributeType.Boolean);
+    }
+
+    [TestMethod]
+    public async Task CreateSimpleArrayOfDatesAttribute_Success()
+    {
+        await CreateSimpleArrayOfTypesAttribute_Success(EavAttributeType.DateRange);
+    }
+
+    [TestMethod]
+    public async Task CreateSimpleArrayOfLocalizedStringsAttribute_Success()
+    {
+        await CreateSimpleArrayOfTypesAttribute_Success(EavAttributeType.LocalizedText);
+    }
+
+    [TestMethod]
+    public async Task CreateSimpleArrayOfLMoneyAttribute_Success()
+    {
+        await CreateSimpleArrayOfTypesAttribute_Success(EavAttributeType.Money);
+    }
+
+    [TestMethod]
+    public async Task CreateSimpleArrayOfText_Success()
+    {
+        await CreateSimpleArrayOfTypesAttribute_Success(EavAttributeType.Text);
+    }
+    private async Task CreateSimpleArrayOfTypesAttribute_Success(EavAttributeType type)
+    {
+        // Arrange
+        var cultureInfoId = CultureInfo.GetCultureInfo("en-US").LCID;
+        var tenantId = Guid.NewGuid();
+        var arrayAttribute = new ArrayAttributeConfigurationCreateUpdateRequest()
+        {
+            MachineName = "testAttr",
+            Description =
+                new List<LocalizedStringCreateRequest>
+                {
+                    new() { CultureInfoId = cultureInfoId, String = "testAttrDesc" }
+                },
+            Name = new List<LocalizedStringCreateRequest>
+            {
+                new() { CultureInfoId = cultureInfoId, String = "testAttrName" }
+            },
+            ItemsType = type,
+            IsRequired = false,
+            TenantId = tenantId
+        };
+
+        var configCreateRequest = new EntityConfigurationCreateRequest
+        {
+            MachineName = "test",
+            Name = new List<LocalizedStringCreateRequest>
+            {
+                new() { CultureInfoId = cultureInfoId, String = "test" }
+            },
+            Attributes = new List<EntityAttributeConfigurationCreateUpdateRequest> { arrayAttribute }
+        };
+
+        // Act
+        (EntityConfigurationViewModel? created, _) =
+            await _eavService.CreateEntityConfiguration(configCreateRequest, CancellationToken.None);
+
+        // Assert
+        // Check domain models
+        var createdArrayAttributeRef = created?.Attributes.First();
+        createdArrayAttributeRef.Should().NotBeNull();
+        var createdAttribute = await _eavService.GetAttribute(createdArrayAttributeRef!.AttributeConfigurationId) as ArrayAttributeConfigurationViewModel;
+
+        createdAttribute.Name.Should().BeEquivalentTo(arrayAttribute.Name);
+        createdAttribute.Description.Should().BeEquivalentTo(arrayAttribute.Description);
+        createdAttribute.ItemsType.Should().Be(type);
+
+        // Check element config
+        var elementAttributeId = createdAttribute.ItemsAttributeConfigurationId;
+        elementAttributeId.Should().NotBeEmpty();
+        var createdElementAttribute = await _eavService.GetAttribute(elementAttributeId);
+
+        var defaultConfigToCompare =
+            DefaultAttributeConfigurationFactory.GetDefaultConfiguration(type,
+                createdElementAttribute.MachineName,
+                tenantId);
+        defaultConfigToCompare.Should().BeEquivalentTo(createdElementAttribute,
+            options => options
+                .Excluding(a => a.Id)
+                .IncludingNestedObjects());
+    }
+
     private IProjectionRepository<ProjectionRebuildState> GetProjectionRebuildStateRepository()
     {
         return new InMemoryProjectionRepository<ProjectionRebuildState>();

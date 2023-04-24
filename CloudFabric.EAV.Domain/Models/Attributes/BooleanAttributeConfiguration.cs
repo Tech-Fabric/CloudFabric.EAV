@@ -7,6 +7,14 @@ namespace CloudFabric.EAV.Domain.Models.Attributes;
 
 public class BooleanAttributeConfiguration : AttributeConfiguration
 {
+    public string TrueDisplayValue { get; set; }
+
+    public string FalseDisplayValue { get; set; }
+
+    public override EavAttributeType ValueType { get; } = EavAttributeType.Boolean;
+
+    #region Init
+
     public BooleanAttributeConfiguration(IEnumerable<IEvent> events) : base(events)
     {
     }
@@ -26,11 +34,22 @@ public class BooleanAttributeConfiguration : AttributeConfiguration
         Apply(new BooleanAttributeConfigurationUpdated(id, trueDisplayValue, falseDisplayValue));
     }
 
-    public string TrueDisplayValue { get; set; }
+    public BooleanAttributeConfiguration(string machineName, Guid? tenantId) : this(Guid.NewGuid(),
+        machineName,
+        new List<LocalizedString>()
+        {
+            LocalizedString.English("Boolean Attribute")
+        },
+        "True",
+        "False",
+        tenantId: tenantId)
+    {
 
-    public string FalseDisplayValue { get; set; }
+    }
 
-    public override EavAttributeType ValueType { get; } = EavAttributeType.Boolean;
+    #endregion
+
+    #region Validation
 
     public override List<string> Validate()
     {
@@ -61,6 +80,7 @@ public class BooleanAttributeConfiguration : AttributeConfiguration
         return errors;
     }
 
+    #endregion
     public override void UpdateAttribute(AttributeConfiguration updatedAttribute)
     {
         var updated = updatedAttribute as BooleanAttributeConfiguration;
@@ -78,6 +98,8 @@ public class BooleanAttributeConfiguration : AttributeConfiguration
             );
         }
     }
+
+    #region Equality
 
     public override bool Equals(object obj)
     {
@@ -97,6 +119,7 @@ public class BooleanAttributeConfiguration : AttributeConfiguration
         return HashCode.Combine(TrueDisplayValue, FalseDisplayValue, (int)ValueType);
     }
 
+    #endregion
     #region EventHandlers
 
     public void On(BooleanAttributeConfigurationUpdated @event)

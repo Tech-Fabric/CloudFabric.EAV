@@ -7,6 +7,11 @@ namespace CloudFabric.EAV.Domain.Models.Attributes;
 
 public class FileAttributeConfiguration : AttributeConfiguration
 {
+    public bool IsDownloadable { get; set; }
+
+    public override EavAttributeType ValueType { get; } = EavAttributeType.File;
+
+    #region Init
     public FileAttributeConfiguration(IEnumerable<IEvent> events) : base(events)
     {
     }
@@ -25,9 +30,23 @@ public class FileAttributeConfiguration : AttributeConfiguration
         Apply(new FileAttributeConfigurationUpdated(id, isDownloadable));
     }
 
-    public bool IsDownloadable { get; set; }
+    public FileAttributeConfiguration(string machineName, Guid? tenantId) : this(Guid.NewGuid(),
+        machineName,
+        new List<LocalizedString>
+        {
+            LocalizedString.English("File")
+        },
+        true,
+        new List<LocalizedString>
+        {
+            LocalizedString.English("File")
+        },
+        tenantId: tenantId)
+    {
 
-    public override EavAttributeType ValueType { get; } = EavAttributeType.File;
+    }
+    #endregion
+
 
     public override void UpdateAttribute(AttributeConfiguration updatedAttribute)
     {
@@ -46,6 +65,7 @@ public class FileAttributeConfiguration : AttributeConfiguration
         }
     }
 
+    #region Validation
     public override List<string> ValidateInstance(AttributeInstance? instance)
     {
         List<string> errors = base.ValidateInstance(instance);
@@ -64,6 +84,10 @@ public class FileAttributeConfiguration : AttributeConfiguration
         return errors;
     }
 
+    #endregion
+
+    #region Equality
+
     public override bool Equals(object obj)
     {
         return Equals(obj as FileAttributeConfiguration);
@@ -80,7 +104,7 @@ public class FileAttributeConfiguration : AttributeConfiguration
     {
         return HashCode.Combine(IsDownloadable, (int)ValueType);
     }
-
+    #endregion
     #region EventHandlers
 
     public void On(FileAttributeConfigurationUpdated @event)
