@@ -1,8 +1,5 @@
-using System.Collections.Generic;
 using System.Globalization;
 using System.Text.Json;
-
-using AutoMapper;
 
 using CloudFabric.EAV.Domain.Models;
 using CloudFabric.EAV.Domain.Models.Attributes;
@@ -32,10 +29,11 @@ public class EntityInstanceCreateUpdateRequestFromJsonDeserializer
         Guid entityConfigurationId,
         Guid tenantId,
         List<AttributeConfiguration> attributesConfigurations,
-        JsonDocument record
+        JsonElement record
     )
     {
-        (List<AttributeInstanceCreateUpdateRequest> attributes, ValidationErrorResponse? validationErrors) = await DeserializeAttributes(attributesConfigurations, record);
+        (List<AttributeInstanceCreateUpdateRequest> attributes, ValidationErrorResponse? validationErrors) =
+            await DeserializeAttributes(attributesConfigurations, record);
 
         var entityInstance = new EntityInstanceCreateRequest
         {
@@ -58,10 +56,11 @@ public class EntityInstanceCreateUpdateRequestFromJsonDeserializer
         Guid categoryTreeId,
         Guid? parentId,
         List<AttributeConfiguration> attributesConfigurations,
-        JsonDocument record
+        JsonElement record
     )
     {
-        (List<AttributeInstanceCreateUpdateRequest> attributes, ValidationErrorResponse? validationErrors) = await DeserializeAttributes(attributesConfigurations, record);
+        (List<AttributeInstanceCreateUpdateRequest> attributes, ValidationErrorResponse? validationErrors) =
+            await DeserializeAttributes(attributesConfigurations, record);
 
         if (validationErrors != null)
         {
@@ -83,7 +82,7 @@ public class EntityInstanceCreateUpdateRequestFromJsonDeserializer
     }
 
     private async Task<(List<AttributeInstanceCreateUpdateRequest>, ValidationErrorResponse?)> DeserializeAttributes(
-        List<AttributeConfiguration> attributesConfigurations, JsonDocument record
+        List<AttributeConfiguration> attributesConfigurations, JsonElement record
     )
     {
         List<AttributeInstanceCreateUpdateRequest> attributes = new List<AttributeInstanceCreateUpdateRequest>();
@@ -91,7 +90,7 @@ public class EntityInstanceCreateUpdateRequestFromJsonDeserializer
 
         foreach (var attribute in attributesConfigurations)
         {
-            if (record.RootElement.TryGetProperty(attribute.MachineName, out var attributeValue))
+            if (record.TryGetProperty(attribute.MachineName, out var attributeValue))
             {
                 var (deserializedAttribute, deserializationErrors) =
                     await DeserializeAttribute(attribute, attributeValue);
@@ -123,60 +122,69 @@ public class EntityInstanceCreateUpdateRequestFromJsonDeserializer
         AttributeInstanceCreateUpdateRequest? attributeInstance = null;
         List<string>? validationErrors = null;
 
-        switch (attributeConfiguration.ValueType)
+        try
         {
-            case EavAttributeType.Array:
-                attributeInstance = new ArrayAttributeInstanceCreateUpdateRequest()
-                {
-                    ConfigurationAttributeMachineName = attributeConfiguration.MachineName,
-                    Items = new List<AttributeInstanceCreateUpdateRequest>()
-                };
-
-                if (attributeValue.ValueKind != JsonValueKind.Array)
-                {
-                    return (null,
-                        new List<string>()
-                        {
-                            $"{attributeConfiguration.MachineName} is expected to be an array, " +
-                            $"{attributeValue.ValueKind} received."
-                        });
-                }
-
-                var itemsAttributeConfigurationId = ((attributeConfiguration as ArrayAttributeConfiguration)!)
-                    .ItemsAttributeConfigurationId;
-
-                var arrayItemsAttributeConfiguration = await _attributeConfigurationRepository
-                    .LoadAsync(itemsAttributeConfigurationId, itemsAttributeConfigurationId.ToString());
-
-                if (arrayItemsAttributeConfiguration == null)
-                {
-                    return (null, new List<string>() { "Array items attribute configuration was not found" });
-                }
-
-                var arrayElements = attributeValue.EnumerateArray().ToList();
-
-                for (var i = 0; i < arrayElements.Count; i++)
-                {
-                    var (deserializedElement, deserializationErrors) = await DeserializeAttribute(
-                        arrayItemsAttributeConfiguration, arrayElements[i]
-                    );
-
-                    if (deserializationErrors != null)
+            switch (attributeConfiguration.ValueType)
+            {
+                case EavAttributeType.Array:
+                    attributeInstance = new ArrayAttributeInstanceCreateUpdateRequest()
                     {
-                        return (null, deserializationErrors);
+                        ConfigurationAttributeMachineName = attributeConfiguration.MachineName,
+                        Items = new List<AttributeInstanceCreateUpdateRequest>()
+                    };
+
+                    if (attributeValue.ValueKind != JsonValueKind.Array)
+                    {
+                        return (null,
+                            new List<string>()
+                            {
+                                $"{attributeConfiguration.MachineName} is expected to be an array, " +
+                                $"{attributeValue.ValueKind} received."
+                            });
                     }
 
-                    ((attributeInstance as ArrayAttributeInstanceCreateUpdateRequest)!).Items.Add(deserializedElement!);
-                }
+                    var itemsAttributeConfigurationId = ((attributeConfiguration as ArrayAttributeConfiguration)!)
+                        .ItemsAttributeConfigurationId;
 
-                break;
-            default:
-                (attributeInstance, validationErrors) = DeserializeAttribute(
-                    attributeConfiguration.MachineName,
-                    attributeConfiguration.ValueType,
-                    attributeValue
-                );
-                break;
+                    var arrayItemsAttributeConfiguration = await _attributeConfigurationRepository
+                        .LoadAsync(itemsAttributeConfigurationId, itemsAttributeConfigurationId.ToString());
+
+                    if (arrayItemsAttributeConfiguration == null)
+                    {
+                        return (null, new List<string>() { "Array items attribute configuration was not found" });
+                    }
+
+                    var arrayElements = attributeValue.EnumerateArray().ToList();
+
+                    for (var i = 0; i < arrayElements.Count; i++)
+                    {
+                        var (deserializedElement, deserializationErrors) = await DeserializeAttribute(
+                            arrayItemsAttributeConfiguration, arrayElements[i]
+                        );
+
+                        if (deserializationErrors != null)
+                        {
+                            return (null, deserializationErrors);
+                        }
+
+                        ((attributeInstance as ArrayAttributeInstanceCreateUpdateRequest)!).Items.Add(
+                            deserializedElement!
+                        );
+                    }
+
+                    break;
+                default:
+                    (attributeInstance, validationErrors) = DeserializeAttribute(
+                        attributeConfiguration.MachineName,
+                        attributeConfiguration.ValueType,
+                        attributeValue
+                    );
+                    break;
+            }
+        }
+        catch (InvalidOperationException ex)
+        {
+            return (null, new List<string>() { ex.Message });
         }
 
         return (attributeInstance, validationErrors);
@@ -189,6 +197,7 @@ public class EntityInstanceCreateUpdateRequestFromJsonDeserializer
     )
     {
         AttributeInstanceCreateUpdateRequest? attributeInstance;
+
         switch (attributeType)
         {
             case EavAttributeType.Array:
@@ -265,16 +274,22 @@ public class EntityInstanceCreateUpdateRequestFromJsonDeserializer
                 attributeInstance = localizedText;
                 break;
             case EavAttributeType.Number:
-                attributeInstance =
-                    new NumberAttributeInstanceCreateUpdateRequest { Value = attributeValue.GetDecimal() };
+                attributeInstance = new NumberAttributeInstanceCreateUpdateRequest
+                {
+                    Value = attributeValue.GetDecimal()
+                };
                 break;
             case EavAttributeType.ValueFromList:
-                attributeInstance =
-                    new ValueFromListAttributeInstanceCreateUpdateRequest { Value = attributeValue.GetString()! };
+                attributeInstance = new ValueFromListAttributeInstanceCreateUpdateRequest
+                {
+                    Value = attributeValue.GetString()!
+                };
                 break;
             case EavAttributeType.Boolean:
-                attributeInstance =
-                    new BooleanAttributeInstanceCreateUpdateRequest { Value = attributeValue.GetBoolean() };
+                attributeInstance = new BooleanAttributeInstanceCreateUpdateRequest
+                {
+                    Value = attributeValue.GetBoolean()
+                };
                 break;
             case EavAttributeType.File:
                 attributeInstance = new FileAttributeInstanceCreateUpdateRequest

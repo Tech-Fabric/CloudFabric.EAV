@@ -3,6 +3,11 @@ namespace CloudFabric.EAV.Models.ViewModels.Attributes;
 public class DateRangeAttributeInstanceViewModel : AttributeInstanceViewModel
 {
     public DateRangeAttributeInstanceValueViewModel Value { get; set; }
+
+    public override object? GetValue()
+    {
+        return Value;
+    }
 }
 
 public class DateRangeAttributeInstanceValueViewModel

@@ -2,17 +2,18 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 
 using CloudFabric.EAV.Domain.Models;
+using CloudFabric.EAV.Models.ViewModels;
 
 namespace CloudFabric.EAV.Service.Serialization;
 
-public class EntityInstanceToJsonSerializer: JsonConverter<EntityInstance>
+public class EntityInstanceViewModelToJsonSerializer: JsonConverter<EntityInstanceViewModel>
 {
-    public override EntityInstance? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    public override EntityInstanceViewModel? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
         throw new NotImplementedException();
     }
 
-    public override void Write(Utf8JsonWriter writer, EntityInstance value, JsonSerializerOptions options)
+    public override void Write(Utf8JsonWriter writer, EntityInstanceViewModel value, JsonSerializerOptions options)
     {
         writer.WriteStartObject();
 
@@ -47,7 +48,6 @@ public class EntityInstanceToJsonSerializer: JsonConverter<EntityInstance>
         }
 
         writer.WriteString("partitionKey", value.PartitionKey);
-        writer.WriteNumber("version", value.Version);
 
         writer.WriteEndObject();
     }

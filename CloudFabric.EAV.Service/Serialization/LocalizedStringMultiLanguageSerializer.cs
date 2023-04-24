@@ -2,18 +2,18 @@ using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-using CloudFabric.EAV.Domain.Models.Base;
+using CloudFabric.EAV.Models.ViewModels;
 
 namespace CloudFabric.EAV.Service.Serialization;
 
-public class LocalizedStringMultiLanguageSerializer: JsonConverter<List<LocalizedString>>
+public class LocalizedStringMultiLanguageSerializer: JsonConverter<List<LocalizedStringViewModel>>
 {
-    public override List<LocalizedString>? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    public override List<LocalizedStringViewModel>? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
         throw new NotImplementedException();
     }
 
-    public override void Write(Utf8JsonWriter writer, List<LocalizedString> value, JsonSerializerOptions options)
+    public override void Write(Utf8JsonWriter writer, List<LocalizedStringViewModel> value, JsonSerializerOptions options)
     {
         writer.WriteStartObject();
 
