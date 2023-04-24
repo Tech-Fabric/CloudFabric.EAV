@@ -38,14 +38,14 @@ public class TextAttributeConfiguration : AttributeConfiguration
         machineName,
         new List<LocalizedString>
         {
-            LocalizedString.English("Number")
+            LocalizedString.English("Text attribute")
         },
         "text",
         100,
         false,
         new List<LocalizedString>
         {
-            LocalizedString.English("Price")
+            LocalizedString.English("Text attribute")
         },
         tenantId: tenantId)
     {
