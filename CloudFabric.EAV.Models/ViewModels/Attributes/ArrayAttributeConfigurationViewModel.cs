@@ -6,5 +6,5 @@ public class ArrayAttributeConfigurationViewModel : AttributeConfigurationViewMo
 {
     public EavAttributeType ItemsType { get; set; }
 
-    public AttributeConfigurationViewModel ItemsAttributeConfiguration { get; set; }
+    public Guid ItemsAttributeConfigurationId { get; set; }
 }

@@ -7,6 +7,14 @@ namespace CloudFabric.EAV.Domain.Models.Attributes;
 
 public class TextAttributeConfiguration : AttributeConfiguration
 {
+    public string DefaultValue { get; set; }
+
+    public bool IsSearchable { get; set; }
+
+    public int? MaxLength { get; set; }
+    public override EavAttributeType ValueType => EavAttributeType.Text;
+
+    #region Init
     public TextAttributeConfiguration(IEnumerable<IEvent> events) : base(events)
     {
     }
@@ -26,15 +34,26 @@ public class TextAttributeConfiguration : AttributeConfiguration
     {
         Apply(new TextAttributeConfigurationUpdated(id, defaultValue, maxLength, isSearchable));
     }
+    public TextAttributeConfiguration(string machineName, Guid? tenantId) : this(Guid.NewGuid(),
+        machineName,
+        new List<LocalizedString>
+        {
+            LocalizedString.English("Text attribute")
+        },
+        "text",
+        100,
+        false,
+        new List<LocalizedString>
+        {
+            LocalizedString.English("Text attribute")
+        },
+        tenantId: tenantId)
+    {
 
-    public string DefaultValue { get; set; }
+    }
+    #endregion
 
-    public bool IsSearchable { get; set; }
-
-    public int? MaxLength { get; set; }
-
-    public override EavAttributeType ValueType { get; } = EavAttributeType.Text;
-
+#region Validaton
     public override List<string> Validate()
     {
         List<string> errors = base.Validate();
@@ -74,7 +93,7 @@ public class TextAttributeConfiguration : AttributeConfiguration
 
         return errors;
     }
-
+#endregion
     public override void UpdateAttribute(AttributeConfiguration updatedAttribute)
     {
         var updated = updatedAttribute as TextAttributeConfiguration;
@@ -100,6 +119,7 @@ public class TextAttributeConfiguration : AttributeConfiguration
         }
     }
 
+    #region Equality
     public override bool Equals(object obj)
     {
         return Equals(obj as TextAttributeConfiguration);
@@ -118,6 +138,8 @@ public class TextAttributeConfiguration : AttributeConfiguration
     {
         return HashCode.Combine(DefaultValue, MaxLength, IsSearchable, (int)ValueType);
     }
+
+    #endregion
 
     #region EventHandlers
 
