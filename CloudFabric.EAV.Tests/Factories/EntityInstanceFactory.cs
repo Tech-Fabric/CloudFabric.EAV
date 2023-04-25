@@ -34,13 +34,26 @@ public class EntityInstanceFactory
         };
     }
 
-    public static string CreateValidBoardGameCategoryCreateRequestJson(Guid categoryConfigurationId, Guid categoryTreeId, Guid tenantId)
+    public static string CreateValidBoardGameCategoryCreateRequestJson(Guid categoryConfigurationId, Guid categoryTreeId, Guid tenantId, Guid? parentId = null)
     {
+        if (parentId == null)
+        {
+            return @"
+                {
+                    ""categoryConfigurationId"": """ + categoryConfigurationId + @""",
+                    ""categoryTreeId"": """ + categoryTreeId + @""",
+                    ""parentId"": null,
+                    ""tenantId"": """ + tenantId + @""",
+                    ""category_attribute_0"": 10
+                }
+            ";
+        }
+
         return @"
             {
                 ""categoryConfigurationId"": """ + categoryConfigurationId + @""",
                 ""categoryTreeId"": """ + categoryTreeId + @""",
-                ""parentId"": null,
+                ""parentId"": """ + parentId + @""",
                 ""tenantId"": """ + tenantId + @""",
                 ""category_attribute_0"": 10
             }

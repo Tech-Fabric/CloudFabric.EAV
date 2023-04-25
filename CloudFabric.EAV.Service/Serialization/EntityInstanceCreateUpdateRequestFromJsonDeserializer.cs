@@ -35,17 +35,17 @@ public class EntityInstanceCreateUpdateRequestFromJsonDeserializer
         (List<AttributeInstanceCreateUpdateRequest> attributes, ValidationErrorResponse? validationErrors) =
             await DeserializeAttributes(attributesConfigurations, record);
 
+        if (validationErrors != null)
+        {
+            return (null, validationErrors);
+        }
+
         var entityInstance = new EntityInstanceCreateRequest
         {
             TenantId = tenantId,
             EntityConfigurationId = entityConfigurationId,
             Attributes = attributes
         };
-
-        if (validationErrors != null)
-        {
-            return (null, validationErrors);
-        }
 
         return (entityInstance, null);
     }
@@ -73,10 +73,8 @@ public class EntityInstanceCreateUpdateRequestFromJsonDeserializer
             CategoryTreeId = categoryTreeId,
             ParentId = parentId,
             TenantId = tenantId,
-            Attributes = new List<AttributeInstanceCreateUpdateRequest>()
+            Attributes = attributes
         };
-
-        categoryInstanceCreateRequest.Attributes = attributes;
 
         return (categoryInstanceCreateRequest, null);
     }
