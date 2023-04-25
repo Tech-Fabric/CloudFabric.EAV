@@ -23,7 +23,7 @@ public class MoneyAttributeConfiguration: AttributeConfiguration
     public MoneyAttributeConfiguration(Guid id,
         string machineName,
         List<LocalizedString> name,
-        string defaultCurrencyId,
+        string? defaultCurrencyId,
         List<Currency>? currencies = null,
         List<LocalizedString>? description = null,
         bool isRequired = false,
@@ -31,6 +31,7 @@ public class MoneyAttributeConfiguration: AttributeConfiguration
         string? metadata = null) : base(id, machineName, name, EavAttributeType.Money, description, isRequired, tenantId, metadata)
     {
         currencies ??= DefaultListOfCurrencies();
+        defaultCurrencyId = string.IsNullOrEmpty(defaultCurrencyId) ? "usd" : defaultCurrencyId;
         Apply(new MoneyAttributeConfigurationUpdated(id, defaultCurrencyId, currencies));
     }
 
