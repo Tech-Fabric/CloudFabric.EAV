@@ -30,7 +30,6 @@ public class EntityInstanceProfile : Profile
         CreateMap<Category, EntityInstance>();
 
         CreateMap<EntityInstanceViewModel, CategoryViewModel>();
-        CreateMap<CategoryViewModel, EntityInstanceViewModel>();
 
         CreateMap<CategoryPath, CategoryPathViewModel>();
         CreateMap<CategoryPathViewModel, CategoryPath>();
