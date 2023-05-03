@@ -2691,7 +2691,6 @@ public class Tests
         var elementAttributeId = createdAttribute.ItemsAttributeConfigurationId;
         elementAttributeId.Should().NotBeEmpty();
         var createdElementAttribute = await _eavService.GetAttribute(elementAttributeId);
-
         var defaultConfigToCompare =
             DefaultAttributeConfigurationFactory.GetDefaultConfiguration(type,
                 createdElementAttribute.MachineName,

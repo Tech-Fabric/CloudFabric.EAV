@@ -70,9 +70,9 @@ public class MoneyAttributeConfiguration: AttributeConfiguration
         return errors;
     }
 
-    public override List<string> ValidateInstance(AttributeInstance? instance)
+    public override List<string> ValidateInstance(AttributeInstance? instance, bool requiredAttributesCanBeNull = false)
     {
-        var errors = base.ValidateInstance(instance);
+        var errors = base.ValidateInstance(instance, requiredAttributesCanBeNull);
         if (instance is MoneyAttributeInstance)
         {
             return errors;
