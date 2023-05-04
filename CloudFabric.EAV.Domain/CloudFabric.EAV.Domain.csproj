@@ -12,8 +12,8 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="CloudFabric.EventSourcing.Domain" Version="0.0.36" />
-        <PackageReference Include="CloudFabric.Projections" Version="0.0.36" />
+        <PackageReference Include="CloudFabric.EventSourcing.Domain" Version="0.0.38" />
+        <PackageReference Include="CloudFabric.Projections" Version="0.0.38" />
         <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="6.0.3" />
         <PackageReference Include="System.ComponentModel.Annotations" Version="5.0.0" />
         <PackageReference Include="System.Text.Json" Version="6.0.7" />
