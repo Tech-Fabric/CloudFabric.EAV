@@ -1495,9 +1495,18 @@ private async Task<Guid?> CreateArrayElementConfiguration(EavAttributeType type,
         );
     }
 
+    /// <summary>
+    /// Returns full category tree.
+    /// If constructTillCategory is specified - returs category tree with all categories that are upper or on the same lavel as a specified.
+    /// <param name="treeId"></param>
+    /// <param name="constructTillCategory"></param>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+
     [SuppressMessage("Performance", "CA1806:Do not ignore method results")]
     public async Task<List<EntityTreeInstanceViewModel>> GetCategoryTreeViewAsync(
         Guid treeId,
+        Guid? constructTillCategory = null,
         CancellationToken cancellationToken = default
     )
     {
@@ -1516,6 +1525,22 @@ private async Task<Guid?> CreateArrayElementConfiguration(EavAttributeType type,
                 },
                 cancellationToken
             ).ConfigureAwait(false);
+
+        int searchedLevelPathLenght;
+
+        if (constructTillCategory != null)
+        {
+            var category = await _entityInstanceRepository.LoadAsync(constructTillCategory.Value, tree.EntityConfigurationId.ToString(), cancellationToken).ConfigureAwait(false);
+
+            if (category == null || category.EntityConfigurationId != tree.EntityConfigurationId)
+            {
+                throw new NotFoundException("Category not found");
+            }
+
+            searchedLevelPathLenght = category.CategoryPaths.FirstOrDefault(x => x.TreeId == treeId)!.Path.Length;
+
+            treeElements.Records = treeElements.Records.Where(x => x.Document?.CategoryPaths.FirstOrDefault(x => x.TreeId == treeId)!.Path.Length <= searchedLevelPathLenght).ToList();
+        }
 
         var treeViewModel = new List<EntityTreeInstanceViewModel>();
 
