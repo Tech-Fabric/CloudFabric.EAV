@@ -1495,9 +1495,18 @@ private async Task<Guid?> CreateArrayElementConfiguration(EavAttributeType type,
         );
     }
 
+    /// <summary>
+    /// Returns full category tree.
+    /// If notDeeperThanCategoryId is specified - returns category tree with all categories that are above or on the same lavel as a provided.
+    /// <param name="treeId"></param>
+    /// <param name="notDeeperThanCategoryId"></param>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+
     [SuppressMessage("Performance", "CA1806:Do not ignore method results")]
     public async Task<List<EntityTreeInstanceViewModel>> GetCategoryTreeViewAsync(
         Guid treeId,
+        Guid? notDeeperThanCategoryId = null,
         CancellationToken cancellationToken = default
     )
     {
@@ -1508,7 +1517,7 @@ private async Task<Guid?> CreateArrayElementConfiguration(EavAttributeType type,
             throw new NotFoundException("Category tree not found");
         }
 
-        ProjectionQueryResult<EntityInstanceViewModel> treeElements =
+        ProjectionQueryResult<EntityInstanceViewModel> treeElementsQueryResult =
             await QueryInstances(tree.EntityConfigurationId,
                 new ProjectionQuery
                 {
@@ -1517,11 +1526,29 @@ private async Task<Guid?> CreateArrayElementConfiguration(EavAttributeType type,
                 cancellationToken
             ).ConfigureAwait(false);
 
+        var treeElements = treeElementsQueryResult.Records.Select(x => x.Document!).ToList();
+
+        int searchedLevelPathLenght;
+
+        if (notDeeperThanCategoryId != null)
+        {
+            var category = treeElements.FirstOrDefault(x => x.Id == notDeeperThanCategoryId);
+
+            if (category == null)
+            {
+                throw new NotFoundException("Category not found");
+            }
+
+            searchedLevelPathLenght = category.CategoryPaths.FirstOrDefault(x => x.TreeId == treeId)!.Path.Length;
+
+            treeElements = treeElements
+                .Where(x => x.CategoryPaths.FirstOrDefault(x => x.TreeId == treeId)!.Path.Length <= searchedLevelPathLenght).ToList();
+        }
+
         var treeViewModel = new List<EntityTreeInstanceViewModel>();
 
         // Go through each instance once
-        foreach (EntityInstanceViewModel treeElement in treeElements.Records
-                     .Select(x => x.Document!)
+        foreach (EntityInstanceViewModel treeElement in treeElements
                      .OrderBy(x => x.CategoryPaths.FirstOrDefault(cp => cp.TreeId == treeId)?.Path.Length))
         {
             var treeElementViewModel = _mapper.Map<EntityTreeInstanceViewModel>(treeElement);
@@ -1543,8 +1570,7 @@ private async Task<Guid?> CreateArrayElementConfiguration(EavAttributeType type,
                             acc.FirstOrDefault(y => y.Id.ToString() == pathComponent);
                         if (parent == null)
                         {
-                            EntityInstanceViewModel? parentInstance = treeElements.Records.Select(x => x.Document)
-                                .FirstOrDefault(x => x.Id.ToString() == pathComponent);
+                            EntityInstanceViewModel? parentInstance = treeElements.FirstOrDefault(x => x.Id.ToString() == pathComponent);
                             parent = _mapper.Map<EntityTreeInstanceViewModel>(parentInstance);
                             acc.Add(parent);
                         }
