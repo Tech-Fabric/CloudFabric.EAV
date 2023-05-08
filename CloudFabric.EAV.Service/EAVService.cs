@@ -1733,6 +1733,7 @@ private async Task<Guid?> CreateArrayElementConfiguration(EavAttributeType type,
         string entityJsonString,
         Func<EntityInstanceCreateRequest, bool, Task<EntityInstanceCreateRequest>>? requestDeserializedCallback = null,
         bool dryRun = false,
+        bool requiredAttributesCanBeNull = false,
         CancellationToken cancellationToken = default
     )
     {
@@ -1742,6 +1743,7 @@ private async Task<Guid?> CreateArrayElementConfiguration(EavAttributeType type,
             entityJson.RootElement,
             requestDeserializedCallback,
             dryRun,
+            requiredAttributesCanBeNull,
             cancellationToken
         );
     }
@@ -1785,6 +1787,7 @@ private async Task<Guid?> CreateArrayElementConfiguration(EavAttributeType type,
         Guid tenantId,
         Func<EntityInstanceCreateRequest, bool, Task<EntityInstanceCreateRequest>>? requestDeserializedCallback = null,
         bool dryRun = false,
+        bool requiredAttributesCanBeNull = false,
         CancellationToken cancellationToken = default
     )
     {
@@ -1796,6 +1799,7 @@ private async Task<Guid?> CreateArrayElementConfiguration(EavAttributeType type,
             tenantId,
             requestDeserializedCallback,
             dryRun,
+            requiredAttributesCanBeNull,
             cancellationToken
         );
     }
@@ -1838,6 +1842,7 @@ private async Task<Guid?> CreateArrayElementConfiguration(EavAttributeType type,
         JsonElement entityJson,
         Func<EntityInstanceCreateRequest, bool, Task<EntityInstanceCreateRequest>>? requestDeserializedCallback = null,
         bool dryRun = false,
+        bool requiredAttributesCanBeNull = false,
         CancellationToken cancellationToken = default
     )
     {
@@ -1857,6 +1862,7 @@ private async Task<Guid?> CreateArrayElementConfiguration(EavAttributeType type,
             entityInstanceCreateRequest.TenantId!.Value,
             requestDeserializedCallback,
             dryRun,
+            requiredAttributesCanBeNull,
             cancellationToken
         );
     }
@@ -1900,6 +1906,7 @@ private async Task<Guid?> CreateArrayElementConfiguration(EavAttributeType type,
         Guid tenantId,
         Func<EntityInstanceCreateRequest, bool, Task<EntityInstanceCreateRequest>>? requestDeserializedCallback = null,
         bool dryRun = false,
+        bool requiredAttributesCanBeNull = false,
         CancellationToken cancellationToken = default
     )
     {
@@ -1919,7 +1926,7 @@ private async Task<Guid?> CreateArrayElementConfiguration(EavAttributeType type,
         }
 
         var (createdEntity, validationErrors) = await CreateEntityInstance(
-            entityInstanceCreateRequest!, dryRun, cancellationToken
+            entityInstanceCreateRequest!, dryRun, requiredAttributesCanBeNull, cancellationToken
         );
 
         if (validationErrors != null)
@@ -1931,7 +1938,7 @@ private async Task<Guid?> CreateArrayElementConfiguration(EavAttributeType type,
     }
 
     public async Task<(EntityInstanceViewModel?, ProblemDetails?)> CreateEntityInstance(
-        EntityInstanceCreateRequest entity, bool dryRun = false, CancellationToken cancellationToken = default
+        EntityInstanceCreateRequest entity, bool dryRun = false, bool requiredAttributesCanBeNull = false, CancellationToken cancellationToken = default
     )
     {
         EntityConfiguration? entityConfiguration = await _entityConfigurationRepository.LoadAsync(
@@ -1965,7 +1972,7 @@ private async Task<Guid?> CreateArrayElementConfiguration(EavAttributeType type,
             AttributeInstance? attributeValue = entityInstance.Attributes
                 .FirstOrDefault(attr => a.MachineName == attr.ConfigurationAttributeMachineName);
 
-            List<string> attrValidationErrors = a.ValidateInstance(attributeValue);
+            List<string> attrValidationErrors = a.ValidateInstance(attributeValue, requiredAttributesCanBeNull);
             if (attrValidationErrors is { Count: > 0 })
             {
                 validationErrors.Add(a.MachineName, attrValidationErrors.ToArray());

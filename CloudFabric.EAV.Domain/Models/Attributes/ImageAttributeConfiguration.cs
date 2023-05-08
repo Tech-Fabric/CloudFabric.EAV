@@ -110,9 +110,9 @@ public class ImageAttributeConfiguration : AttributeConfiguration, IEquatable<Im
         return errors;
     }
 
-    public override List<string> ValidateInstance(AttributeInstance? instance)
+    public override List<string> ValidateInstance(AttributeInstance? instance, bool requiredAttributesCanBeNull = false)
     {
-        List<string> errors = base.ValidateInstance(instance);
+        List<string> errors = base.ValidateInstance(instance, requiredAttributesCanBeNull);
 
         if (instance == null)
         {

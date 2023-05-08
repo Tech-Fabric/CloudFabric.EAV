@@ -245,6 +245,48 @@ public class Tests
     }
 
     [TestMethod]
+    public async Task CreateInstance_IgnoreRequiredCheck_Success()
+    {
+        EntityConfigurationCreateRequest configurationCreateRequest =
+            EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
+        var requiredAttributeMachineName = "test_date";
+
+        configurationCreateRequest.Attributes.Add(new DateRangeAttributeConfigurationUpdateRequest()
+        {
+            DateRangeAttributeType = DateRangeAttributeType.SingleDate,
+            IsRequired = true,
+            MachineName = requiredAttributeMachineName,
+            Name = new List<LocalizedStringCreateRequest>()
+            {
+                new LocalizedStringCreateRequest()
+                {
+                    CultureInfoId = CultureInfo.GetCultureInfo("en-US").LCID,
+                    String = "Test Date"
+                }
+            }
+        });
+        (EntityConfigurationViewModel? createdConfiguration, _) = await _eavService.CreateEntityConfiguration(
+            configurationCreateRequest,
+            CancellationToken.None
+        );
+
+        await _eavService.GetEntityConfiguration(createdConfiguration.Id);
+        EntityInstanceCreateRequest entityInstanceCreateRequest =
+            EntityInstanceFactory.CreateValidBoardGameEntityInstanceCreateRequest(createdConfiguration.Id);
+        entityInstanceCreateRequest.Attributes.Add(
+            new DateRangeAttributeInstanceCreateUpdateRequest()
+            {
+                ConfigurationAttributeMachineName = requiredAttributeMachineName,
+                Value = null
+            });
+
+        (EntityInstanceViewModel? createdInstance, ProblemDetails? validationErrors) =
+            await _eavService.CreateEntityInstance(entityInstanceCreateRequest, requiredAttributesCanBeNull: true);
+        validationErrors.Should().BeNull();
+        createdInstance.Should().NotBeNull();
+    }
+
+    [TestMethod]
     public async Task CreateEntityConfiguration_Success()
     {
         EntityConfigurationCreateRequest configurationCreateRequest =
@@ -2691,7 +2733,6 @@ public class Tests
         var elementAttributeId = createdAttribute.ItemsAttributeConfigurationId;
         elementAttributeId.Should().NotBeEmpty();
         var createdElementAttribute = await _eavService.GetAttribute(elementAttributeId);
-
         var defaultConfigToCompare =
             DefaultAttributeConfigurationFactory.GetDefaultConfiguration(type,
                 createdElementAttribute.MachineName,

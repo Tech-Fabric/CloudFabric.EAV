@@ -84,9 +84,9 @@ public abstract class AttributeConfiguration : AggregateBase
         return errors;
     }
 
-    public virtual List<string> ValidateInstance(AttributeInstance? instance)
+    public virtual List<string> ValidateInstance(AttributeInstance? instance, bool requiredAttributesCanBeNull = false)
     {
-        if (!IsRequired)
+        if (!IsRequired || requiredAttributesCanBeNull)
         {
             return new List<string>();
         }
