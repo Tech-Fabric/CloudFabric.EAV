@@ -1349,10 +1349,6 @@ public class Tests
             .Url
             .Should()
             .Be("/test.pdf");
-
-        var smt = _eavService.SerializeEntityInstanceToJsonMultiLanguage(createdInstance);
-
-        string str = string.Empty;
     }
 
     [TestMethod]
