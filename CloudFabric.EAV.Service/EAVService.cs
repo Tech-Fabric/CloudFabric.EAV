@@ -1541,7 +1541,8 @@ private async Task<Guid?> CreateArrayElementConfiguration(EavAttributeType type,
 
             searchedLevelPathLenght = category.CategoryPaths.FirstOrDefault(x => x.TreeId == treeId)!.Path.Length;
 
-            treeElements = treeElements.Where(x => x.CategoryPaths.FirstOrDefault(x => x.TreeId == treeId)!.Path.Length <= searchedLevelPathLenght).ToList();
+            treeElements = treeElements
+                .Where(x => x.CategoryPaths.FirstOrDefault(x => x.TreeId == treeId)!.Path.Length <= searchedLevelPathLenght).ToList();
         }
 
         var treeViewModel = new List<EntityTreeInstanceViewModel>();
@@ -1569,8 +1570,7 @@ private async Task<Guid?> CreateArrayElementConfiguration(EavAttributeType type,
                             acc.FirstOrDefault(y => y.Id.ToString() == pathComponent);
                         if (parent == null)
                         {
-                            EntityInstanceViewModel? parentInstance = treeElementsQueryResult.Records.Select(x => x.Document)
-                                .FirstOrDefault(x => x.Id.ToString() == pathComponent);
+                            EntityInstanceViewModel? parentInstance = treeElements.FirstOrDefault(x => x.Id.ToString() == pathComponent);
                             parent = _mapper.Map<EntityTreeInstanceViewModel>(parentInstance);
                             acc.Add(parent);
                         }
