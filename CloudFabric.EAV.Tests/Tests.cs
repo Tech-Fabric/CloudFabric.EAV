@@ -1330,7 +1330,7 @@ public class Tests
                     ConfigurationAttributeMachineName = fileAttribute.MachineName,
                     Value = new FileAttributeValueCreateUpdateRequest
                     {
-                        Filename = "test.pdf", Url = "/test.pdf"
+                        FileName = "test.pdf", Url = "/test.pdf"
                     }
                 }
             }
@@ -1349,6 +1349,10 @@ public class Tests
             .Url
             .Should()
             .Be("/test.pdf");
+
+        var smt = _eavService.SerializeEntityInstanceToJsonMultiLanguage(createdInstance);
+
+        string str = string.Empty;
     }
 
     [TestMethod]
