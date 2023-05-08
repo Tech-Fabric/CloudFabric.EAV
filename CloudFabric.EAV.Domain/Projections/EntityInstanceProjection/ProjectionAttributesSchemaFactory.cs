@@ -450,12 +450,12 @@ public static class ProjectionAttributesSchemaFactory
             },
             new()
             {
-                PropertyName = nameof(FileAttributeInstance.Value.Filename),
+                PropertyName = nameof(FileAttributeInstance.Value.FileName),
                 PropertyType = Type.GetTypeCode(
                     typeof(FileAttributeInstance)
                         .GetProperty(nameof(FileAttributeInstance.Value))
                         ?.PropertyType
-                        .GetProperty(nameof(FileAttributeInstance.Value.Filename))
+                        .GetProperty(nameof(FileAttributeInstance.Value.FileName))
                         ?.PropertyType
                 ),
                 IsRetrievable = true

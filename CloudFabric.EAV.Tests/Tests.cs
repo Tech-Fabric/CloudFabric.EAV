@@ -1330,7 +1330,7 @@ public class Tests
                     ConfigurationAttributeMachineName = fileAttribute.MachineName,
                     Value = new FileAttributeValueCreateUpdateRequest
                     {
-                        Filename = "test.pdf", Url = "/test.pdf"
+                        FileName = "test.pdf", Url = "/test.pdf"
                     }
                 }
             }

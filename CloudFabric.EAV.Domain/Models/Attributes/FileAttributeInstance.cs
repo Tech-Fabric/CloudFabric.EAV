@@ -14,5 +14,5 @@ public class FileAttributeValue
 {
     public string Url { get; set; }
 
-    public string Filename { get; set; }
+    public string FileName { get; set; }
 }

@@ -1,4 +1,4 @@
-﻿namespace CloudFabric.EAV.Models.ViewModels.Attributes;
+namespace CloudFabric.EAV.Models.ViewModels.Attributes;
 
 public class FileAttributeInstanceViewModel : AttributeInstanceViewModel
 {
@@ -14,5 +14,5 @@ public class FileAttributeValueViewModel
 {
     public string Url { get; set; }
 
-    public string Filename { get; set; }
+    public string FileName { get; set; }
 }
