@@ -98,7 +98,7 @@ public abstract class CategoryTests : BaseQueryTests.BaseQueryTests
             CategoryViewModel rogAsusGamingLaptopsCategory) = await BuildTestTreeAsync();
 
         List<EntityTreeInstanceViewModel> list =
-            await _eavService.GetCategoryTreeViewAsync(createdTree.Id, CancellationToken.None);
+            await _eavService.GetCategoryTreeViewAsync(createdTree.Id);
 
         EntityTreeInstanceViewModel? laptops = list.FirstOrDefault(x => x.Id == laptopsCategory.Id);
         laptops.Should().NotBeNull();
@@ -115,6 +115,33 @@ public abstract class CategoryTests : BaseQueryTests.BaseQueryTests
         EntityTreeInstanceViewModel? rogAsusGamingLaptops =
             asusGamingLaptops?.Children.FirstOrDefault(x => x.Id == rogAsusGamingLaptopsCategory.Id);
         rogAsusGamingLaptops.Should().NotBeNull();
+
+        list = await _eavService.GetCategoryTreeViewAsync(createdTree.Id, laptopsCategory.Id);
+        laptops = list.FirstOrDefault(x => x.Id == laptopsCategory.Id);
+        laptops.Children.Count.Should().Be(0);
+
+        list = await _eavService.GetCategoryTreeViewAsync(createdTree.Id, asusGamingLaptopsCategory.Id);
+        laptops = list.FirstOrDefault(x => x.Id == laptopsCategory.Id);
+        gamingLaptops =
+            laptops.Children.FirstOrDefault(x => x.Id == gamingLaptopsCategory.Id);
+        officeLaptops =
+            laptops.Children.FirstOrDefault(x => x.Id == officeLaptopsCategory.Id);
+        asusGamingLaptops =
+            gamingLaptops?.Children.FirstOrDefault(x => x.Id == asusGamingLaptopsCategory.Id);
+
+        asusGamingLaptops.Children.Count.Should().Be(0);
+    }
+
+    [TestMethod]
+    public async Task GetTreeViewAsync_CategoryNofFound()
+    {
+        (HierarchyViewModel createdTree, CategoryViewModel _, CategoryViewModel _,
+            CategoryViewModel _, CategoryViewModel _,
+            CategoryViewModel _) = await BuildTestTreeAsync();
+
+        Func<Task> action = async () => await _eavService.GetCategoryTreeViewAsync(createdTree.Id, Guid.NewGuid());
+
+        await action.Should().ThrowAsync<NotFoundException>();
     }
 
     [TestMethod]

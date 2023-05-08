@@ -7,7 +7,7 @@ on:
     branches: [ "main" ]
 
 env:
-  PACKAGE_VERSION: 1.1.4
+  PACKAGE_VERSION: 1.1.5
 
 jobs:
 
