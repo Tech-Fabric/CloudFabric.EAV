@@ -8,6 +8,8 @@ namespace CloudFabric.EAV.Domain.Projections.EntityInstanceProjection;
 
 public static class ProjectionAttributesSchemaFactory
 {
+    // To prevent indexing fields in some event store implementations (like ElasticSearch) when IsSearchable is "false",
+    // we must assign "false" to IsFiltering as well, as EAV attributes have one flag that indicates this.
     public static ProjectionDocumentPropertySchema GetTextAttributeSchema(
         AttributeConfiguration attributeConfiguration)
     {
@@ -24,7 +26,7 @@ public static class ProjectionAttributesSchemaFactory
             PropertyType = GetPropertyType(attributeConfiguration.ValueType).GetValueOrDefault(),
             IsSearchable = attribute.IsSearchable,
             IsRetrievable = true,
-            IsFilterable = true,
+            IsFilterable = attribute.IsSearchable,
             IsSortable = true
         };
     }
@@ -345,7 +347,7 @@ public static class ProjectionAttributesSchemaFactory
                         ?.PropertyType
                 ),
                 IsRetrievable = true,
-                IsFilterable = false,
+                IsFilterable = true,
                 IsSortable = true
             }
         };
