@@ -83,9 +83,11 @@ public class Tests
         projectionsEngine.SetEventsObserver(GetEventStoreEventsObserver());
 
         var attributeConfigurationProjectionBuilder = new AttributeConfigurationProjectionBuilder(
-            _projectionRepositoryFactory
+            _projectionRepositoryFactory, _aggregateRepositoryFactory
         );
-        var ordersListProjectionBuilder = new EntityConfigurationProjectionBuilder(_projectionRepositoryFactory);
+        var ordersListProjectionBuilder = new EntityConfigurationProjectionBuilder(
+            _projectionRepositoryFactory, _aggregateRepositoryFactory
+        );
 
         projectionsEngine.AddProjectionBuilder(attributeConfigurationProjectionBuilder);
         projectionsEngine.AddProjectionBuilder(ordersListProjectionBuilder);

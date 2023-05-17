@@ -1,6 +1,7 @@
 using CloudFabric.EAV.Domain.Events.Instance.Attribute;
 using CloudFabric.EAV.Domain.Events.Instance.Entity;
 using CloudFabric.EAV.Domain.Models;
+using CloudFabric.EAV.Domain.Models.Attributes;
 using CloudFabric.EventSourcing.Domain;
 using CloudFabric.Projections;
 
@@ -39,8 +40,8 @@ public class EntityInstanceProjectionBuilder : ProjectionBuilder,
     private readonly AggregateRepositoryFactory _aggregateRepositoryFactory;
 
     public EntityInstanceProjectionBuilder(
-        AggregateRepositoryFactory aggregateRepositoryFactory,
-        ProjectionRepositoryFactory projectionRepositoryFactory
+        ProjectionRepositoryFactory projectionRepositoryFactory,
+        AggregateRepositoryFactory aggregateRepositoryFactory
     ) : base(projectionRepositoryFactory)
     {
         _aggregateRepositoryFactory = aggregateRepositoryFactory;
