@@ -8,6 +8,8 @@
     <Version>0.0.1</Version>
     <Authors>CloudFabric Developers</Authors>
     <Company>CloudFabric</Company>
+    <AssemblyName>CloudFabric.EAV.Domain</AssemblyName>
+    <RootNamespace>CloudFabric.EAV.Domain</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>
