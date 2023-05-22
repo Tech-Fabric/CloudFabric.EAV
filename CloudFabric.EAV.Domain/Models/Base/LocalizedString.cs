@@ -10,7 +10,7 @@ public class LocalizedString : IEquatable<LocalizedString>
     public int CultureInfoId { get; set; }
 
 #pragma warning disable CA1720 // Identifier contains type name
-    [ProjectionDocumentProperty] public virtual string String { get; set; }
+    [ProjectionDocumentProperty(IsFilterable = true)] public virtual string String { get; set; }
 #pragma warning restore CA1720 // Identifier contains type name
     public bool Equals(LocalizedString other)
     {
