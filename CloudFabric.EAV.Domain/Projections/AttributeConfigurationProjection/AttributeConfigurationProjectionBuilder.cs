@@ -4,6 +4,7 @@ using CloudFabric.EAV.Domain.Events.Instance.Attribute;
 using CloudFabric.EAV.Domain.Events.Instance.Entity;
 using CloudFabric.EAV.Domain.Models;
 using CloudFabric.EAV.Domain.Models.Base;
+using CloudFabric.EventSourcing.Domain;
 using CloudFabric.Projections;
 using CloudFabric.Projections.Queries;
 
@@ -25,7 +26,7 @@ public class AttributeConfigurationProjectionBuilder : ProjectionBuilder<Attribu
     IHandleEvent<EntityConfigurationAttributeRemoved>
 {
     public AttributeConfigurationProjectionBuilder(
-        ProjectionRepositoryFactory projectionRepositoryFactory
+        ProjectionRepositoryFactory projectionRepositoryFactory, AggregateRepositoryFactory _
     ) : base(projectionRepositoryFactory)
     {
     }

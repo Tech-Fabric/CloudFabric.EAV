@@ -2,6 +2,7 @@ using CloudFabric.EAV.Domain.Events.Configuration.Entity;
 using CloudFabric.EAV.Domain.Models;
 using CloudFabric.EAV.Domain.Models.Base;
 using CloudFabric.EAV.Domain.Projections.AttributeConfigurationProjection;
+using CloudFabric.EventSourcing.Domain;
 using CloudFabric.Projections;
 
 namespace CloudFabric.EAV.Domain.Projections.EntityConfigurationProjection;
@@ -14,7 +15,7 @@ public class EntityConfigurationProjectionBuilder : ProjectionBuilder<EntityConf
     IHandleEvent<AggregateUpdatedEvent<EntityConfiguration>>
 {
     public EntityConfigurationProjectionBuilder(
-        ProjectionRepositoryFactory projectionRepositoryFactory
+        ProjectionRepositoryFactory projectionRepositoryFactory, AggregateRepositoryFactory _
     ) : base(projectionRepositoryFactory)
     {
     }

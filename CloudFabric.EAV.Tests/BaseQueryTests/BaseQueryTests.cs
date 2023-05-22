@@ -55,12 +55,11 @@ public abstract class BaseQueryTests
         projectionsEngine.SetEventsObserver(GetEventStoreEventsObserver());
 
         var attributeConfigurationProjectionBuilder = new AttributeConfigurationProjectionBuilder(
-            projectionRepositoryFactory
+            projectionRepositoryFactory, aggregateRepositoryFactory
         );
 
         var entityInstanceProjectionBuilder = new EntityInstanceProjectionBuilder(
-            aggregateRepositoryFactory,
-            projectionRepositoryFactory
+            projectionRepositoryFactory, aggregateRepositoryFactory
         );
 
         projectionsEngine.AddProjectionBuilder(attributeConfigurationProjectionBuilder);
