@@ -1,29 +1,51 @@
-<Project Sdk="Microsoft.NET.Sdk">
+<Project>
 
-  <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-    <PackageId>CloudFabric.EAV.Domain</PackageId>
-    <Version>0.0.1</Version>
-    <Authors>CloudFabric Developers</Authors>
-    <Company>CloudFabric</Company>
-    <AssemblyName>CloudFabric.EAV.Domain</AssemblyName>
-    <RootNamespace>CloudFabric.EAV.Domain</RootNamespace>
-  </PropertyGroup>
+    <PropertyGroup>
+        <TargetFramework>net7.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <PackageId>CloudFabric.EAV.Domain</PackageId>
+        <Version>0.0.1</Version>
+        <Authors>CloudFabric Developers</Authors>
+        <Company>CloudFabric</Company>
+        <AssemblyName>CloudFabric.EAV.Domain</AssemblyName>
+        <RootNamespace>CloudFabric.EAV.Domain</RootNamespace>
 
-  <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.Mvc.Core" Version="2.2.5" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="6.0.0" />
-    <PackageReference Include="System.ComponentModel.Annotations" Version="5.0.0" />
-    <PackageReference Include="System.Text.Json" Version="6.0.2" />
-  </ItemGroup>
+        <BaseIntermediateOutputPath>obj-localpackages\$(AssemblyName)</BaseIntermediateOutputPath>
+        <OutputPath>bin-localpackages\$(AssemblyName)</OutputPath>
+    </PropertyGroup>
+    
+    <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk"/>
 
-  <ItemGroup>
-    <ProjectReference Include="..\..\CloudFabric.EventSourcing\CloudFabric.EventSourcing.Domain\CloudFabric.EventSourcing.Domain.csproj" />
-    <ProjectReference Include="..\..\CloudFabric.EventSourcing\CloudFabric.Projections\CloudFabric.Projections.csproj" />
-    <ProjectReference Include="..\CloudFabric.EAV.Enums\CloudFabric.EAV.Enums.csproj" />
-    <ProjectReference Include="..\CloudFabric.EAV.Json\CloudFabric.EAV.Json.LocalEventSourcingPackages.csproj" />
-  </ItemGroup>
+    <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk"/>
 
+    <ItemGroup>
+        <PackageReference Include="Microsoft.AspNetCore.Mvc.Core" Version="2.2.5"/>
+        <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="6.0.0"/>
+        <PackageReference Include="System.ComponentModel.Annotations" Version="5.0.0"/>
+        <PackageReference Include="System.Text.Json" Version="6.0.2"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\..\CloudFabric.EventSourcing\CloudFabric.EventSourcing.Domain\CloudFabric.EventSourcing.Domain.csproj"/>
+        <ProjectReference Include="..\..\CloudFabric.EventSourcing\CloudFabric.Projections\CloudFabric.Projections.csproj"/>
+        <ProjectReference Include="..\CloudFabric.EAV.Enums\CloudFabric.EAV.Enums.LocalEventSourcingPackages.csproj"/>
+        <ProjectReference Include="..\CloudFabric.EAV.Json\CloudFabric.EAV.Json.LocalEventSourcingPackages.csproj"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <Compile Remove="bin\**" />
+        <Compile Remove="obj\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <EmbeddedResource Remove="bin\**" />
+        <EmbeddedResource Remove="obj\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <None Remove="bin\**" />
+        <None Remove="obj\**" />
+    </ItemGroup>
+    
 </Project>

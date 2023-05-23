@@ -4,12 +4,13 @@
         <TargetFramework>net7.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
-        <PackageId>CloudFabric.EAV.Json</PackageId>
+        <PackageId>CloudFabric.EAV.Enums</PackageId>
         <Version>0.0.1</Version>
         <Authors>CloudFabric Developers</Authors>
         <Company>CloudFabric</Company>
-        <AssemblyName>CloudFabric.EAV.Json</AssemblyName>
-        <RootNamespace>CloudFabric.EAV.Json</RootNamespace>
+        <PackageLicenseExpression>MIT</PackageLicenseExpression>
+        <AssemblyName>CloudFabric.EAV.Enums</AssemblyName>
+        <RootNamespace>CloudFabric.EAV.Enums</RootNamespace>
 
         <BaseIntermediateOutputPath>obj-localpackages\$(AssemblyName)</BaseIntermediateOutputPath>
         <OutputPath>bin-localpackages\$(AssemblyName)</OutputPath>

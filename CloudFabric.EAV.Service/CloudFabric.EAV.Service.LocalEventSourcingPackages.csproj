@@ -1,25 +1,47 @@
-<Project Sdk="Microsoft.NET.Sdk">
+<Project>
 
-  <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-    <PackageId>CloudFabric.EAV.Service</PackageId>
-    <Version>0.0.1</Version>
-    <Authors>CloudFabric Developers</Authors>
-    <Company>CloudFabric</Company>
-    <AssemblyName>CloudFabric.EAV.Service</AssemblyName>
-    <RootNamespace>CloudFabric.EAV.Service</RootNamespace>
-  </PropertyGroup>
+    <PropertyGroup>
+        <TargetFramework>net7.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <PackageId>CloudFabric.EAV.Service</PackageId>
+        <Version>0.0.1</Version>
+        <Authors>CloudFabric Developers</Authors>
+        <Company>CloudFabric</Company>
+        <AssemblyName>CloudFabric.EAV.Service</AssemblyName>
+        <RootNamespace>CloudFabric.EAV.Service</RootNamespace>
 
-  <ItemGroup>
-    <PackageReference Include="AutoMapper" Version="11.0.1" />
-  </ItemGroup>
+        <BaseIntermediateOutputPath>obj-localpackages\$(AssemblyName)</BaseIntermediateOutputPath>
+        <OutputPath>bin-localpackages\$(AssemblyName)</OutputPath>
+    </PropertyGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\..\CloudFabric.EventSourcing\CloudFabric.EventSourcing.Domain\CloudFabric.EventSourcing.Domain.csproj" />
-    <ProjectReference Include="..\CloudFabric.EAV.Json\CloudFabric.EAV.Json.LocalEventSourcingPackages.csproj" />
-    <ProjectReference Include="..\CloudFabric.EAV.Models\CloudFabric.EAV.Models.LocalEventSourcingPackages.csproj" />
-  </ItemGroup>
+    <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk"/>
+    
+    <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk"/>
 
+    <ItemGroup>
+        <PackageReference Include="AutoMapper" Version="12.0.1"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\..\CloudFabric.EventSourcing\CloudFabric.EventSourcing.Domain\CloudFabric.EventSourcing.Domain.csproj"/>
+        <ProjectReference Include="..\CloudFabric.EAV.Json\CloudFabric.EAV.Json.LocalEventSourcingPackages.csproj"/>
+        <ProjectReference Include="..\CloudFabric.EAV.Models\CloudFabric.EAV.Models.LocalEventSourcingPackages.csproj"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <Compile Remove="bin\**" />
+        <Compile Remove="obj\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <EmbeddedResource Remove="bin\**" />
+        <EmbeddedResource Remove="obj\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <None Remove="bin\**" />
+        <None Remove="obj\**" />
+    </ItemGroup>
+    
 </Project>

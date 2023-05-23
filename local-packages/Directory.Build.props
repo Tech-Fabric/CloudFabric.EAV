@@ -1,0 +1,6 @@
+<Project>
+ <PropertyGroup>
+   <Deterministic>true</Deterministic>
+   <BaseIntermediateOutputPath>obj-localpackages</BaseIntermediateOutputPath>
+ </PropertyGroup>
+</Project>

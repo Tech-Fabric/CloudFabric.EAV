@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>net6.0</TargetFramework>
+        <TargetFramework>net7.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <PackageId>CloudFabric.EAV.Enums</PackageId>
@@ -10,5 +10,20 @@
         <Company>CloudFabric</Company>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
     </PropertyGroup>
+
+    <ItemGroup>
+      <Compile Remove="bin-localpackages\**" />
+      <Compile Remove="obj-localpackages\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <EmbeddedResource Remove="bin-localpackages\**" />
+      <EmbeddedResource Remove="obj-localpackages\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Remove="bin-localpackages\**" />
+      <None Remove="obj-localpackages\**" />
+    </ItemGroup>
 
 </Project>
