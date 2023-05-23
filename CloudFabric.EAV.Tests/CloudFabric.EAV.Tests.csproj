@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
-        <TargetFramework>net6.0</TargetFramework>
+        <TargetFramework>net7.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <PackageId>CloudFabric.EAV.Tests</PackageId>
@@ -11,11 +11,11 @@
 
     <ItemGroup>
         <PackageReference Include="AutoMapper" Version="12.0.1" />
-        <PackageReference Include="CloudFabric.EventSourcing.EventStore.InMemory" Version="0.0.44" />
-        <PackageReference Include="CloudFabric.EventSourcing.EventStore.Postgresql" Version="0.0.44" />
-        <PackageReference Include="CloudFabric.Projections.ElasticSearch" Version="0.0.44" />
-        <PackageReference Include="CloudFabric.Projections.InMemory" Version="0.0.44" />
-        <PackageReference Include="CloudFabric.Projections.Postgresql" Version="0.0.44" />
+        <PackageReference Include="CloudFabric.EventSourcing.EventStore.InMemory" Version="0.0.46" />
+        <PackageReference Include="CloudFabric.EventSourcing.EventStore.Postgresql" Version="0.0.46" />
+        <PackageReference Include="CloudFabric.Projections.ElasticSearch" Version="0.0.46" />
+        <PackageReference Include="CloudFabric.Projections.InMemory" Version="0.0.46" />
+        <PackageReference Include="CloudFabric.Projections.Postgresql" Version="0.0.46" />
         <PackageReference Include="coverlet.collector" Version="3.2.0">
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -34,5 +34,20 @@
     <ItemGroup>
         <ProjectReference Include="..\CloudFabric.EAV.Models\CloudFabric.EAV.Models.csproj" />
         <ProjectReference Include="..\CloudFabric.EAV.Service\CloudFabric.EAV.Service.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Compile Remove="bin-localpackages\**" />
+      <Compile Remove="obj-localpackages\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <EmbeddedResource Remove="bin-localpackages\**" />
+      <EmbeddedResource Remove="obj-localpackages\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Remove="bin-localpackages\**" />
+      <None Remove="obj-localpackages\**" />
     </ItemGroup>
 </Project>

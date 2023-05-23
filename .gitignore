@@ -28,6 +28,8 @@ x86/
 bld/
 [Bb]in/
 [Oo]bj/
+[Bb]in-localpackages/
+[Oo]bj-localpackages/
 [Ll]og/
 [Ll]ogs/
 

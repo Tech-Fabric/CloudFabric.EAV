@@ -1,40 +1,63 @@
-<Project Sdk="Microsoft.NET.Sdk">
+<Project>
+
     <PropertyGroup>
-        <TargetFramework>net6.0</TargetFramework>
+        <TargetFramework>net7.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <PackageId>CloudFabric.EAV.Tests</PackageId>
         <Version>0.0.1</Version>
         <Authors>CloudFabric Developers</Authors>
         <Company>CloudFabric</Company>
+
+        <BaseIntermediateOutputPath>obj-localpackages\$(AssemblyName)</BaseIntermediateOutputPath>
+        <OutputPath>bin-localpackages\$(AssemblyName)</OutputPath>
     </PropertyGroup>
 
+    <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk"/>
+
+    <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk"/>
+
     <ItemGroup>
-        <PackageReference Include="AutoMapper" Version="11.0.1" />
+        <PackageReference Include="AutoMapper" Version="12.0.1"/>
         <PackageReference Include="coverlet.msbuild" Version="3.1.2">
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
             <PrivateAssets>all</PrivateAssets>
         </PackageReference>
-        <PackageReference Include="FluentAssertions" Version="6.5.0" />
-        <PackageReference Include="IdentityModel" Version="6.0.0" />
-        <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="6.0.2" />
-        <PackageReference Include="Microsoft.EntityFrameworkCore" Version="6.0.2" />
-        <PackageReference Include="Moq" Version="4.16.1" />
-        <PackageReference Include="MSTest.TestAdapter" Version="2.2.8" />
-        <PackageReference Include="MSTest.TestFramework" Version="2.2.8" />
-        <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="6.0.3" />
-        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.0.0" />
+        <PackageReference Include="FluentAssertions" Version="6.5.0"/>
+        <PackageReference Include="IdentityModel" Version="6.0.0"/>
+        <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="6.0.2"/>
+        <PackageReference Include="Microsoft.EntityFrameworkCore" Version="6.0.2"/>
+        <PackageReference Include="Moq" Version="4.16.1"/>
+        <PackageReference Include="MSTest.TestAdapter" Version="2.2.8"/>
+        <PackageReference Include="MSTest.TestFramework" Version="2.2.8"/>
+        <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="6.0.3"/>
+        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.0.0"/>
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\..\CloudFabric.EventSourcing\CloudFabric.EventSourcing.Domain\CloudFabric.EventSourcing.Domain.csproj" />
-      <ProjectReference Include="..\..\CloudFabric.EventSourcing\CloudFabric.Projections\CloudFabric.Projections.csproj" />
-      <ProjectReference Include="..\..\CloudFabric.EventSourcing\Implementations\CloudFabric.EventSourcing.EventStore.InMemory\CloudFabric.EventSourcing.EventStore.InMemory.csproj" />
-      <ProjectReference Include="..\..\CloudFabric.EventSourcing\Implementations\CloudFabric.EventSourcing.EventStore.Postgresql\CloudFabric.EventSourcing.EventStore.Postgresql.csproj" />
-      <ProjectReference Include="..\..\CloudFabric.EventSourcing\Implementations\CloudFabric.Projections.ElasticSearch\CloudFabric.Projections.ElasticSearch.csproj" />
-      <ProjectReference Include="..\..\CloudFabric.EventSourcing\Implementations\CloudFabric.Projections.InMemory\CloudFabric.Projections.InMemory.csproj" />
-      <ProjectReference Include="..\..\CloudFabric.EventSourcing\Implementations\CloudFabric.Projections.Postgresql\CloudFabric.Projections.Postgresql.csproj" />
-      <ProjectReference Include="..\CloudFabric.EAV.Models\CloudFabric.EAV.Models.LocalEventSourcingPackages.csproj" />
-      <ProjectReference Include="..\CloudFabric.EAV.Service\CloudFabric.EAV.Service.LocalEventSourcingPackages.csproj" />
+        <ProjectReference Include="..\..\CloudFabric.EventSourcing\CloudFabric.EventSourcing.Domain\CloudFabric.EventSourcing.Domain.csproj"/>
+        <ProjectReference Include="..\..\CloudFabric.EventSourcing\CloudFabric.Projections\CloudFabric.Projections.csproj"/>
+        <ProjectReference Include="..\..\CloudFabric.EventSourcing\Implementations\CloudFabric.EventSourcing.EventStore.InMemory\CloudFabric.EventSourcing.EventStore.InMemory.csproj"/>
+        <ProjectReference Include="..\..\CloudFabric.EventSourcing\Implementations\CloudFabric.EventSourcing.EventStore.Postgresql\CloudFabric.EventSourcing.EventStore.Postgresql.csproj"/>
+        <ProjectReference Include="..\..\CloudFabric.EventSourcing\Implementations\CloudFabric.Projections.ElasticSearch\CloudFabric.Projections.ElasticSearch.csproj"/>
+        <ProjectReference Include="..\..\CloudFabric.EventSourcing\Implementations\CloudFabric.Projections.InMemory\CloudFabric.Projections.InMemory.csproj"/>
+        <ProjectReference Include="..\..\CloudFabric.EventSourcing\Implementations\CloudFabric.Projections.Postgresql\CloudFabric.Projections.Postgresql.csproj"/>
+        <ProjectReference Include="..\CloudFabric.EAV.Models\CloudFabric.EAV.Models.LocalEventSourcingPackages.csproj"/>
+        <ProjectReference Include="..\CloudFabric.EAV.Service\CloudFabric.EAV.Service.LocalEventSourcingPackages.csproj"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <Compile Remove="bin\**" />
+        <Compile Remove="obj\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <EmbeddedResource Remove="bin\**" />
+        <EmbeddedResource Remove="obj\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <None Remove="bin\**" />
+        <None Remove="obj\**" />
     </ItemGroup>
 </Project>
