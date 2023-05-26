@@ -97,6 +97,8 @@ public static class ProjectionDocumentSchemaFactory
                 return ProjectionAttributesSchemaFactory.GetArrayAttributeSchema(attributeConfiguration);
             case EavAttributeType.Serial:
                 return ProjectionAttributesSchemaFactory.GetSerialAttributeShema(attributeConfiguration);
+            case EavAttributeType.Money:
+                return ProjectionAttributesSchemaFactory.GetMoneyAttributeSchema(attributeConfiguration);
             default:
                 throw new Exception($"EavAttributeType {attributeConfiguration.ValueType} is not supported.");
         }
