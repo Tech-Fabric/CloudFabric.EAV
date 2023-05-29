@@ -16,22 +16,25 @@
         <OutputPath>bin-localpackages\$(AssemblyName)</OutputPath>
     </PropertyGroup>
 
-    <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk"/>
+    <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
 
-    <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk"/>
+    <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
 
     <ItemGroup>
         <Compile Remove="bin\**" />
         <Compile Remove="obj\**" />
+        <Compile Remove="obj-localpackages\**" />
     </ItemGroup>
 
     <ItemGroup>
         <EmbeddedResource Remove="bin\**" />
         <EmbeddedResource Remove="obj\**" />
+        <EmbeddedResource Remove="obj-localpackages\**" />
     </ItemGroup>
 
     <ItemGroup>
         <None Remove="bin\**" />
         <None Remove="obj\**" />
+        <None Remove="obj-localpackages\**" />
     </ItemGroup>
 </Project>

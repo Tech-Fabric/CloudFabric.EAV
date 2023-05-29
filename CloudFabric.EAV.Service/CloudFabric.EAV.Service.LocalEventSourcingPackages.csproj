@@ -15,33 +15,36 @@
         <OutputPath>bin-localpackages\$(AssemblyName)</OutputPath>
     </PropertyGroup>
 
-    <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk"/>
+    <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
     
-    <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk"/>
+    <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
 
     <ItemGroup>
-        <PackageReference Include="AutoMapper" Version="12.0.1"/>
+        <PackageReference Include="AutoMapper" Version="12.0.1" />
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\..\CloudFabric.EventSourcing\CloudFabric.EventSourcing.Domain\CloudFabric.EventSourcing.Domain.csproj"/>
-        <ProjectReference Include="..\CloudFabric.EAV.Json\CloudFabric.EAV.Json.LocalEventSourcingPackages.csproj"/>
-        <ProjectReference Include="..\CloudFabric.EAV.Models\CloudFabric.EAV.Models.LocalEventSourcingPackages.csproj"/>
+        <ProjectReference Include="..\..\CloudFabric.EventSourcing\CloudFabric.EventSourcing.Domain\CloudFabric.EventSourcing.Domain.csproj" />
+        <ProjectReference Include="..\CloudFabric.EAV.Json\CloudFabric.EAV.Json.LocalEventSourcingPackages.csproj" />
+        <ProjectReference Include="..\CloudFabric.EAV.Models\CloudFabric.EAV.Models.LocalEventSourcingPackages.csproj" />
     </ItemGroup>
 
     <ItemGroup>
         <Compile Remove="bin\**" />
         <Compile Remove="obj\**" />
+        <Compile Remove="obj-localpackages\**" />
     </ItemGroup>
 
     <ItemGroup>
         <EmbeddedResource Remove="bin\**" />
         <EmbeddedResource Remove="obj\**" />
+        <EmbeddedResource Remove="obj-localpackages\**" />
     </ItemGroup>
 
     <ItemGroup>
         <None Remove="bin\**" />
         <None Remove="obj\**" />
+        <None Remove="obj-localpackages\**" />
     </ItemGroup>
     
 </Project>

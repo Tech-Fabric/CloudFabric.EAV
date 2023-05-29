@@ -15,37 +15,40 @@
         <OutputPath>bin-localpackages\$(AssemblyName)</OutputPath>
     </PropertyGroup>
     
-    <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk"/>
+    <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
 
-    <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk"/>
+    <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
 
     <ItemGroup>
-        <PackageReference Include="Microsoft.AspNetCore.Mvc.Core" Version="2.2.5"/>
-        <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="6.0.0"/>
-        <PackageReference Include="System.ComponentModel.Annotations" Version="5.0.0"/>
-        <PackageReference Include="System.Text.Json" Version="6.0.2"/>
+        <PackageReference Include="Microsoft.AspNetCore.Mvc.Core" Version="2.2.5" />
+        <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="6.0.0" />
+        <PackageReference Include="System.ComponentModel.Annotations" Version="5.0.0" />
+        <PackageReference Include="System.Text.Json" Version="6.0.2" />
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\..\CloudFabric.EventSourcing\CloudFabric.EventSourcing.Domain\CloudFabric.EventSourcing.Domain.csproj"/>
-        <ProjectReference Include="..\..\CloudFabric.EventSourcing\CloudFabric.Projections\CloudFabric.Projections.csproj"/>
-        <ProjectReference Include="..\CloudFabric.EAV.Enums\CloudFabric.EAV.Enums.LocalEventSourcingPackages.csproj"/>
-        <ProjectReference Include="..\CloudFabric.EAV.Json\CloudFabric.EAV.Json.LocalEventSourcingPackages.csproj"/>
+        <ProjectReference Include="..\..\CloudFabric.EventSourcing\CloudFabric.EventSourcing.Domain\CloudFabric.EventSourcing.Domain.csproj" />
+        <ProjectReference Include="..\..\CloudFabric.EventSourcing\CloudFabric.Projections\CloudFabric.Projections.csproj" />
+        <ProjectReference Include="..\CloudFabric.EAV.Enums\CloudFabric.EAV.Enums.LocalEventSourcingPackages.csproj" />
+        <ProjectReference Include="..\CloudFabric.EAV.Json\CloudFabric.EAV.Json.LocalEventSourcingPackages.csproj" />
     </ItemGroup>
 
     <ItemGroup>
         <Compile Remove="bin\**" />
         <Compile Remove="obj\**" />
+        <Compile Remove="obj-localpackages\**" />
     </ItemGroup>
 
     <ItemGroup>
         <EmbeddedResource Remove="bin\**" />
         <EmbeddedResource Remove="obj\**" />
+        <EmbeddedResource Remove="obj-localpackages\**" />
     </ItemGroup>
 
     <ItemGroup>
         <None Remove="bin\**" />
         <None Remove="obj\**" />
+        <None Remove="obj-localpackages\**" />
     </ItemGroup>
     
 </Project>

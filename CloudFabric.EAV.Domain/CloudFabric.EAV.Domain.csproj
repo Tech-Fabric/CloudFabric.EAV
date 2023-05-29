@@ -12,11 +12,11 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="CloudFabric.EventSourcing.Domain" Version="0.0.46" />
-        <PackageReference Include="CloudFabric.Projections" Version="0.0.45" />
-        <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="6.0.3" />
+        <PackageReference Include="CloudFabric.EventSourcing.Domain" Version="0.1.2" />
+        <PackageReference Include="CloudFabric.Projections" Version="0.1.2" />
+        <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="7.0.0" />
         <PackageReference Include="System.ComponentModel.Annotations" Version="5.0.0" />
-        <PackageReference Include="System.Text.Json" Version="6.0.7" />
+        <PackageReference Include="System.Text.Json" Version="7.0.2" />
     </ItemGroup>
 
     <ItemGroup>
