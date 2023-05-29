@@ -28,7 +28,7 @@ public static class ProjectionAttributesSchemaFactory
             PropertyType = GetPropertyType(attributeConfiguration.ValueType).GetValueOrDefault(),
             IsSearchable = attribute.IsSearchable,
             IsRetrievable = true,
-            IsFilterable = attribute.IsSearchable,
+            IsFilterable = true,
             IsSortable = true
         };
     }
@@ -136,7 +136,7 @@ public static class ProjectionAttributesSchemaFactory
             PropertyName = attributeConfiguration.MachineName,
             PropertyType = GetPropertyType(attributeConfiguration.ValueType).GetValueOrDefault(),
             IsRetrievable = true,
-            IsFilterable = false,
+            IsFilterable = true,
             IsSortable = true,
             IsNestedArray = true,
             ArrayElementType = Type.GetTypeCode(typeof(Currency)),
