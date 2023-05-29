@@ -197,6 +197,12 @@ public class EntityInstanceFromDictionaryDeserializer
             case EavAttributeType.Serial:
                 attributeInstance = new SerialAttributeInstanceViewModel { Value = (long)attributeValue };
                 break;
+            case EavAttributeType.Money:
+                attributeInstance = new MoneyAttributeInstanceViewModel
+                {
+                    Value = (decimal?)attributeValue
+                };
+                break;
             default:
                 throw new NotSupportedException(
                     $"Unable to deserialize attribute value of type {attributeType}: not supported"

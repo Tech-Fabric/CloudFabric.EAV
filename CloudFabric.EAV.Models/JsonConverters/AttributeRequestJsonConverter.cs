@@ -65,6 +65,8 @@ public class AttributeRequestJsonConverter<T> : JsonConverter<T>
                 return typeof(ImageAttributeConfigurationCreateUpdateRequest);
             case EavAttributeType.Array:
                 return typeof(ArrayAttributeConfigurationCreateUpdateRequest);
+            case EavAttributeType.Money:
+                return typeof(MoneyAttributeConfigurationCreateUpdateRequest);
             default:
                 throw new InvalidOperationException();
         }

@@ -124,6 +124,26 @@ public static class ProjectionAttributesSchemaFactory
         };
     }
 
+    public static ProjectionDocumentPropertySchema GetMoneyAttributeSchema(AttributeConfiguration attributeConfiguration)
+    {
+        if (attributeConfiguration is not MoneyAttributeConfiguration)
+        {
+            throw new ArgumentException("Invalid attribute type");
+        }
+
+        return new ProjectionDocumentPropertySchema
+        {
+            PropertyName = attributeConfiguration.MachineName,
+            PropertyType = GetPropertyType(attributeConfiguration.ValueType).GetValueOrDefault(),
+            IsRetrievable = true,
+            IsFilterable = false,
+            IsSortable = true,
+            IsNestedArray = true,
+            ArrayElementType = Type.GetTypeCode(typeof(Currency)),
+            NestedObjectProperties = GetCurrencyAttributeNestedProperties()
+        };
+    }
+
     public static ProjectionDocumentPropertySchema GetLocalizedTextAttributeSchema(
         AttributeConfiguration attributeConfiguration)
     {
@@ -269,6 +289,7 @@ public static class ProjectionAttributesSchemaFactory
 
         switch (valueType)
         {
+            case EavAttributeType.Money:
             case EavAttributeType.Number:
                 propertyType = TypeCode.Decimal;
                 break;
@@ -351,6 +372,37 @@ public static class ProjectionAttributesSchemaFactory
                 IsRetrievable = true,
                 IsFilterable = true,
                 IsSortable = true
+            }
+        };
+    }
+
+    private static List<ProjectionDocumentPropertySchema> GetCurrencyAttributeNestedProperties()
+    {
+        return new List<ProjectionDocumentPropertySchema>
+        {
+            new()
+            {
+                PropertyName = nameof(Currency.Name),
+                PropertyType = TypeCode.String,
+                IsRetrievable = false,
+                IsFilterable = false,
+                IsSortable = false
+            },
+            new()
+            {
+                PropertyName = nameof(Currency.MachineName),
+                PropertyType = TypeCode.String,
+                IsRetrievable = false,
+                IsFilterable = false,
+                IsSortable = false
+            },
+            new()
+            {
+                PropertyName = nameof(Currency.Prefix),
+                PropertyType = TypeCode.String,
+                IsRetrievable = true,
+                IsFilterable = false,
+                IsSortable = false
             }
         };
     }
@@ -468,4 +520,6 @@ public static class ProjectionAttributesSchemaFactory
     }
 
     #endregion
+
+
 }

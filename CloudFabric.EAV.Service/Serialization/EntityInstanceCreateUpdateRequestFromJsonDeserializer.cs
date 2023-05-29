@@ -302,6 +302,12 @@ public class EntityInstanceCreateUpdateRequestFromJsonDeserializer
             case EavAttributeType.Serial:
                 attributeInstance = new SerialAttributeInstanceCreateUpdateRequest { };
                 break;
+            case EavAttributeType.Money:
+                attributeInstance = new MoneyAttributeInstanceCreateUpdateRequest()
+                {
+                    Value = attributeValue.GetDecimal()
+                };
+                break;
             default:
                 throw new NotSupportedException(
                     $"Unable to deserialize attribute value of type {attributeType}: not supported"
