@@ -1,10 +1,10 @@
-﻿using CloudFabric.EAV.Enums;
+using CloudFabric.EAV.Enums;
 
 namespace CloudFabric.EAV.Models.RequestModels.Attributes;
 
 public class NumberAttributeConfigurationCreateUpdateRequest : AttributeConfigurationCreateUpdateRequest
 {
-    public decimal DefaultValue { get; set; }
+    public decimal? DefaultValue { get; set; }
     public decimal? MinimumValue { get; set; }
     public decimal? MaximumValue { get; set; }
 

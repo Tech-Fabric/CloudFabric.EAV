@@ -7,7 +7,7 @@ namespace CloudFabric.EAV.Domain.Models.Attributes;
 
 public class NumberAttributeConfiguration : AttributeConfiguration
 {
-    public decimal DefaultValue { get; set; }
+    public decimal? DefaultValue { get; set; }
     public decimal? MinimumValue { get; set; }
     public decimal? MaximumValue { get; set; }
 
@@ -24,10 +24,10 @@ public class NumberAttributeConfiguration : AttributeConfiguration
         Guid id,
         string machineName,
         List<LocalizedString> name,
-        decimal defaultValue,
         NumberAttributeType numberType,
         List<LocalizedString> description = null,
         bool isRequired = false,
+        decimal? defaultValue = null,
         decimal? minimumValue = null,
         decimal? maximumValue = null,
         Guid? tenantId = null,
@@ -43,7 +43,6 @@ public class NumberAttributeConfiguration : AttributeConfiguration
         {
             LocalizedString.English("Number")
         },
-        0,
         NumberAttributeType.Integer,
         new List<LocalizedString>
         {

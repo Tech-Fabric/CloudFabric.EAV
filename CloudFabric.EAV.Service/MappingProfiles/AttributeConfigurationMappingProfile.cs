@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using AutoMapper;
 
 using CloudFabric.EAV.Domain.Models;
 using CloudFabric.EAV.Domain.Models.Attributes;
@@ -70,10 +70,10 @@ public class AttributeConfigurationProfile : Profile
                     Guid.NewGuid(),
                     o.MachineName,
                     ctx.Mapper.Map<List<LocalizedString>>(o.Name),
-                    o.DefaultValue,
                     o.NumberType,
                     ctx.Mapper.Map<List<LocalizedString>>(o.Description),
                     o.IsRequired,
+                    o.DefaultValue,
                     o.MinimumValue,
                     o.MaximumValue,
                     o.TenantId,
@@ -87,10 +87,10 @@ public class AttributeConfigurationProfile : Profile
                         Guid.NewGuid(),
                         src.MachineName,
                         ctx.Mapper.Map<List<LocalizedString>>(src.Name),
-                        src.DefaultValue,
                         src.MaxLength,
                         src.IsSearchable,
                         ctx.Mapper.Map<List<LocalizedString>>(src.Description),
+                        src.DefaultValue,
                         src.IsRequired,
                         src.TenantId,
                         src.Metadata

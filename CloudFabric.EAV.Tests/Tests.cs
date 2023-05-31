@@ -998,7 +998,7 @@ public class Tests
             {
                 new() { CultureInfoId = cultureInfoId, String = "testAttrName" }
             },
-            DefaultValue = 15,
+            DefaultValue = null,
             IsRequired = true,
             MaximumValue = 100,
             MinimumValue = -100

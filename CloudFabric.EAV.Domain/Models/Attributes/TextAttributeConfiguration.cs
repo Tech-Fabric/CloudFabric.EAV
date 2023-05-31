@@ -7,7 +7,7 @@ namespace CloudFabric.EAV.Domain.Models.Attributes;
 
 public class TextAttributeConfiguration : AttributeConfiguration
 {
-    public string DefaultValue { get; set; }
+    public string? DefaultValue { get; set; }
 
     public bool IsSearchable { get; set; }
 
@@ -23,10 +23,10 @@ public class TextAttributeConfiguration : AttributeConfiguration
         Guid id,
         string machineName,
         List<LocalizedString> name,
-        string defaultValue,
         int? maxLength,
         bool isSearchable,
         List<LocalizedString> description = null,
+        string? defaultValue = null,
         bool isRequired = false,
         Guid? tenantId = null,
         string? metadata = null
@@ -40,7 +40,6 @@ public class TextAttributeConfiguration : AttributeConfiguration
         {
             LocalizedString.English("Text attribute")
         },
-        "text",
         100,
         false,
         new List<LocalizedString>
