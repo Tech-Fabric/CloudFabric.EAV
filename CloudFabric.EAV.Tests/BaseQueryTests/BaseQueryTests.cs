@@ -5,7 +5,6 @@ using AutoMapper;
 
 using CloudFabric.EAV.Domain.Projections.AttributeConfigurationProjection;
 using CloudFabric.EAV.Domain.Projections.EntityInstanceProjection;
-using CloudFabric.EAV.Options;
 using CloudFabric.EAV.Service;
 using CloudFabric.EventSourcing.Domain;
 using CloudFabric.EventSourcing.EventStore;
@@ -13,7 +12,6 @@ using CloudFabric.EventSourcing.EventStore.Persistence;
 using CloudFabric.Projections;
 
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace CloudFabric.EAV.Tests.BaseQueryTests;
@@ -79,8 +77,7 @@ public abstract class BaseQueryTests
             },
             aggregateRepositoryFactory,
             projectionRepositoryFactory,
-            new EventUserInfo(Guid.NewGuid()),
-            Microsoft.Extensions.Options.Options.Create(new ElasticSearchQueryOptions())
+            new EventUserInfo(Guid.NewGuid())
         );
     }
 }

@@ -68,7 +68,7 @@ public class EAVService : IEAVService
         AggregateRepositoryFactory aggregateRepositoryFactory,
         ProjectionRepositoryFactory projectionRepositoryFactory,
         EventUserInfo userInfo,
-        IOptions<ElasticSearchQueryOptions> elasticSearchQueryOptions
+        IOptions<ElasticSearchQueryOptions>? elasticSearchQueryOptions = null
     )
     {
         _logger = logger;
@@ -80,7 +80,9 @@ public class EAVService : IEAVService
 
         _userInfo = userInfo;
 
-        _elasticSearchQueryOptions = elasticSearchQueryOptions.Value;
+        _elasticSearchQueryOptions = elasticSearchQueryOptions != null
+            ? elasticSearchQueryOptions.Value
+            : new ElasticSearchQueryOptions();
 
         _attributeConfigurationRepository = _aggregateRepositoryFactory
             .GetAggregateRepository<AttributeConfiguration>();
