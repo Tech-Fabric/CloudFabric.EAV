@@ -5,6 +5,7 @@ using AutoMapper;
 
 using CloudFabric.EAV.Domain.Projections.AttributeConfigurationProjection;
 using CloudFabric.EAV.Domain.Projections.EntityInstanceProjection;
+using CloudFabric.EAV.Options;
 using CloudFabric.EAV.Service;
 using CloudFabric.EventSourcing.Domain;
 using CloudFabric.EventSourcing.EventStore;
@@ -77,7 +78,8 @@ public abstract class BaseQueryTests
             },
             aggregateRepositoryFactory,
             projectionRepositoryFactory,
-            new EventUserInfo(Guid.NewGuid())
+            new EventUserInfo(Guid.NewGuid()),
+            new ElasticSearchQueryOptions()
         );
     }
 }

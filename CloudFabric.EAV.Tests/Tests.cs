@@ -30,6 +30,7 @@ using FluentAssertions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using CloudFabric.EAV.Options;
 
 // ReSharper disable AsyncConverter.ConfigureAwaitHighlighting
 
@@ -106,7 +107,8 @@ public class Tests
             },
             _aggregateRepositoryFactory,
             _projectionRepositoryFactory,
-            new EventUserInfo(Guid.NewGuid())
+            new EventUserInfo(Guid.NewGuid()),
+            new ElasticSearchQueryOptions()
         );
     }
 

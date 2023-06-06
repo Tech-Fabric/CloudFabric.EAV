@@ -27,6 +27,7 @@ using Microsoft.Extensions.Logging;
 
 using ProjectionDocumentSchemaFactory =
     CloudFabric.EAV.Domain.Projections.EntityInstanceProjection.ProjectionDocumentSchemaFactory;
+using CloudFabric.EAV.Options;
 
 namespace CloudFabric.EAV.Service;
 
@@ -57,13 +58,16 @@ public class EAVService : IEAVService
 
     private readonly EventUserInfo _userInfo;
 
+    private readonly ElasticSearchQueryOptions _elasticSearchQueryOptions;
+
     public EAVService(
         ILogger<EAVService> logger,
         IMapper mapper,
         JsonSerializerOptions jsonSerializerOptions,
         AggregateRepositoryFactory aggregateRepositoryFactory,
         ProjectionRepositoryFactory projectionRepositoryFactory,
-        EventUserInfo userInfo
+        EventUserInfo userInfo,
+        ElasticSearchQueryOptions elasticSearchQueryOptions
     )
     {
         _logger = logger;
@@ -74,6 +78,8 @@ public class EAVService : IEAVService
         _projectionRepositoryFactory = projectionRepositoryFactory;
 
         _userInfo = userInfo;
+
+        _elasticSearchQueryOptions = elasticSearchQueryOptions;
 
         _attributeConfigurationRepository = _aggregateRepositoryFactory
             .GetAggregateRepository<AttributeConfiguration>();
@@ -1521,7 +1527,8 @@ private async Task<Guid?> CreateArrayElementConfiguration(EavAttributeType type,
             await QueryInstances(tree.EntityConfigurationId,
                 new ProjectionQuery
                 {
-                    Filters = new List<Filter> { new("CategoryPaths.TreeId", FilterOperator.Equal, treeId) }
+                    Filters = new List<Filter> { new("CategoryPaths.TreeId", FilterOperator.Equal, treeId) },
+                    Limit = _elasticSearchQueryOptions.MaxSize
                 },
                 cancellationToken
             ).ConfigureAwait(false);
@@ -1631,7 +1638,10 @@ private async Task<Guid?> CreateArrayElementConfiguration(EavAttributeType type,
             throw new NotFoundException("Category tree not found");
         }
 
-        ProjectionQuery query = new ProjectionQuery();
+        ProjectionQuery query = new ProjectionQuery
+        {
+            Limit = _elasticSearchQueryOptions.MaxSize
+        };
 
         if (parentId == null)
         {
