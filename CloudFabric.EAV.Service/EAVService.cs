@@ -15,6 +15,7 @@ using CloudFabric.EAV.Models.RequestModels;
 using CloudFabric.EAV.Models.RequestModels.Attributes;
 using CloudFabric.EAV.Models.ViewModels;
 using CloudFabric.EAV.Models.ViewModels.Attributes;
+using CloudFabric.EAV.Options;
 using CloudFabric.EAV.Service.Serialization;
 using CloudFabric.EventSourcing.Domain;
 using CloudFabric.EventSourcing.EventStore;
@@ -27,7 +28,6 @@ using Microsoft.Extensions.Logging;
 
 using ProjectionDocumentSchemaFactory =
     CloudFabric.EAV.Domain.Projections.EntityInstanceProjection.ProjectionDocumentSchemaFactory;
-using CloudFabric.EAV.Options;
 
 namespace CloudFabric.EAV.Service;
 
