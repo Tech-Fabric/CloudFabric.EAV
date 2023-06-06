@@ -29,6 +29,7 @@ using FluentAssertions;
 
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using CloudFabric.EAV.Options;
 
@@ -108,7 +109,7 @@ public class Tests
             _aggregateRepositoryFactory,
             _projectionRepositoryFactory,
             new EventUserInfo(Guid.NewGuid()),
-            new ElasticSearchQueryOptions()
+            Options.Create(new ElasticSearchQueryOptions())
         );
     }
 

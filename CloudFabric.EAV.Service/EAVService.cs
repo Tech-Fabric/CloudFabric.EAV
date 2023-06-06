@@ -25,6 +25,7 @@ using CloudFabric.Projections.Queries;
 
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 using ProjectionDocumentSchemaFactory =
     CloudFabric.EAV.Domain.Projections.EntityInstanceProjection.ProjectionDocumentSchemaFactory;
@@ -67,7 +68,7 @@ public class EAVService : IEAVService
         AggregateRepositoryFactory aggregateRepositoryFactory,
         ProjectionRepositoryFactory projectionRepositoryFactory,
         EventUserInfo userInfo,
-        ElasticSearchQueryOptions elasticSearchQueryOptions
+        IOptions<ElasticSearchQueryOptions> elasticSearchQueryOptions
     )
     {
         _logger = logger;
@@ -79,7 +80,7 @@ public class EAVService : IEAVService
 
         _userInfo = userInfo;
 
-        _elasticSearchQueryOptions = elasticSearchQueryOptions;
+        _elasticSearchQueryOptions = elasticSearchQueryOptions.Value;
 
         _attributeConfigurationRepository = _aggregateRepositoryFactory
             .GetAggregateRepository<AttributeConfiguration>();

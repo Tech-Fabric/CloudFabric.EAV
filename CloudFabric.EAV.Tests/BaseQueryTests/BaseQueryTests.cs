@@ -13,6 +13,7 @@ using CloudFabric.EventSourcing.EventStore.Persistence;
 using CloudFabric.Projections;
 
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace CloudFabric.EAV.Tests.BaseQueryTests;
@@ -79,7 +80,7 @@ public abstract class BaseQueryTests
             aggregateRepositoryFactory,
             projectionRepositoryFactory,
             new EventUserInfo(Guid.NewGuid()),
-            new ElasticSearchQueryOptions()
+            Microsoft.Extensions.Options.Options.Create(new ElasticSearchQueryOptions())
         );
     }
 }
