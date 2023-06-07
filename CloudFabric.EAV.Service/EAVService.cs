@@ -15,6 +15,7 @@ using CloudFabric.EAV.Models.RequestModels;
 using CloudFabric.EAV.Models.RequestModels.Attributes;
 using CloudFabric.EAV.Models.ViewModels;
 using CloudFabric.EAV.Models.ViewModels.Attributes;
+using CloudFabric.EAV.Options;
 using CloudFabric.EAV.Service.Serialization;
 using CloudFabric.EventSourcing.Domain;
 using CloudFabric.EventSourcing.EventStore;
@@ -24,6 +25,7 @@ using CloudFabric.Projections.Queries;
 
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 using ProjectionDocumentSchemaFactory =
     CloudFabric.EAV.Domain.Projections.EntityInstanceProjection.ProjectionDocumentSchemaFactory;
@@ -57,13 +59,16 @@ public class EAVService : IEAVService
 
     private readonly EventUserInfo _userInfo;
 
+    private readonly ElasticSearchQueryOptions _elasticSearchQueryOptions;
+
     public EAVService(
         ILogger<EAVService> logger,
         IMapper mapper,
         JsonSerializerOptions jsonSerializerOptions,
         AggregateRepositoryFactory aggregateRepositoryFactory,
         ProjectionRepositoryFactory projectionRepositoryFactory,
-        EventUserInfo userInfo
+        EventUserInfo userInfo,
+        IOptions<ElasticSearchQueryOptions>? elasticSearchQueryOptions = null
     )
     {
         _logger = logger;
@@ -74,6 +79,10 @@ public class EAVService : IEAVService
         _projectionRepositoryFactory = projectionRepositoryFactory;
 
         _userInfo = userInfo;
+
+        _elasticSearchQueryOptions = elasticSearchQueryOptions != null
+            ? elasticSearchQueryOptions.Value
+            : new ElasticSearchQueryOptions();
 
         _attributeConfigurationRepository = _aggregateRepositoryFactory
             .GetAggregateRepository<AttributeConfiguration>();
@@ -1521,7 +1530,8 @@ private async Task<Guid?> CreateArrayElementConfiguration(EavAttributeType type,
             await QueryInstances(tree.EntityConfigurationId,
                 new ProjectionQuery
                 {
-                    Filters = new List<Filter> { new("CategoryPaths.TreeId", FilterOperator.Equal, treeId) }
+                    Filters = new List<Filter> { new("CategoryPaths.TreeId", FilterOperator.Equal, treeId) },
+                    Limit = _elasticSearchQueryOptions.MaxSize
                 },
                 cancellationToken
             ).ConfigureAwait(false);
@@ -1631,7 +1641,10 @@ private async Task<Guid?> CreateArrayElementConfiguration(EavAttributeType type,
             throw new NotFoundException("Category tree not found");
         }
 
-        ProjectionQuery query = new ProjectionQuery();
+        ProjectionQuery query = new ProjectionQuery
+        {
+            Limit = _elasticSearchQueryOptions.MaxSize
+        };
 
         if (parentId == null)
         {
