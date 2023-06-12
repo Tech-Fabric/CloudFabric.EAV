@@ -1,4 +1,4 @@
-﻿using System.Collections.Immutable;
+using System.Collections.Immutable;
 
 using CloudFabric.EAV.Domain.Events.Configuration.Attributes;
 using CloudFabric.EAV.Domain.Models.Base;
@@ -42,7 +42,7 @@ public class ImageAttributeConfiguration : AttributeConfiguration, IEquatable<Im
         string machineName,
         List<LocalizedString> name,
         List<ImageThumbnailDefinition> thumbnailsConfiguration = null,
-        List<LocalizedString> description = null,
+        List<LocalizedString>? description = null,
         bool isRequired = false,
         Guid? tenantId = null,
         string? metadata = null

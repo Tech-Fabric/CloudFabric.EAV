@@ -25,7 +25,7 @@ public class NumberAttributeConfiguration : AttributeConfiguration
         string machineName,
         List<LocalizedString> name,
         NumberAttributeType numberType,
-        List<LocalizedString> description = null,
+        List<LocalizedString>? description = null,
         bool isRequired = false,
         decimal? defaultValue = null,
         decimal? minimumValue = null,

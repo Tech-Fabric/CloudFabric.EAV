@@ -12,7 +12,7 @@ public class EntityReferenceAttributeConfiguration : AttributeConfiguration
         List<LocalizedString> name,
         Guid referenceEntityConfiguration,
         Guid defaultValue,
-        List<LocalizedString> description = null,
+        List<LocalizedString>? description = null,
         bool isRequired = false,
         Guid? tenantId = null,
         string? metadata = null

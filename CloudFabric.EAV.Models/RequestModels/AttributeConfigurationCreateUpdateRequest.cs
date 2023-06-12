@@ -22,7 +22,7 @@ public abstract class AttributeConfigurationCreateUpdateRequest : EntityAttribut
 {
     public List<LocalizedStringCreateRequest> Name { get; set; }
 
-    public List<LocalizedStringCreateRequest> Description { get; set; }
+    public List<LocalizedStringCreateRequest>? Description { get; set; }
 
     public string? MachineName { get; set; }
 

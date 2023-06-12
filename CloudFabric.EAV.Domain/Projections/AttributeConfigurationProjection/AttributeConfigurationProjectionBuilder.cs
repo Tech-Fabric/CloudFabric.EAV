@@ -49,7 +49,9 @@ public class AttributeConfigurationProjectionBuilder : ProjectionBuilder<Attribu
                 MachineName = @event.MachineName,
                 PartitionKey = @event.PartitionKey,
                 TenantId = @event.TenantId,
-                Description = @event.Description,
+                Description = @event.Description == null
+                    ? new List<LocalizedString>()
+                    : new List<LocalizedString>(@event.Description),
                 UpdatedAt = @event.Timestamp,
                 ValueType = @event.ValueType,
                 Metadata = @event.Metadata

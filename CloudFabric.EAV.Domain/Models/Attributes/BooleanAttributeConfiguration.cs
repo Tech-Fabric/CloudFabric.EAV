@@ -25,7 +25,7 @@ public class BooleanAttributeConfiguration : AttributeConfiguration
         List<LocalizedString> name,
         string trueDisplayValue,
         string falseDisplayValue,
-        List<LocalizedString> description = null,
+        List<LocalizedString>? description = null,
         bool isRequired = false,
         Guid? tenantId = null,
         string? metadata = null

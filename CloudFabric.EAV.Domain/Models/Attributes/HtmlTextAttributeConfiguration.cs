@@ -1,4 +1,4 @@
-﻿using CloudFabric.EAV.Enums;
+using CloudFabric.EAV.Enums;
 using CloudFabric.EAV.Domain.Models.Base;
 
 namespace CloudFabric.EAV.Domain.Models.Attributes;
@@ -9,7 +9,7 @@ public class HtmlTextAttributeConfiguration : AttributeConfiguration
         Guid id,
         string machineName,
         List<LocalizedString> name,
-        List<LocalizedString> description = null,
+        List<LocalizedString>? description = null,
         bool isRequired = false,
         Guid? tenantId = null,
         string? metadata = null

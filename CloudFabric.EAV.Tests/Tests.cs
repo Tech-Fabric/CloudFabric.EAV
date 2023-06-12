@@ -989,11 +989,6 @@ public class Tests
         var numberAttribute = new NumberAttributeConfigurationCreateUpdateRequest
         {
             MachineName = "testAttr",
-            Description =
-                new List<LocalizedStringCreateRequest>
-                {
-                    new() { CultureInfoId = cultureInfoId, String = "testAttrDesc" }
-                },
             Name = new List<LocalizedStringCreateRequest>
             {
                 new() { CultureInfoId = cultureInfoId, String = "testAttrName" }

@@ -25,7 +25,7 @@ public class TextAttributeConfiguration : AttributeConfiguration
         List<LocalizedString> name,
         int? maxLength,
         bool isSearchable,
-        List<LocalizedString> description = null,
+        List<LocalizedString>? description = null,
         string? defaultValue = null,
         bool isRequired = false,
         Guid? tenantId = null,

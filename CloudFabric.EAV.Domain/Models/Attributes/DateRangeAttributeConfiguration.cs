@@ -20,7 +20,7 @@ public class DateRangeAttributeConfiguration : AttributeConfiguration
         string machineName,
         List<LocalizedString> name,
         DateRangeAttributeType dateRangeAttributeType,
-        List<LocalizedString> description = null,
+        List<LocalizedString>? description = null,
         bool isRequired = false,
         Guid? tenantId = null,
         string? metadata = null

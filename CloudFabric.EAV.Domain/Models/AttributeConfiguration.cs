@@ -249,7 +249,9 @@ public abstract class AttributeConfiguration : AggregateBase
     public void On(AttributeConfigurationUpdated @event)
     {
         Name = @event.Name.AsReadOnly();
-        Description = @event.Description.AsReadOnly();
+        Description = @event.Description == null
+            ? new List<LocalizedString>().AsReadOnly()
+            : new List<LocalizedString>(@event.Description).AsReadOnly();
         IsRequired = @event.IsRequired;
         TenantId = @event.TenantId;
         Metadata = @event.Metadata;

@@ -21,7 +21,7 @@ public class LocalizedTextAttributeConfiguration : AttributeConfiguration
         string machineName,
         List<LocalizedString> name,
         LocalizedString defaultValue,
-        List<LocalizedString> description = null,
+        List<LocalizedString>? description = null,
         bool isRequired = false,
         Guid? tenantId = null,
         string? metadata = null
