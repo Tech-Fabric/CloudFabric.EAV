@@ -75,13 +75,13 @@ public class TextAttributeConfiguration : AttributeConfiguration
 
         if (instance is not TextAttributeInstance textInstance)
         {
-            errors.Add("Cannot validate attribute. Expected attribute type: Text)");
+            errors.Add("Cannot validate attribute. Expected attribute type: Text");
             return errors;
         }
 
         if (IsRequired && string.IsNullOrWhiteSpace(textInstance.Value))
         {
-            errors.Add("Cannot validate attribute. Expected attribute type: Text)");
+            errors.Add("Required text value is missing");
             return errors;
         }
 

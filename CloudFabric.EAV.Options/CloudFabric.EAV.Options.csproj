@@ -4,24 +4,12 @@
         <TargetFramework>net7.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
-        <PackageId>CloudFabric.EAV.Service</PackageId>
+        <PackageId>CloudFabric.EAV.Options</PackageId>
         <Version>0.0.1</Version>
         <Authors>CloudFabric Developers</Authors>
         <Company>CloudFabric</Company>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
     </PropertyGroup>
-
-    <ItemGroup>
-        <PackageReference Include="AutoMapper" Version="12.0.1" />
-        <PackageReference Include="CloudFabric.EventSourcing.Domain" Version="0.1.2" />
-    </ItemGroup>
-
-    <ItemGroup>
-        <ProjectReference Include="..\CloudFabric.EAV.Domain\CloudFabric.EAV.Domain.csproj" />
-        <ProjectReference Include="..\CloudFabric.EAV.Json\CloudFabric.EAV.Json.csproj" />
-        <ProjectReference Include="..\CloudFabric.EAV.Models\CloudFabric.EAV.Models.csproj" />
-        <ProjectReference Include="..\CloudFabric.EAV.Options\CloudFabric.EAV.Options.csproj" />
-    </ItemGroup>
 
     <ItemGroup>
       <Compile Remove="bin-localpackages\**" />
