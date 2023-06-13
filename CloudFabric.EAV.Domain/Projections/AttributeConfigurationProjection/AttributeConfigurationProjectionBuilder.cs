@@ -137,7 +137,9 @@ public class AttributeConfigurationProjectionBuilder : ProjectionBuilder<Attribu
                     new SearchableLocalizedString { CultureInfoId = x.CultureInfoId, String = x.String }
                 );
 
-                document.Description = @event.Description;
+                document.Description = @event.Description == null
+                    ? new List<LocalizedString>()
+                    : new List<LocalizedString>(@event.Description);
                 document.IsRequired = @event.IsRequired;
                 document.TenantId = @event.TenantId;
                 document.Metadata = @event.Metadata;

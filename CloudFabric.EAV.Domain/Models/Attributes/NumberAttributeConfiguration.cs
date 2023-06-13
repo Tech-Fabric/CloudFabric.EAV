@@ -63,12 +63,12 @@ public class NumberAttributeConfiguration : AttributeConfiguration
             errors.Add("Minimum value cannot be greater than Maximum value");
         }
 
-        if (MaximumValue != null && DefaultValue > MaximumValue)
+        if (MaximumValue != null && DefaultValue != null && DefaultValue > MaximumValue)
         {
             errors.Add("Default value cannot be greater than Maximum value");
         }
 
-        if (MinimumValue != null && DefaultValue < MinimumValue)
+        if (MinimumValue != null && DefaultValue != null && DefaultValue < MinimumValue)
         {
             errors.Add("Default value cannot be less than Minimum value");
         }

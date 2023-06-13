@@ -11,8 +11,8 @@ public class EntityReferenceAttributeConfiguration : AttributeConfiguration
         string machineName,
         List<LocalizedString> name,
         Guid referenceEntityConfiguration,
-        Guid defaultValue,
         List<LocalizedString>? description = null,
+        Guid? defaultValue = null,
         bool isRequired = false,
         Guid? tenantId = null,
         string? metadata = null
@@ -25,7 +25,7 @@ public class EntityReferenceAttributeConfiguration : AttributeConfiguration
 
     public Guid ReferenceEntityConfiguration { get; set; }
 
-    public Guid DefaultValue { get; set; }
+    public Guid? DefaultValue { get; set; }
 
     public override void UpdateAttribute(AttributeConfiguration updatedAttribute)
     {

@@ -17,7 +17,7 @@ public class HtmlTextAttributeConfiguration : AttributeConfiguration
     {
     }
 
-    public string DefaultValue { get; set; }
+    public string? DefaultValue { get; set; }
 
     public List<string> AllowedTags { get; set; }
 

@@ -11,7 +11,7 @@ public record EntityReferenceAttributeConfigurationUpdated : Event
     }
 
     public EntityReferenceAttributeConfigurationUpdated(Guid id, Guid referenceEntityConfiguration,
-        Guid defaultValue)
+        Guid? defaultValue)
     {
         AggregateId = id;
         DefaultValue = defaultValue;
@@ -20,5 +20,5 @@ public record EntityReferenceAttributeConfigurationUpdated : Event
 
     public Guid ReferenceEntityConfiguration { get; set; }
 
-    public Guid DefaultValue { get; set; }
+    public Guid? DefaultValue { get; set; }
 }

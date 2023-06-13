@@ -7,7 +7,7 @@ namespace CloudFabric.EAV.Domain.Models.Attributes;
 
 public class LocalizedTextAttributeConfiguration : AttributeConfiguration
 {
-    public LocalizedString DefaultValue { get; set; }
+    public LocalizedString? DefaultValue { get; set; }
 
     public override EavAttributeType ValueType { get; } = EavAttributeType.LocalizedText;
 
@@ -20,8 +20,8 @@ public class LocalizedTextAttributeConfiguration : AttributeConfiguration
         Guid id,
         string machineName,
         List<LocalizedString> name,
-        LocalizedString defaultValue,
         List<LocalizedString>? description = null,
+        LocalizedString? defaultValue = null,
         bool isRequired = false,
         Guid? tenantId = null,
         string? metadata = null
@@ -36,7 +36,6 @@ public class LocalizedTextAttributeConfiguration : AttributeConfiguration
         {
             LocalizedString.English("Localized string")
         },
-        LocalizedString.English("text"),
         new List<LocalizedString>
         {
             LocalizedString.English("Localized string")
