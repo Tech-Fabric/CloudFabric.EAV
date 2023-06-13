@@ -22,8 +22,6 @@ public class ImageAttributeValueCreateUpdateRequest
 
 public class ImageAttributeConfigurationCreateUpdateRequest : AttributeConfigurationCreateUpdateRequest
 {
-    public ImageAttributeValueCreateUpdateRequest? DefaultValue { get; set; }
-
     public List<ImageThumbnailDefinitionCreateUpdateRequest> ThumbnailsConfiguration { get; set; }
 
     public override EavAttributeType ValueType { get; } = EavAttributeType.Image;

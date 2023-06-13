@@ -127,7 +127,7 @@ public class TextAttributeConfiguration : AttributeConfiguration
     private bool Equals(TextAttributeConfiguration other)
     {
         return base.Equals(other)
-               && DefaultValue.Equals(other.DefaultValue)
+               && string.Equals(DefaultValue, other.DefaultValue)
                && Nullable.Equals(MaxLength, other.MaxLength)
                && IsSearchable == other.IsSearchable
                && ValueType == other.ValueType;
