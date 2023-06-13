@@ -57,7 +57,13 @@ public class TextAttributeConfiguration : AttributeConfiguration
     public override List<string> Validate()
     {
         List<string> errors = base.Validate();
-        if (MaxLength != null && DefaultValue?.Length > MaxLength)
+
+        if (MaxLength <= 0)
+        {
+            errors.Add("Max length can't be negative or zero");
+        }
+
+        if (MaxLength != null && !string.IsNullOrEmpty(DefaultValue) && DefaultValue.Length > MaxLength)
         {
             errors.Add("Default value length cannot be greater than MaxLength");
         }
