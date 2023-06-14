@@ -990,22 +990,129 @@ public class Tests
     }
 
     [TestMethod]
+    public async Task CreateTextAttribute_Success()
+    {
+        var cultureInfoId = CultureInfo.GetCultureInfo("en-US").LCID;
+        var textAttrbiuteRequest = new TextAttributeConfigurationCreateUpdateRequest
+        {
+            MachineName = "testAttr",
+            Name = new List<LocalizedStringCreateRequest>
+            {
+                new() { CultureInfoId = cultureInfoId, String = "testAttrName" }
+            },
+            DefaultValue = null,
+            IsRequired = true,
+            MaxLength = null
+        };
+
+        var configCreateRequest = new EntityConfigurationCreateRequest
+        {
+            MachineName = "test",
+            Name = new List<LocalizedStringCreateRequest>
+            {
+                new() { CultureInfoId = cultureInfoId, String = "test" }
+            },
+            Attributes = new List<EntityAttributeConfigurationCreateUpdateRequest> { textAttrbiuteRequest }
+        };
+
+        (EntityConfigurationViewModel? created, _) =
+            await _eavService.CreateEntityConfiguration(configCreateRequest, CancellationToken.None);
+        created.Attributes.Count.Should().Be(1);
+
+        ProjectionQueryResult<AttributeConfigurationListItemViewModel> allAttributes =
+            await _eavService.ListAttributes(new ProjectionQuery { Limit = 100 });
+
+        allAttributes.Records.First().As<QueryResultDocument<AttributeConfigurationListItemViewModel>>()
+            .Document?.MachineName.Should().Be(textAttrbiuteRequest.MachineName);
+        allAttributes.Records.First().As<QueryResultDocument<AttributeConfigurationListItemViewModel>>()
+            .Document?.Name.Should().BeEquivalentTo(textAttrbiuteRequest.Name);
+        allAttributes.Records.First().As<QueryResultDocument<AttributeConfigurationListItemViewModel>>()
+            .Document?.Description.Should().BeEmpty();
+    }
+
+    [TestMethod]
+    public async Task CreateTextAttribute_MaxLengthValidationError()
+    {
+        var cultureInfoId = CultureInfo.GetCultureInfo("en-US").LCID;
+        var textAttrbiuteRequest = new TextAttributeConfigurationCreateUpdateRequest
+        {
+            MachineName = "testAttr",
+            Name = new List<LocalizedStringCreateRequest>
+            {
+                new() { CultureInfoId = cultureInfoId, String = "testAttrName" }
+            },
+            DefaultValue = null,
+            IsRequired = true,
+            MaxLength = 0
+        };
+
+        var configCreateRequest = new EntityConfigurationCreateRequest
+        {
+            MachineName = "test",
+            Name = new List<LocalizedStringCreateRequest>
+            {
+                new() { CultureInfoId = cultureInfoId, String = "test" }
+            },
+            Attributes = new List<EntityAttributeConfigurationCreateUpdateRequest> { textAttrbiuteRequest }
+        };
+
+        // check
+        (_, ProblemDetails? errors) = await _eavService.CreateEntityConfiguration(configCreateRequest, CancellationToken.None);
+        errors.As<ValidationErrorResponse>().Errors.Count.Should().Be(1);
+        errors.As<ValidationErrorResponse>().Errors.First().Value.First().Should().Be("Max length can't be negative or zero");
+
+        // check for negative max length 
+        textAttrbiuteRequest.MaxLength = -10;
+
+        (_, errors) = await _eavService.CreateEntityConfiguration(configCreateRequest, CancellationToken.None);
+        errors.As<ValidationErrorResponse>().Errors.First().Value.First().Should().NotBeNullOrEmpty();
+    }
+
+    [TestMethod]
+    public async Task CreateTextAttribute_DefaultValueValidationError()
+    {
+        var cultureInfoId = CultureInfo.GetCultureInfo("en-US").LCID;
+        var textAttrbiuteRequest = new TextAttributeConfigurationCreateUpdateRequest
+        {
+            MachineName = "testAttr",
+            Name = new List<LocalizedStringCreateRequest>
+            {
+                new() { CultureInfoId = cultureInfoId, String = "testAttrName" }
+            },
+            DefaultValue = "wrong length",
+            IsRequired = true,
+            MaxLength = 1
+        };
+
+        var configCreateRequest = new EntityConfigurationCreateRequest
+        {
+            MachineName = "test",
+            Name = new List<LocalizedStringCreateRequest>
+            {
+                new() { CultureInfoId = cultureInfoId, String = "test" }
+            },
+            Attributes = new List<EntityAttributeConfigurationCreateUpdateRequest> { textAttrbiuteRequest }
+        };
+
+        (_, ProblemDetails? errors) = await _eavService.CreateEntityConfiguration(configCreateRequest, CancellationToken.None);
+
+        errors.As<ValidationErrorResponse>().Errors
+            .First().Value.First().Should().Be("Default value length cannot be greater than MaxLength");
+    }
+
+
+    [TestMethod]
     public async Task CreateNumberAttribute_Success()
     {
         var cultureInfoId = CultureInfo.GetCultureInfo("en-US").LCID;
         var numberAttribute = new NumberAttributeConfigurationCreateUpdateRequest
         {
             MachineName = "testAttr",
-            Description =
-                new List<LocalizedStringCreateRequest>
-                {
-                    new() { CultureInfoId = cultureInfoId, String = "testAttrDesc" }
-                },
             Name = new List<LocalizedStringCreateRequest>
             {
                 new() { CultureInfoId = cultureInfoId, String = "testAttrName" }
             },
-            DefaultValue = 15,
+            DefaultValue = null,
             IsRequired = true,
             MaximumValue = 100,
             MinimumValue = -100

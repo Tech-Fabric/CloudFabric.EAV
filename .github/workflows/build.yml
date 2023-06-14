@@ -7,8 +7,8 @@ on:
     branches: [ "main" ]
 
 env:
-  PACKAGE_VERSION: 1.2.8
-
+  PACKAGE_VERSION: 1.2.9
+  
 jobs:
 
   build:

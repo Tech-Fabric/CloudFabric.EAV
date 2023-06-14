@@ -17,7 +17,7 @@ public class ArrayAttributeConfiguration : AttributeConfiguration
         List<LocalizedString> name,
         EavAttributeType itemsType,
         Guid itemsAttributeConfigurationId,
-        List<LocalizedString> description = null,
+        List<LocalizedString>? description = null,
         bool isRequired = false,
         Guid? tenantId = null,
         string? metadata = null

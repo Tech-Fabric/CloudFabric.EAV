@@ -22,7 +22,7 @@ public record AttributeConfigurationUpdated : Event
 
     public List<LocalizedString> Name { get; set; }
 
-    public List<LocalizedString> Description { get; set; }
+    public List<LocalizedString>? Description { get; set; }
 
     public bool IsRequired { get; set; }
 

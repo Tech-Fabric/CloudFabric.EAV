@@ -11,7 +11,7 @@ public record NumberAttributeConfigurationUpdated : Event
     {
     }
 
-    public NumberAttributeConfigurationUpdated(Guid id, decimal defaultValue, decimal? minimumValue,
+    public NumberAttributeConfigurationUpdated(Guid id, decimal? defaultValue, decimal? minimumValue,
         decimal? maximumValue, NumberAttributeType numberType)
     {
         AggregateId = id;
@@ -21,7 +21,7 @@ public record NumberAttributeConfigurationUpdated : Event
         DefaultValue = defaultValue;
     }
 
-    public decimal DefaultValue { get; set; }
+    public decimal? DefaultValue { get; set; }
 
     public decimal? MinimumValue { get; set; }
 

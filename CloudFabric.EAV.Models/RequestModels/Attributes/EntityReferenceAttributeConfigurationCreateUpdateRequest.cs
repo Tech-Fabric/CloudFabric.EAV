@@ -8,5 +8,5 @@ public class EntityReferenceAttributeConfigurationCreateUpdateRequest : Attribut
 
     public Guid ReferenceEntityConfiguration { get; set; }
 
-    public Guid DefaultValue { get; set; }
+    public Guid? DefaultValue { get; set; }
 }

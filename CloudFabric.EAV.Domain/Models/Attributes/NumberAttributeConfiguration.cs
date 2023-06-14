@@ -7,7 +7,7 @@ namespace CloudFabric.EAV.Domain.Models.Attributes;
 
 public class NumberAttributeConfiguration : AttributeConfiguration
 {
-    public decimal DefaultValue { get; set; }
+    public decimal? DefaultValue { get; set; }
     public decimal? MinimumValue { get; set; }
     public decimal? MaximumValue { get; set; }
 
@@ -24,10 +24,10 @@ public class NumberAttributeConfiguration : AttributeConfiguration
         Guid id,
         string machineName,
         List<LocalizedString> name,
-        decimal defaultValue,
         NumberAttributeType numberType,
-        List<LocalizedString> description = null,
+        List<LocalizedString>? description = null,
         bool isRequired = false,
+        decimal? defaultValue = null,
         decimal? minimumValue = null,
         decimal? maximumValue = null,
         Guid? tenantId = null,
@@ -43,7 +43,6 @@ public class NumberAttributeConfiguration : AttributeConfiguration
         {
             LocalizedString.English("Number")
         },
-        0,
         NumberAttributeType.Integer,
         new List<LocalizedString>
         {
@@ -64,12 +63,12 @@ public class NumberAttributeConfiguration : AttributeConfiguration
             errors.Add("Minimum value cannot be greater than Maximum value");
         }
 
-        if (MaximumValue != null && DefaultValue > MaximumValue)
+        if (MaximumValue != null && DefaultValue != null && DefaultValue > MaximumValue)
         {
             errors.Add("Default value cannot be greater than Maximum value");
         }
 
-        if (MinimumValue != null && DefaultValue < MinimumValue)
+        if (MinimumValue != null && DefaultValue != null && DefaultValue < MinimumValue)
         {
             errors.Add("Default value cannot be less than Minimum value");
         }

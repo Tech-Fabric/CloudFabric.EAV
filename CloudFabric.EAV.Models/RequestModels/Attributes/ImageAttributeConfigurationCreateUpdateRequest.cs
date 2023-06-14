@@ -1,4 +1,4 @@
-﻿using CloudFabric.EAV.Enums;
+using CloudFabric.EAV.Enums;
 
 namespace CloudFabric.EAV.Models.RequestModels.Attributes;
 
@@ -14,6 +14,7 @@ public class ImageThumbnailDefinitionCreateUpdateRequest
 public class ImageAttributeValueCreateUpdateRequest
 {
     public string Url { get; set; }
+
     public string Title { get; set; }
 
     public string Alt { get; set; }
@@ -21,8 +22,6 @@ public class ImageAttributeValueCreateUpdateRequest
 
 public class ImageAttributeConfigurationCreateUpdateRequest : AttributeConfigurationCreateUpdateRequest
 {
-    public ImageAttributeValueCreateUpdateRequest DefaultValue { get; set; }
-
     public List<ImageThumbnailDefinitionCreateUpdateRequest> ThumbnailsConfiguration { get; set; }
 
     public override EavAttributeType ValueType { get; } = EavAttributeType.Image;

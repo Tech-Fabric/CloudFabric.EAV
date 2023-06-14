@@ -10,7 +10,7 @@ public record TextAttributeConfigurationUpdated : Event
     {
     }
 
-    public TextAttributeConfigurationUpdated(Guid id, string defaultValue, int? maxLength, bool isSearchable)
+    public TextAttributeConfigurationUpdated(Guid id, string? defaultValue, int? maxLength, bool isSearchable)
     {
         AggregateId = id;
         IsSearchable = isSearchable;
@@ -18,7 +18,7 @@ public record TextAttributeConfigurationUpdated : Event
         DefaultValue = defaultValue;
     }
 
-    public string DefaultValue { get; set; }
+    public string? DefaultValue { get; set; }
 
     public int? MaxLength { get; set; }
 

@@ -1,10 +1,10 @@
-﻿using CloudFabric.EAV.Enums;
+using CloudFabric.EAV.Enums;
 
 namespace CloudFabric.EAV.Models.RequestModels.Attributes;
 
 public class HtmlTextAttributeConfigurationCreateUpdateRequest : AttributeConfigurationCreateUpdateRequest
 {
-    public string DefaultValue { get; set; }
+    public string? DefaultValue { get; set; }
 
     public List<string> AllowedTags { get; set; }
 

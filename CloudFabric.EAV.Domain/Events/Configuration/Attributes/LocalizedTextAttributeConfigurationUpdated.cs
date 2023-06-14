@@ -11,11 +11,11 @@ public record LocalizedTextAttributeConfigurationUpdated : Event
     {
     }
 
-    public LocalizedTextAttributeConfigurationUpdated(Guid id, LocalizedString defaultValue)
+    public LocalizedTextAttributeConfigurationUpdated(Guid id, LocalizedString? defaultValue)
     {
         AggregateId = id;
         DefaultValue = defaultValue;
     }
 
-    public LocalizedString DefaultValue { get; set; }
+    public LocalizedString? DefaultValue { get; set; }
 }
