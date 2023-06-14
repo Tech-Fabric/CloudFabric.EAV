@@ -60,6 +60,7 @@ public class TextAttributeConfiguration : AttributeConfiguration
         if (MaxLength <= 0)
         {
             errors.Add("Max length can't be negative or zero");
+            return errors;
         }
 
         if (MaxLength != null && !string.IsNullOrEmpty(DefaultValue) && DefaultValue.Length > MaxLength)
