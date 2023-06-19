@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Linq;
 using System.Text.Json;
 
 using CloudFabric.EAV.Domain.Models;
@@ -204,11 +205,51 @@ public class EntityInstanceCreateUpdateRequestFromJsonDeserializer
                     "AttributeConfiguration object to deserialize arrays."
                 );
             case EavAttributeType.DateRange:
+                var enumeratedProps = attributeValue.EnumerateObject();
+
+                var fromJsonProp = enumeratedProps.FirstOrDefault(
+                    x => x.Name.ToLower() == nameof(DateRangeAttributeInstanceValueRequest.From).ToLower()
+                );
+
+                bool fromValueParsedSuccessfully = fromJsonProp.Value.TryGetDateTime(out var fromParsedValue);
+
+                if (!fromValueParsedSuccessfully)
+                {
+                    attributeInstance = new DateRangeAttributeInstanceCreateUpdateRequest
+                    {
+                        Value = null
+                    };
+                    break;
+                }
+
+                // Since DateRangeAttributeInstance.Value.To is a nullable optional ptoperty
+                // and used with all DateRangeAttributeType we must check nullable "To" field without exception throw
+                var toJsonProp = enumeratedProps.FirstOrDefault(
+                    x => x.Name.ToLower() == nameof(DateRangeAttributeInstanceValueRequest.To).ToLower()
+                );
+                if (toJsonProp.Value.ValueKind == JsonValueKind.Undefined
+                    || toJsonProp.Value.ValueKind == JsonValueKind.Null)
+                {
+                    attributeInstance = new DateRangeAttributeInstanceCreateUpdateRequest
+                    {
+                        Value = new DateRangeAttributeInstanceValueRequest
+                        {
+                            From = fromParsedValue,
+                            To = null
+                        }
+                    };
+                    break;
+                }
+
+                bool toValueParsedSuccessfully = toJsonProp.Value.TryGetDateTime(out var toParsedValue);
+
                 attributeInstance = new DateRangeAttributeInstanceCreateUpdateRequest
                 {
-                    Value = attributeValue.Deserialize<DateRangeAttributeInstanceValueRequest>(
-                        new JsonSerializerOptions() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase }
-                    )
+                    Value = new DateRangeAttributeInstanceValueRequest
+                    {
+                        From = fromParsedValue,
+                        To = toValueParsedSuccessfully ? toParsedValue : null
+                    }
                 };
                 break;
             case EavAttributeType.Image:
