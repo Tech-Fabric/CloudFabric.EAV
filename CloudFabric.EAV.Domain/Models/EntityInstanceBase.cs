@@ -54,9 +54,9 @@ public class EntityInstanceBase : AggregateBase
         CategoryPaths = new List<CategoryPath>();
     }
 
-    public void ChangeCategoryPath(Guid treeId, string categoryPath)
+    public void ChangeCategoryPath(Guid treeId, string categoryPath, Guid parentId)
     {
-        Apply(new EntityCategoryPathChanged(Id, EntityConfigurationId, treeId, categoryPath));
+        Apply(new EntityCategoryPathChanged(Id, EntityConfigurationId, treeId, categoryPath, parentId));
     }
 
     public void On(EntityCategoryPathChanged @event)
@@ -64,11 +64,17 @@ public class EntityInstanceBase : AggregateBase
         CategoryPath? categoryPath = CategoryPaths.FirstOrDefault(x => x.TreeId == @event.CategoryTreeId);
         if (categoryPath == null)
         {
-            CategoryPaths.Add(new CategoryPath { TreeId = @event.CategoryTreeId, Path = @event.CategoryPath });
+            CategoryPaths.Add(new CategoryPath { TreeId = @event.CategoryTreeId,
+                Path = @event.CategoryPath,
+                ParentId = @event.ParentId,
+                ParentMachineName = @event.ParentMachineName
+            });
         }
         else
         {
             categoryPath.Path = @event.CategoryPath;
+            categoryPath.ParentMachineName = @event.ParentMachineName;
+            categoryPath.ParentId = @event.ParentId;
         }
     }
 

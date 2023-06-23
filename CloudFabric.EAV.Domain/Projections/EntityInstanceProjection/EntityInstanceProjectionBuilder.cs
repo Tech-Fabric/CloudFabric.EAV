@@ -134,14 +134,20 @@ public class EntityInstanceProjectionBuilder : ProjectionBuilder,
                 List<CategoryPath> categoryPaths =
                     categoryPathsObj as List<CategoryPath> ?? new List<CategoryPath>();
                 CategoryPath? categoryPath = categoryPaths.FirstOrDefault(x => x.TreeId == @event.CategoryTreeId);
+
                 if (categoryPath == null)
                 {
-                    categoryPaths.Add(new CategoryPath { Path = @event.CategoryPath, TreeId = @event.CategoryTreeId }
-                    );
+                    categoryPaths.Add(new CategoryPath { TreeId = @event.CategoryTreeId,
+                        Path = @event.CategoryPath,
+                        ParentId = @event.ParentId,
+                        ParentMachineName = @event.ParentMachineName
+                    });
                 }
                 else
                 {
                     categoryPath.Path = @event.CategoryPath;
+                    categoryPath.ParentMachineName = @event.ParentMachineName;
+                    categoryPath.ParentId = @event.ParentId;
                 }
 
                 document["CategoryPaths"] = categoryPaths;

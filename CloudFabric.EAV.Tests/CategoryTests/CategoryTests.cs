@@ -1,4 +1,4 @@
-using CloudFabric.EAV.Models.RequestModels;
+ using CloudFabric.EAV.Models.RequestModels;
 using CloudFabric.EAV.Models.ViewModels;
 using CloudFabric.EAV.Tests.Factories;
 using CloudFabric.EventSourcing.EventStore;

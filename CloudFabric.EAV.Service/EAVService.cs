@@ -271,14 +271,14 @@ public class EAVService : IEAVService
         return attributes;
     }
 
-    private async Task<(string?, ProblemDetails?)> BuildCategoryPath(Guid treeId, Guid? parentId,
+    private async Task<(string?, Guid?, ProblemDetails?)> BuildCategoryPath(Guid treeId, Guid? parentId,
         CancellationToken cancellationToken)
     {
         CategoryTree? tree = await _categoryTreeRepository.LoadAsync(treeId, treeId.ToString(), cancellationToken)
             .ConfigureAwait(false);
         if (tree == null)
         {
-            return (null, new ValidationErrorResponse("TreeId", "Tree not found"))!;
+            return (null, null, new ValidationErrorResponse("TreeId", "Tree not found"))!;
         }
 
         Category? parent = parentId == null
@@ -290,12 +290,12 @@ public class EAVService : IEAVService
 
         if (parent == null && parentId != null)
         {
-            return (null, new ValidationErrorResponse("ParentId", "Parent category not found"))!;
+            return (null, null, new ValidationErrorResponse("ParentId", "Parent category not found"))!;
         }
 
         CategoryPath? parentPath = parent?.CategoryPaths.FirstOrDefault(x => x.TreeId == treeId);
-        var categoryPath = parentPath == null ? "" : $"{parentPath.Path}/{parent?.Id}";
-        return (categoryPath, null)!;
+        var categoryPath = parentPath == null ? "" : $"{parentPath.Path}/{parent?.MachineName}";
+        return (categoryPath, parent!.Id, null);
     }
 
     #region EntityConfiguration
@@ -1305,7 +1305,7 @@ private async Task<Guid?> CreateArrayElementConfiguration(EavAttributeType type,
             ).ConfigureAwait(false);
 
 
-        (var categoryPath, ProblemDetails? errors) =
+        (var categoryPath, Guid? parentId, ProblemDetails? errors) =
             await BuildCategoryPath(tree.Id, categoryCreateRequest.ParentId, cancellationToken).ConfigureAwait(false);
 
         if (errors != null)
@@ -1319,6 +1319,7 @@ private async Task<Guid?> CreateArrayElementConfiguration(EavAttributeType type,
             _mapper.Map<List<AttributeInstance>>(categoryCreateRequest.Attributes),
             categoryCreateRequest.TenantId,
             categoryPath!,
+            parentId!.Value,
             categoryCreateRequest.CategoryTreeId
         );
 
@@ -2438,7 +2439,7 @@ private async Task<Guid?> CreateArrayElementConfiguration(EavAttributeType type,
             return (null, new ValidationErrorResponse(nameof(entityInstanceId), "Instance not found"))!;
         }
 
-        (var newCategoryPath, ProblemDetails? errors) =
+        (var newCategoryPath, var parentId,  ProblemDetails? errors) =
             await BuildCategoryPath(treeId, newParentId, cancellationToken).ConfigureAwait(false);
 
         if (errors != null)
@@ -2446,7 +2447,7 @@ private async Task<Guid?> CreateArrayElementConfiguration(EavAttributeType type,
             return (null, errors)!;
         }
 
-        entityInstance.ChangeCategoryPath(treeId, newCategoryPath ?? "");
+        entityInstance.ChangeCategoryPath(treeId, newCategoryPath ?? "", parentId!.Value);
         var saved = await _entityInstanceRepository.SaveAsync(_userInfo, entityInstance, cancellationToken)
             .ConfigureAwait(false);
         if (!saved)

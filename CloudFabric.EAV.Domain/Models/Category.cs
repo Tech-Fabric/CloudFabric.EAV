@@ -5,24 +5,32 @@ namespace CloudFabric.EAV.Domain.Models;
 
 public class Category : EntityInstanceBase
 {
+    public string MachineName { get; set; }
     public Category(IEnumerable<IEvent> events) : base(events)
     {
     }
 
-    public Category(Guid id, Guid entityConfigurationId, List<AttributeInstance> attributes, Guid? tenantId)
+    public Category(Guid id,
+        string machineName,
+        Guid entityConfigurationId,
+        List<AttributeInstance> attributes,
+        Guid? tenantId)
         : base(id, entityConfigurationId, attributes, tenantId)
     {
+        Apply(new CategoryCreated(id, machineName, entityConfigurationId, attributes, tenantId));
     }
 
     public Category(
         Guid id,
+        string machineName,
         Guid entityConfigurationId,
         List<AttributeInstance> attributes,
         Guid? tenantId,
         string categoryPath,
+        Guid parentId,
         Guid categoryTreeId
-    ) : base(id, entityConfigurationId, attributes, tenantId)
+    ) : this(id, machineName, entityConfigurationId, attributes, tenantId)
     {
-        Apply(new EntityCategoryPathChanged(id, EntityConfigurationId, categoryTreeId, categoryPath));
+        Apply(new EntityCategoryPathChanged(id, EntityConfigurationId, categoryTreeId, categoryPath, parentId));
     }
 }
