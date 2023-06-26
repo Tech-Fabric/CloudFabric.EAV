@@ -441,6 +441,22 @@ public static class ProjectionAttributesSchemaFactory
                 IsRetrievable = true,
                 IsFilterable = true,
                 IsSortable = true
+            },
+            new ()
+            {
+                PropertyName = "ParentMachineName",
+                PropertyType = TypeCode.String,
+                IsRetrievable = true,
+                IsFilterable = true,
+                IsSortable = true
+            },
+            new ()
+            {
+                PropertyName = "ParentId",
+                PropertyType = TypeCode.Object,
+                IsRetrievable = true,
+                IsFilterable = true,
+                IsSortable = true
             }
         };
     }

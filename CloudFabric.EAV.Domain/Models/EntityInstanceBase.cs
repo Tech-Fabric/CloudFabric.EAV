@@ -9,7 +9,7 @@ namespace CloudFabric.EAV.Domain.Models;
 
 public class EntityInstanceBase : AggregateBase
 {
-    public EntityInstanceBase(IEnumerable<IEvent> events) : base(events)
+        public EntityInstanceBase(IEnumerable<IEvent> events) : base(events)
     {
     }
 
@@ -17,6 +17,10 @@ public class EntityInstanceBase : AggregateBase
         Guid? tenantId)
     {
         Apply(new EntityInstanceCreated(id, entityConfigurationId, attributes, tenantId));
+    }
+
+    protected EntityInstanceBase()
+    {
     }
 
     public override string PartitionKey => EntityConfigurationId.ToString();

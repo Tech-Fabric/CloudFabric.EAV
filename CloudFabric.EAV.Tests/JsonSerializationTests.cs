@@ -310,6 +310,7 @@ public class JsonSerializationTests : BaseQueryTests.BaseQueryTests
 
         (createdCategory, _) = await _eavService.CreateCategoryInstance(
             categoryJsonStringCreateRequest,
+            "test-category",
             createdCategoryConfiguration.Id,
             hierarchy.Id,
             null,

@@ -52,6 +52,7 @@ public class EntityInstanceCreateUpdateRequestFromJsonDeserializer
 
     public async Task<(CategoryInstanceCreateRequest?, ValidationErrorResponse?)> DeserializeCategoryInstanceCreateRequest(
         Guid categoryConfigurationId,
+        string machineName,
         Guid? tenantId,
         Guid categoryTreeId,
         Guid? parentId,
@@ -73,7 +74,8 @@ public class EntityInstanceCreateUpdateRequestFromJsonDeserializer
             CategoryTreeId = categoryTreeId,
             ParentId = parentId,
             TenantId = tenantId,
-            Attributes = attributes
+            Attributes = attributes,
+            MachineName = machineName
         };
 
         return (categoryInstanceCreateRequest, null);

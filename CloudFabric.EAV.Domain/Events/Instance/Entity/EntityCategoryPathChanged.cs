@@ -14,20 +14,20 @@ public record EntityCategoryPathChanged : Event
         Guid entityConfigurationId,
         Guid categoryTreeId,
         string categoryPath,
-        Guid parentId)
+        Guid? parentId)
     {
         AggregateId = id;
         EntityConfigurationId = entityConfigurationId;
         CategoryPath = categoryPath;
         CategoryTreeId = categoryTreeId;
         ParentId = parentId;
-        ParentMachineName = categoryPath.Split('/').Last(x => !string.IsNullOrEmpty(x));
+        ParentMachineName = string.IsNullOrEmpty(categoryPath) ? "" : categoryPath.Split('/').Last(x => !string.IsNullOrEmpty(x));
     }
 
     public string CategoryPath { get; set; }
     public Guid EntityConfigurationId { get; set; }
 
     public Guid CategoryTreeId { get; set; }
-    public Guid ParentId { get; set; }
+    public Guid? ParentId { get; set; }
     public string ParentMachineName { get; set; }
 }

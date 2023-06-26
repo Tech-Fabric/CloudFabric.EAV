@@ -52,6 +52,7 @@ public class EAVService : IEAVService
     private readonly EntityInstanceCreateUpdateRequestFromJsonDeserializer
         _entityInstanceCreateUpdateRequestFromJsonDeserializer;
     private readonly AggregateRepository<EntityInstance> _entityInstanceRepository;
+    private readonly AggregateRepository<Category> _categoryInstanceRepository;
     private readonly ILogger<EAVService> _logger;
     private readonly IMapper _mapper;
     private readonly JsonSerializerOptions _jsonSerializerOptions;
@@ -90,6 +91,8 @@ public class EAVService : IEAVService
             .GetAggregateRepository<EntityConfiguration>();
         _entityInstanceRepository = _aggregateRepositoryFactory
             .GetAggregateRepository<EntityInstance>();
+        _categoryInstanceRepository = _aggregateRepositoryFactory
+            .GetAggregateRepository<Category>();
         _categoryTreeRepository = _aggregateRepositoryFactory
             .GetAggregateRepository<CategoryTree>();
 
@@ -283,7 +286,7 @@ public class EAVService : IEAVService
 
         Category? parent = parentId == null
             ? null
-            : _mapper.Map<Category>(await _entityInstanceRepository
+            : _mapper.Map<Category>(await _categoryInstanceRepository
                 .LoadAsync(parentId.Value, tree.EntityConfigurationId.ToString(), cancellationToken)
                 .ConfigureAwait(false)
             );
@@ -295,7 +298,7 @@ public class EAVService : IEAVService
 
         CategoryPath? parentPath = parent?.CategoryPaths.FirstOrDefault(x => x.TreeId == treeId);
         var categoryPath = parentPath == null ? "" : $"{parentPath.Path}/{parent?.MachineName}";
-        return (categoryPath, parent!.Id, null);
+        return (categoryPath, parent?.Id, null);
     }
 
     #region EntityConfiguration
@@ -1092,6 +1095,7 @@ private async Task<Guid?> CreateArrayElementConfiguration(EavAttributeType type,
     ///
     /// </remarks>
     /// <param name="categoryJsonString"></param>
+    /// <param name="machineName"></param>
     /// <param name="categoryConfigurationId">id of entity configuration which has all category attributes</param>
     /// <param name="categoryTreeId">id of category tree, which represents separated hirerarchy with relations between categories</param>
     /// <param name="parentId">id of category from which new branch of hierarchy will be built. Can be null if placed at the root of category tree.</param>
@@ -1107,6 +1111,7 @@ private async Task<Guid?> CreateArrayElementConfiguration(EavAttributeType type,
     /// <returns></returns>
     public Task<(JsonDocument?, ProblemDetails?)> CreateCategoryInstance(
         string categoryJsonString,
+        string machineName,
         Guid categoryConfigurationId,
         Guid categoryTreeId,
         Guid? parentId,
@@ -1119,6 +1124,7 @@ private async Task<Guid?> CreateArrayElementConfiguration(EavAttributeType type,
 
         return CreateCategoryInstance(
             categoryJson.RootElement,
+            machineName,
             categoryConfigurationId,
             categoryTreeId,
             parentId,
@@ -1170,7 +1176,7 @@ private async Task<Guid?> CreateArrayElementConfiguration(EavAttributeType type,
     )
     {
         var (categoryInstanceCreateRequest, deserializationErrors) =
-           await DeserializeCategoryInstanceCreateRequestFromJson(categoryJson, cancellationToken);
+           await DeserializeCategoryInstanceCreateRequestFromJson(categoryJson, cancellationToken: cancellationToken);
 
         if (deserializationErrors != null)
         {
@@ -1179,6 +1185,7 @@ private async Task<Guid?> CreateArrayElementConfiguration(EavAttributeType type,
 
         return await CreateCategoryInstance(
             categoryJson,
+            categoryInstanceCreateRequest!.MachineName,
             categoryInstanceCreateRequest!.CategoryConfigurationId,
             categoryInstanceCreateRequest.CategoryTreeId,
             categoryInstanceCreateRequest.ParentId,
@@ -1222,6 +1229,7 @@ private async Task<Guid?> CreateArrayElementConfiguration(EavAttributeType type,
     /// <returns></returns>
     public async Task<(JsonDocument?, ProblemDetails?)> CreateCategoryInstance(
         JsonElement categoryJson,
+        string machineName,
         Guid categoryConfigurationId,
         Guid categoryTreeId,
         Guid? parentId,
@@ -1233,6 +1241,7 @@ private async Task<Guid?> CreateArrayElementConfiguration(EavAttributeType type,
         (CategoryInstanceCreateRequest? categoryInstanceCreateRequest, ProblemDetails? deserializationErrors)
           = await DeserializeCategoryInstanceCreateRequestFromJson(
               categoryJson,
+              machineName,
               categoryConfigurationId,
               categoryTreeId,
               parentId,
@@ -1315,11 +1324,12 @@ private async Task<Guid?> CreateArrayElementConfiguration(EavAttributeType type,
 
         var categoryInstance = new Category(
             Guid.NewGuid(),
+            categoryCreateRequest.MachineName,
             categoryCreateRequest.CategoryConfigurationId,
             _mapper.Map<List<AttributeInstance>>(categoryCreateRequest.Attributes),
             categoryCreateRequest.TenantId,
             categoryPath!,
-            parentId!.Value,
+            parentId,
             categoryCreateRequest.CategoryTreeId
         );
 
@@ -1341,15 +1351,13 @@ private async Task<Guid?> CreateArrayElementConfiguration(EavAttributeType type,
             return (null, new ValidationErrorResponse(validationErrors))!;
         }
 
-        var mappedInstance = _mapper.Map<EntityInstance>(categoryInstance);
-
         ProjectionDocumentSchema schema = ProjectionDocumentSchemaFactory
             .FromEntityConfiguration(entityConfiguration, attributeConfigurations);
 
         IProjectionRepository projectionRepository = _projectionRepositoryFactory.GetProjectionRepository(schema);
         await projectionRepository.EnsureIndex(cancellationToken).ConfigureAwait(false);
 
-        var saved = await _entityInstanceRepository.SaveAsync(_userInfo, mappedInstance, cancellationToken)
+        var saved = await _categoryInstanceRepository.SaveAsync(_userInfo, categoryInstance, cancellationToken)
             .ConfigureAwait(false);
         if (!saved)
         {
@@ -1456,7 +1464,17 @@ private async Task<Guid?> CreateArrayElementConfiguration(EavAttributeType type,
             }
         }
 
-        return await DeserializeCategoryInstanceCreateRequestFromJson(categoryJson, categoryConfigurationId, categoryTreeId, parentId, tenantId, cancellationToken);
+        string? machineName = null;
+        if (categoryJson.TryGetProperty("machineName", out var machineNameJsonElement))
+        {
+            machineName = machineNameJsonElement.ValueKind == JsonValueKind.Null ? null : machineNameJsonElement.GetString();
+            if (machineName == null)
+            {
+                return (null, new ValidationErrorResponse("machineName", "Value is not a valid"));
+            }
+        }
+
+        return await DeserializeCategoryInstanceCreateRequestFromJson(categoryJson, machineName!, categoryConfigurationId, categoryTreeId, parentId, tenantId, cancellationToken);
     }
 
     /// Use following json format:
@@ -1475,6 +1493,7 @@ private async Task<Guid?> CreateArrayElementConfiguration(EavAttributeType type,
     /// </remarks>
     public async Task<(CategoryInstanceCreateRequest?, ProblemDetails?)> DeserializeCategoryInstanceCreateRequestFromJson(
         JsonElement categoryJson,
+        string machineName,
         Guid categoryConfigurationId,
         Guid categoryTreeId,
         Guid? parentId,
@@ -1501,7 +1520,7 @@ private async Task<Guid?> CreateArrayElementConfiguration(EavAttributeType type,
                 .ConfigureAwait(false);
 
         return await _entityInstanceCreateUpdateRequestFromJsonDeserializer.DeserializeCategoryInstanceCreateRequest(
-            categoryConfigurationId, tenantId, categoryTreeId, parentId, attributeConfigurations, categoryJson
+            categoryConfigurationId, machineName, tenantId, categoryTreeId, parentId, attributeConfigurations, categoryJson
         );
     }
 
@@ -1605,7 +1624,8 @@ private async Task<Guid?> CreateArrayElementConfiguration(EavAttributeType type,
     /// <returns></returns>
     public async Task<List<CategoryViewModel?>> GetSubcategories(
         Guid categoryTreeId,
-        Guid? parentId,
+        Guid? parentId = null,
+        string? parentMachineName = null,
         CancellationToken cancellationToken = default
     )
     {
@@ -1618,7 +1638,7 @@ private async Task<Guid?> CreateArrayElementConfiguration(EavAttributeType type,
             throw new NotFoundException("Category tree not found");
         }
 
-        var query = await GetSubcategoriesPrepareQuery(categoryTreeId, parentId, cancellationToken);
+        var query = GetSubcategoriesPrepareQuery(categoryTree, parentId, parentMachineName, cancellationToken);
 
         var queryResult = _mapper.Map<ProjectionQueryResult<CategoryViewModel>>(
             await QueryInstances(categoryTree.EntityConfigurationId, query, cancellationToken)
@@ -1627,82 +1647,60 @@ private async Task<Guid?> CreateArrayElementConfiguration(EavAttributeType type,
         return queryResult.Records.Select(x => x.Document).ToList() ?? new List<CategoryViewModel?>();
     }
 
-    private async Task<ProjectionQuery> GetSubcategoriesPrepareQuery(
-        Guid categoryTreeId,
+    private ProjectionQuery GetSubcategoriesPrepareQuery(
+        CategoryTree categoryTree,
         Guid? parentId,
+        string? parentMachineName,
         CancellationToken cancellationToken = default
     )
     {
-        var categoryTree = await _categoryTreeRepository.LoadAsync(
-            categoryTreeId, categoryTreeId.ToString(), cancellationToken
-        ).ConfigureAwait(false);
-
-        if (categoryTree == null)
-        {
-            throw new NotFoundException("Category tree not found");
-        }
-
         ProjectionQuery query = new ProjectionQuery
         {
             Limit = _elasticSearchQueryOptions.MaxSize
         };
 
-        if (parentId == null)
+        query.Filters.Add(new Filter
         {
-            query.Filters.AddRange(
+            PropertyName = $"{nameof(CategoryViewModel.CategoryPaths)}.{nameof(CategoryPath.TreeId)}",
+            Operator = FilterOperator.Equal,
+            Value = categoryTree.Id.ToString(),
+        });
 
-                new List<Filter>
-                {
-                    new Filter
-                    {
-                        PropertyName = $"{nameof(CategoryViewModel.CategoryPaths)}.{nameof(CategoryPath.TreeId)}",
-                        Operator = FilterOperator.Equal,
-                        Value = categoryTree.Id.ToString(),
-                    },
-                    new Filter
-                    {
-                        PropertyName = $"{nameof(CategoryViewModel.CategoryPaths)}.{nameof(CategoryPath.Path)}",
-                        Operator = FilterOperator.Equal,
-                        Value = string.Empty
-                    }
-                }
-            );
-
+        // If nothing is set - get subcategories of master level
+        if (parentId == null && string.IsNullOrEmpty(parentMachineName))
+        {
+            query.Filters.Add(new Filter
+            {
+                PropertyName = $"{nameof(CategoryViewModel.CategoryPaths)}.{nameof(CategoryPath.ParentMachineName)}",
+                Operator = FilterOperator.Equal,
+                Value = string.Empty,
+            });
             return query;
         }
 
-        var category = await _entityInstanceRepository.LoadAsync(
-            parentId.Value, categoryTree.EntityConfigurationId.ToString(), cancellationToken
-        ).ConfigureAwait(false);
-
-        if (category == null)
+        if (parentId != null)
         {
-            throw new NotFoundException("Category not found");
+
+            query.Filters.Add(new Filter
+            {
+                PropertyName = $"{nameof(CategoryViewModel.CategoryPaths)}.{nameof(CategoryPath.ParentId)}",
+                Operator = FilterOperator.Equal,
+                Value = parentId.ToString()
+            });
         }
 
-        string categoryPath = category.CategoryPaths.Where(x => x.TreeId == categoryTree.Id)
-            .Select(p => p.Path).FirstOrDefault()!;
-
-        query = new ProjectionQuery
+        if (!string.IsNullOrEmpty(parentMachineName))
         {
-            Filters = new List<Filter>
-            {
-                new Filter
-                {
-                    PropertyName = $"{nameof(CategoryViewModel.CategoryPaths)}.{nameof(CategoryPath.TreeId)}",
-                    Operator = FilterOperator.Equal,
-                    Value = categoryTree.Id.ToString(),
-                },
-                new Filter
-                {
-                    PropertyName = $"{nameof(CategoryViewModel.CategoryPaths)}.{nameof(CategoryPath.Path)}",
-                    Operator = FilterOperator.Equal,
-                    Value = categoryPath + $"/{category.Id}"
-                }
-            }
-        };
 
+            query.Filters.Add(new Filter
+            {
+                PropertyName = $"{nameof(CategoryViewModel.CategoryPaths)}.{nameof(CategoryPath.ParentMachineName)}",
+                Operator = FilterOperator.Equal,
+                Value = parentMachineName
+            });
+        }
         return query;
+
     }
 
     #endregion

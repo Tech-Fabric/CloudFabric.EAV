@@ -15,9 +15,9 @@ public class Category : EntityInstanceBase
         Guid entityConfigurationId,
         List<AttributeInstance> attributes,
         Guid? tenantId)
-        : base(id, entityConfigurationId, attributes, tenantId)
     {
         Apply(new CategoryCreated(id, machineName, entityConfigurationId, attributes, tenantId));
+
     }
 
     public Category(
@@ -27,10 +27,20 @@ public class Category : EntityInstanceBase
         List<AttributeInstance> attributes,
         Guid? tenantId,
         string categoryPath,
-        Guid parentId,
+        Guid? parentId,
         Guid categoryTreeId
     ) : this(id, machineName, entityConfigurationId, attributes, tenantId)
     {
         Apply(new EntityCategoryPathChanged(id, EntityConfigurationId, categoryTreeId, categoryPath, parentId));
+    }
+
+    public void On(CategoryCreated @event)
+    {
+        Id = @event.AggregateId;
+        EntityConfigurationId = @event.EntityConfigurationId;
+        Attributes = new List<AttributeInstance>(@event.Attributes).AsReadOnly();
+        TenantId = @event.TenantId;
+        CategoryPaths = new List<CategoryPath>();
+        MachineName = @event.MachineName;
     }
 }

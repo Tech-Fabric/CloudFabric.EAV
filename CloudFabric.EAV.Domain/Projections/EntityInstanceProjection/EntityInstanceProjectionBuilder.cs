@@ -31,7 +31,8 @@ namespace CloudFabric.EAV.Domain.Projections.EntityInstanceProjection;
 /// </summary>
 public class EntityInstanceProjectionBuilder : ProjectionBuilder,
     IHandleEvent<EntityInstanceCreated>,
-    // IHandleEvent<AttributeInstanceAdded>,
+    IHandleEvent<CategoryCreated>,
+// IHandleEvent<AttributeInstanceAdded>,
     IHandleEvent<AttributeInstanceUpdated>,
     // IHandleEvent<AttributeInstanceRemoved>,
     IHandleEvent<EntityCategoryPathChanged>,
@@ -168,6 +169,35 @@ public class EntityInstanceProjectionBuilder : ProjectionBuilder,
             { "EntityConfigurationId", @event.EntityConfigurationId },
             { "TenantId", @event.TenantId },
             { "CategoryPaths", new List<CategoryPath>() }
+        };
+
+        foreach (AttributeInstance attribute in @event.Attributes)
+        {
+            document.Add(attribute.ConfigurationAttributeMachineName, attribute.GetValue());
+        }
+
+        await UpsertDocument(
+            projectionDocumentSchema,
+            document,
+            @event.PartitionKey,
+            @event.Timestamp
+        );
+    }
+
+    public async Task On(CategoryCreated @event)
+    {
+        ProjectionDocumentSchema projectionDocumentSchema =
+            await BuildProjectionDocumentSchemaForEntityConfigurationIdAsync(
+                @event.EntityConfigurationId
+            ).ConfigureAwait(false);
+
+        var document = new Dictionary<string, object?>
+        {
+            { "Id", @event.AggregateId },
+            { "EntityConfigurationId", @event.EntityConfigurationId },
+            { "TenantId", @event.TenantId },
+            { "CategoryPaths", new List<CategoryPath>() },
+            { "MachineName", @event.MachineName},
         };
 
         foreach (AttributeInstance attribute in @event.Attributes)
