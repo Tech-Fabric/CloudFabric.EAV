@@ -21,6 +21,8 @@ public class EntityTreeInstanceViewModel
 {
     public Guid Id { get; set; }
 
+    public string MachineName { get; set; }
+
     public Guid EntityConfigurationId { get; set; }
 
     public List<AttributeInstanceViewModel> Attributes { get; set; }
