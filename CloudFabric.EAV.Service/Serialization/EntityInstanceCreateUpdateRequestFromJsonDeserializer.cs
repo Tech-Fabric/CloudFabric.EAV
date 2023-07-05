@@ -129,6 +129,7 @@ public class EntityInstanceCreateUpdateRequestFromJsonDeserializer
                     attributeInstance = new ArrayAttributeInstanceCreateUpdateRequest()
                     {
                         ConfigurationAttributeMachineName = attributeConfiguration.MachineName,
+                        ValueType = attributeConfiguration.ValueType,
                         Items = new List<AttributeInstanceCreateUpdateRequest>()
                     };
 
@@ -356,6 +357,7 @@ public class EntityInstanceCreateUpdateRequestFromJsonDeserializer
         }
 
         attributeInstance.ConfigurationAttributeMachineName = attributeMachineName;
+        attributeInstance.ValueType = attributeType;
 
         return (attributeInstance, null);
     }
