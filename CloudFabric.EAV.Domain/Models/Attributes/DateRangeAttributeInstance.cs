@@ -8,7 +8,7 @@ public class DateRangeAttributeInstanceValue
 
 public class DateRangeAttributeInstance : AttributeInstance
 {
-    public DateRangeAttributeInstanceValue? Value { get; set; }
+    public DateRangeAttributeInstanceValue Value { get; set; }
 
     public override object? GetValue()
     {

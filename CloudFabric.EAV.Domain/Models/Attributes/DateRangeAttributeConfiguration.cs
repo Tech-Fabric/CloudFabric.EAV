@@ -73,13 +73,11 @@ public class DateRangeAttributeConfiguration : AttributeConfiguration
             return errors;
         }
 
-        if (IsRequired && !requiredAttributesCanBeNull
-            && (dateRangeAttribute.Value == null
-                || (DateRangeAttributeType == DateRangeAttributeType.DateRange && dateRangeAttribute.Value?.To == null)
-            )
+        if (dateRangeAttribute.Value != null
+            && (DateRangeAttributeType == DateRangeAttributeType.DateRange && dateRangeAttribute.Value.To == null)
         )
         {
-            errors.Add("Required date attribute value is missing");
+            errors.Add("DateRange attribute value To is missing");
             return errors;
         }
 
