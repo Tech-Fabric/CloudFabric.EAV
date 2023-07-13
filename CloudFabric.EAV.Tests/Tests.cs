@@ -2180,10 +2180,7 @@ public class Tests
         };
 
         (EntityInstanceViewModel updatedInstance, _) =
-            await _eavService.UpdateEntityInstance(createdConfiguration.Id.ToString(),
-                updateRequest,
-                CancellationToken.None
-            );
+            await _eavService.UpdateEntityInstance(createdConfiguration.Id.ToString(),updateRequest);
         updatedInstance.Attributes.First(a => a.ConfigurationAttributeMachineName == changedAttributeName)
             .As<NumberAttributeInstanceViewModel>().Value.Should().Be(10);
     }
@@ -2222,10 +2219,7 @@ public class Tests
         };
 
         (EntityInstanceViewModel updatedInstance, ProblemDetails validationErrors) =
-            await _eavService.UpdateEntityInstance(createdConfiguration.Id.ToString(),
-                updateRequest,
-                CancellationToken.None
-            );
+            await _eavService.UpdateEntityInstance(createdConfiguration.Id.ToString(), updateRequest);
         updatedInstance.Should().BeNull();
         validationErrors.As<ValidationErrorResponse>().Errors.Should().ContainKey(changedAttributeName);
     }
@@ -2264,10 +2258,7 @@ public class Tests
         };
 
         (EntityInstanceViewModel updatedInstance, _) =
-            await _eavService.UpdateEntityInstance(createdConfiguration.Id.ToString(),
-                updateRequest,
-                CancellationToken.None
-            );
+            await _eavService.UpdateEntityInstance(createdConfiguration.Id.ToString(), updateRequest);
         updatedInstance.Attributes.First(a => a.ConfigurationAttributeMachineName == changedAttributeName)
             .As<NumberAttributeInstanceViewModel>().Value.Should().Be(30);
     }
@@ -2305,10 +2296,7 @@ public class Tests
             Id = createdInstance.Id
         };
 
-        await _eavService.UpdateEntityInstance(createdConfiguration.Id.ToString(),
-            updateRequest,
-            CancellationToken.None
-        );
+        await _eavService.UpdateEntityInstance(createdConfiguration.Id.ToString(), updateRequest);
 
         ProjectionQueryResult<AttributeConfigurationListItemViewModel> attributeConfigurations =
             await _eavService.ListAttributes(
@@ -2403,10 +2391,7 @@ public class Tests
         };
 
         (EntityInstanceViewModel updatedInstance, _) =
-            await _eavService.UpdateEntityInstance(createdConfiguration.Id.ToString(),
-                updateRequest,
-                CancellationToken.None
-            );
+            await _eavService.UpdateEntityInstance(createdConfiguration.Id.ToString(), updateRequest);
         updatedInstance.Attributes.FirstOrDefault(a => a.ConfigurationAttributeMachineName == changedAttributeName)
             .Should().BeNull();
     }
@@ -2442,10 +2427,7 @@ public class Tests
         };
 
         (EntityInstanceViewModel updatedInstance, _) =
-            await _eavService.UpdateEntityInstance(createdConfiguration.Id.ToString(),
-                updateRequest,
-                CancellationToken.None
-            );
+            await _eavService.UpdateEntityInstance(createdConfiguration.Id.ToString(), updateRequest);
         updatedInstance.Attributes.FirstOrDefault(a => a.ConfigurationAttributeMachineName == changedAttributeName)
             .Should().BeNull();
     }
@@ -2483,10 +2465,7 @@ public class Tests
         };
 
         (EntityInstanceViewModel updatedInstance, ProblemDetails errors) =
-            await _eavService.UpdateEntityInstance(createdConfiguration.Id.ToString(),
-                updateRequest,
-                CancellationToken.None
-            );
+            await _eavService.UpdateEntityInstance(createdConfiguration.Id.ToString(), updateRequest);
         updatedInstance.Should().BeNull();
         errors.As<ValidationErrorResponse>().Errors.Should().ContainKey(changedAttributeName);
     }
