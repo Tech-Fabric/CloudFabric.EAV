@@ -2186,8 +2186,13 @@ private async Task<Guid?> CreateArrayElementConfiguration(EavAttributeType type,
         return JsonSerializer.SerializeToDocument(entityInstanceViewModel, serializerOptions);
     }
 
-    public async Task<(EntityInstanceViewModel, ProblemDetails)> UpdateEntityInstance(string partitionKey,
-        EntityInstanceUpdateRequest updateRequest, CancellationToken cancellationToken)
+    public async Task<(EntityInstanceViewModel, ProblemDetails)> UpdateEntityInstance(
+        string partitionKey,
+        EntityInstanceUpdateRequest updateRequest,
+        bool dryRun = false,
+        bool requiredAttributesCanBeNull = false,
+        CancellationToken cancellationToken = default
+    )
     {
         EntityInstance? entityInstance =
             await _entityInstanceRepository.LoadAsync(updateRequest.Id, partitionKey, cancellationToken);
@@ -2227,6 +2232,13 @@ private async Task<Guid?> CreateArrayElementConfiguration(EavAttributeType type,
                     .First(c => c.MachineName == attributeMachineNameToRemove);
                 updateRequest.AttributesToAddOrUpdate.RemoveAll(a =>
                     a.ConfigurationAttributeMachineName == attributeMachineNameToRemove);
+
+                if (requiredAttributesCanBeNull)
+                {
+                    entityInstance.RemoveAttributeInstance(attributeMachineNameToRemove);
+                    continue;
+                }
+
                 // validation against null will check if the attribute is required
                 List<string> errors = attrConfiguration.ValidateInstance(null);
 
@@ -2253,7 +2265,7 @@ private async Task<Guid?> CreateArrayElementConfiguration(EavAttributeType type,
             }
 
             var newAttribute = _mapper.Map<AttributeInstance>(newAttributeRequest);
-            List<string> errors = attrConfig.ValidateInstance(newAttribute);
+            List<string> errors = attrConfig.ValidateInstance(newAttribute, requiredAttributesCanBeNull);
 
             if (errors.Count == 0)
             {
@@ -2285,10 +2297,13 @@ private async Task<Guid?> CreateArrayElementConfiguration(EavAttributeType type,
             return (null, new ValidationErrorResponse(validationErrors))!;
         }
 
-        var saved = await _entityInstanceRepository.SaveAsync(_userInfo, entityInstance, cancellationToken);
-        if (!saved)
+        if (!dryRun)
         {
-            //TODO: Throw a error when ready
+            var saved = await _entityInstanceRepository.SaveAsync(_userInfo, entityInstance, cancellationToken);
+            if (!saved)
+            {
+                //TODO: Throw a error when ready
+            }
         }
 
         return (_mapper.Map<EntityInstanceViewModel>(entityInstance), null)!;
