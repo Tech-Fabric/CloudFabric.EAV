@@ -1,5 +1,4 @@
 using System.Globalization;
-using System.Linq;
 using System.Text.Json;
 
 using CloudFabric.EAV.Domain.Models;
@@ -47,6 +46,72 @@ public class EntityInstanceCreateUpdateRequestFromJsonDeserializer
             EntityConfigurationId = entityConfigurationId,
             Attributes = attributes
         };
+
+        return (entityInstance, null);
+    }
+
+    public async Task<(EntityInstanceUpdateRequest?, ValidationErrorResponse?)> DeserializeEntityInstanceUpdateRequest(
+        Guid id,
+        Guid entityConfigurrationId,
+        List<AttributeConfiguration> attributesConfigurations,
+        JsonElement record
+    )
+    {
+        var entityInstance = new EntityInstanceUpdateRequest
+        {
+            Id = id,
+            EntityConfigurationId = entityConfigurrationId
+        };
+
+        (List<AttributeInstanceCreateUpdateRequest> attributes, ValidationErrorResponse? deserializeAttributeErrors) =
+            await DeserializeAttributes(attributesConfigurations, record);
+
+        if (deserializeAttributeErrors != null)
+        {
+            foreach (var keyValuePair in deserializeAttributeErrors.Errors)
+            {
+                return (null, deserializeAttributeErrors);
+            }
+        }
+        else
+        {
+            entityInstance.AttributesToAddOrUpdate = attributes;
+        }
+
+        string attributeMahineNamesToRemoveCamelCasePropName =
+            char.ToLower(nameof(EntityInstanceUpdateRequest.AttributeMachineNamesToRemove)[0])
+            + nameof(EntityInstanceUpdateRequest.AttributeMachineNamesToRemove).Substring(1);
+
+        if (record.TryGetProperty(
+            $"{attributeMahineNamesToRemoveCamelCasePropName}", out var attributeMachinaNamesToRemoveJson)
+            && attributeMachinaNamesToRemoveJson.ValueKind != JsonValueKind.Null
+        )
+        {
+            if (attributeMachinaNamesToRemoveJson.ValueKind != JsonValueKind.Array
+            )
+            {
+                return (null, new ValidationErrorResponse(
+                    $"{nameof(EntityInstanceUpdateRequest.AttributeMachineNamesToRemove)}",
+                    $" {attributeMachinaNamesToRemoveJson.ValueKind} is an unsupported type.")
+                );
+            }
+
+            var enumeratedArray = attributeMachinaNamesToRemoveJson.EnumerateArray();
+
+            if (enumeratedArray.Count() > 0)
+            {
+                if (enumeratedArray.Any(x => x.ValueKind != JsonValueKind.String))
+                {
+                    return (null, new ValidationErrorResponse(
+                        $"{nameof(EntityInstanceUpdateRequest.AttributeMachineNamesToRemove)}",
+                        $"Array contains unsupported elements type.")
+                    );
+                }
+            }
+
+            entityInstance.AttributeMachineNamesToRemove
+                = attributeMachinaNamesToRemoveJson.Deserialize<List<string>>(_jsonSerializerOptions);
+        }
 
         return (entityInstance, null);
     }
@@ -279,7 +344,8 @@ public class EntityInstanceCreateUpdateRequestFromJsonDeserializer
                                 localizedText.Value.Add(
                                     new LocalizedStringCreateRequest()
                                     {
-                                        CultureInfoId = cultureInfo.LCID, String = element.Value.GetString()!
+                                        CultureInfoId = cultureInfo.LCID,
+                                        String = element.Value.GetString()!
                                     }
                                 );
                             }

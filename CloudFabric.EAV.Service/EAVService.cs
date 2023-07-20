@@ -2309,6 +2309,171 @@ private async Task<Guid?> CreateArrayElementConfiguration(EavAttributeType type,
         return (_mapper.Map<EntityInstanceViewModel>(entityInstance), null)!;
     }
 
+    /// <remarks>
+    /// Use following json format:
+    ///
+    /// ```
+    /// {
+    ///     "id": "c06e4e1f-bece-481c-a5e8-98ddcb86254f",
+    ///     "entityConfigurationId": "fb80cb74-6f47-4d38-bb87-25bd820efee7",    
+    ///     "sku": "123",
+    ///     "name": "Updated entity name",
+    ///     "attributeMachineNamesToRemove": [
+    ///       "firstAttributeMachineNameToRemove",
+    ///       "secondAttributeMachineNameToRemove"
+    ///     ]
+    /// }
+    /// ```
+    ///
+    /// Where "sku" and "name" are attributes machine names to add or update,
+    /// "attributeMachineNamesToRemove" an array of attribute machine names,
+    /// "id" - entity instance id to update,
+    /// "entityConfigurationId" - obviously the id of entity configuration which has all attributes.
+    /// </remarks>
+    public async Task<(EntityInstanceUpdateRequest?, ProblemDetails?)> DeserializeEntityInstanceUpdateRequestFromJson(
+        JsonElement entityJson,
+        CancellationToken cancellationToken = default
+    )
+    {
+        Guid entityConfigurationId;
+        if (entityJson.TryGetProperty("entityConfigurationId", out var entityConfigurationIdJsonElement))
+        {
+            if (entityConfigurationIdJsonElement.TryGetGuid(out var entityConfigurationIdGuid))
+            {
+                entityConfigurationId = entityConfigurationIdGuid;
+            }
+            else
+            {
+                return (null, new ValidationErrorResponse("entityConfigurationId", "Value is not a valid Guid"))!;
+            }
+        }
+        else
+        {
+            return (null, new ValidationErrorResponse("entityConfigurationId", "Value is missing"));
+        }
+
+        Guid instanceId;
+        if (entityJson.TryGetProperty("id", out var idJsonElement))
+        {
+            if (idJsonElement.TryGetGuid(out var idGuid))
+            {
+                instanceId = idGuid;
+            }
+            else
+            {
+                return (null, new ValidationErrorResponse("id", "Value is not a valid Guid"))!;
+            }
+        }
+        else
+        {
+            return (null, new ValidationErrorResponse("id", "Value is missing"));
+        }
+
+        return await DeserializeEntityInstanceUpdateRequestFromJson(
+            entityJson, entityConfigurationId, instanceId, cancellationToken
+        );
+    }
+
+    /// <remarks>
+    /// Use following json format:
+    ///
+    /// ```
+    /// {
+    ///     "id": "c06e4e1f-bece-481c-a5e8-98ddcb86254f",
+    ///     "sku": "123",
+    ///     "name": "Updated entity name",
+    ///     "attributeMachineNamesToRemove": [
+    ///       "firstAttributeMachineNameToRemove",
+    ///       "secondAttributeMachineNameToRemove"
+    ///     ]
+    /// }
+    /// ```
+    ///
+    /// Where "sku" and "name" are attributes machine names to add or update,
+    /// "attributeMachineNamesToRemove" an array of attribute machine names,
+    /// "id" - entity instance id to update.
+    ///
+    /// Note that this overload accepts "entityConfigurationId" via method arguments,
+    /// so it should not be in json.
+    /// </remarks>
+    public async Task<(EntityInstanceUpdateRequest?, ProblemDetails?)> DeserializeEntityInstanceUpdateRequestFromJson(
+        JsonElement updateEntityJson,
+        Guid entityConfgigurationId,
+        CancellationToken cancellationToken = default
+    )
+    {
+        Guid instanceId;
+        if (updateEntityJson.TryGetProperty("id", out var idJsonElement))
+        {
+            if (idJsonElement.TryGetGuid(out var tenantIdGuid))
+            {
+                instanceId = tenantIdGuid;
+            }
+            else
+            {
+                return (null, new ValidationErrorResponse("id", "Value is not a valid Guid"))!;
+            }
+        }
+        else
+        {
+            return (null, new ValidationErrorResponse("id", "Value is missing"));
+        }
+
+        return await DeserializeEntityInstanceUpdateRequestFromJson(
+            updateEntityJson, entityConfgigurationId, instanceId, cancellationToken
+        );
+    }
+
+    /// <remarks>
+    /// Use following json format:
+    ///
+    /// ```
+    /// {
+    ///     "sku": "123",
+    ///     "name": "Updated entity name",
+    ///     "attributeMachineNamesToRemove": [
+    ///       "firstAttributeMachineNameToRemove",
+    ///       "secondAttributeMachineNameToRemove"
+    ///     ]
+    /// }
+    /// ```
+    /// Where "sku" and "name" are attributes machine names to add or update,
+    /// "attributeMachineNamesToRemove" an array of attribute machine names.
+    /// 
+    /// Note that this overload accepts "instanceId" and "entityConfigurationId" via method arguments,
+    /// so they should not be in json.
+    /// </remarks>
+    public async Task<(EntityInstanceUpdateRequest?, ProblemDetails?)> DeserializeEntityInstanceUpdateRequestFromJson(
+        JsonElement entityJson,
+        Guid entityConfigurationId,
+        Guid instanceId,
+        CancellationToken cancellationToken = default
+    )
+    {
+        EntityConfiguration? entityConfiguration = await _entityConfigurationRepository.LoadAsync(
+                entityConfigurationId,
+                entityConfigurationId.ToString(),
+                cancellationToken
+            )
+            .ConfigureAwait(false);
+
+        if (entityConfiguration == null)
+        {
+            return (null, new ValidationErrorResponse("EntityConfigurationId", "EntityConfiguration not found"))!;
+        }
+
+        List<AttributeConfiguration> attributeConfigurations =
+            await GetAttributeConfigurationsForEntityConfiguration(
+                    entityConfiguration,
+                    cancellationToken
+                )
+                .ConfigureAwait(false);
+
+        return await _entityInstanceCreateUpdateRequestFromJsonDeserializer.DeserializeEntityInstanceUpdateRequest(
+            instanceId, entityConfigurationId, attributeConfigurations, entityJson
+        );
+    }
+
     /// <summary>
     /// Returns records in internal EntityInstanceViewModel format - use this is library is used by .net code.
     /// That way you will have full control over attributes and will be able to convert them to

@@ -322,4 +322,27 @@ public class JsonSerializationTests : BaseQueryTests.BaseQueryTests
         JsonSerializer.Deserialize<List<CategoryPath>>(resultDocument!.RootElement.GetProperty("categoryPaths"), _serializerOptions)!
             .First().TreeId.Should().Be(hierarchy.Id);
     }
+
+    [TestMethod]
+    public async Task DeserializeEntityInstanceUpdateRequest_Success()
+    {
+        var entityConfigurationCreateRequest = EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
+        (var entityConfiguration, _) = await _eavService.CreateEntityConfiguration(entityConfigurationCreateRequest, CancellationToken.None);
+
+        var entityInstanceCreateRequest = EntityInstanceFactory.CreateValidBoardGameEntityInstanceCreateRequest(entityConfiguration!.Id);
+        (var entityInstance, _) = await _eavService.CreateEntityInstance(entityInstanceCreateRequest);
+
+        string entityInstanceUpdateRequest
+            = EntityInstanceFactory.CreateValidBoardGameEntityInstanceUpdateRequestJson(entityInstance!.EntityConfigurationId, entityInstance.Id);
+
+        JsonDocument entityJson = JsonDocument.Parse(entityInstanceUpdateRequest);
+
+        (var instanceUpdateRequest, var errors) = await _eavService.DeserializeEntityInstanceUpdateRequestFromJson(entityJson.RootElement);
+
+        errors.Should().BeNull();
+
+        (var updatedInstance, _) = await _eavService.UpdateEntityInstance(entityConfiguration.Id.ToString(), instanceUpdateRequest);
+
+        updatedInstance.Should().NotBeNull();
+    }
 }
