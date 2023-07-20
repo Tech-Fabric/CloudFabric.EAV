@@ -68,10 +68,7 @@ public class EntityInstanceCreateUpdateRequestFromJsonDeserializer
 
         if (deserializeAttributeErrors != null)
         {
-            foreach (var keyValuePair in deserializeAttributeErrors.Errors)
-            {
-                return (null, deserializeAttributeErrors);
-            }
+            return (null, deserializeAttributeErrors);
         }
         else
         {
@@ -92,7 +89,7 @@ public class EntityInstanceCreateUpdateRequestFromJsonDeserializer
             {
                 return (null, new ValidationErrorResponse(
                     $"{nameof(EntityInstanceUpdateRequest.AttributeMachineNamesToRemove)}",
-                    $" {attributeMachinaNamesToRemoveJson.ValueKind} is an unsupported type.")
+                    $" {attributeMachinaNamesToRemoveJson.ValueKind} is an unavaliable type.")
                 );
             }
 
