@@ -38,10 +38,6 @@ public class SerialAttributeConfiguration : AttributeConfiguration
         if (instance == null)
         {
             errors = base.ValidateInstance(instance, requiredAttributesCanBeNull);
-        }
-
-        if (instance == null)
-        {
             return errors;
         }
 
