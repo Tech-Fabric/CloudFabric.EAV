@@ -60,6 +60,36 @@ public class EntityInstanceFactory
         ";
     }
 
+    public static string CreateValidBoardGameEntityInstanceUpdateRequestJson(Guid entityConfigurationId, Guid instanceId)
+    {
+        return @"
+            {
+                ""entityConfigurationId"": """ + entityConfigurationId + @""",
+                ""id"": """ + instanceId + @""",
+                ""name"": ""Caverna"",
+                ""description"": ""It is a complex worker placement strategy game that shares similarities in gameplay and theme with his earlier board game, Agricola,[1] The game's theme revolves around helping a small dwarf family to settle a cave and nearby woodlands and to develop the setting through furnishing caves as well as converting forests into meadows, fields and pastures."",
+                ""brand"": ""LookoutGames"",
+                ""players_max"": 7,
+                ""price"": 195.50,
+                ""images"": [
+                    {
+                        ""title"": ""Photo 2"",
+                        ""url"": ""/images/photo2.jpg"",
+                        ""alt"": ""A photo of Caverna board game box""
+                    },
+                    {
+                        ""title"": ""Caverna Rulebook"",
+                        ""url"": ""/images/rulebook.jpg"",
+                        ""alt"": ""A photo of Caverna board game rulebook, page 1""
+                    }
+                ]                ,
+                ""attributeMachineNamesToRemove"": [
+                    ""avg_time_mins"", ""release_date""
+                ]
+            }
+        ";
+    }
+
     public static string CreateValidBoardGameEntityInstanceCreateRequestJsonSingleLanguage(Guid entityConfigurationId)
     {
         return @"
