@@ -2401,7 +2401,7 @@ private async Task<Guid?> CreateArrayElementConfiguration(EavAttributeType type,
 
             var entityInstanceSaved = await _entityInstanceRepository
                 .SaveAsync(_userInfo, entityInstance, cancellationToken)
-                .ConfigureAwait(false);
+                .ConfigureAwait(false);                
             if (!entityInstanceSaved || !entityConfigurationSaved)
             {
                 //TODO: Throw a error when ready
