@@ -18,9 +18,12 @@ namespace CloudFabric.EAV.Tests.BaseQueryTests;
 
 public abstract class BaseQueryTests
 {
-    protected EAVService _eavService;
+    protected EAVEntityInstanceService _eavEntityInstanceService;
+    protected EAVCategoryService _eavCategoryService;
+    
     protected IEventStore _eventStore;
-    protected ILogger<EAVService> _logger;
+    protected ILogger<EAVEntityInstanceService> _eiLogger;
+    protected ILogger<EAVCategoryService> _cLogger;
 
     protected virtual TimeSpan ProjectionsUpdateDelay { get; set; } = TimeSpan.FromMilliseconds(0);
 
@@ -32,15 +35,23 @@ public abstract class BaseQueryTests
     public async Task SetUp()
     {
         var loggerFactory = new LoggerFactory();
-        _logger = loggerFactory.CreateLogger<EAVService>();
-
-        var configuration = new MapperConfiguration(cfg =>
+        _eiLogger = loggerFactory.CreateLogger<EAVEntityInstanceService>();
+        _cLogger = loggerFactory.CreateLogger<EAVCategoryService>();
+        
+        var eiConfiguration = new MapperConfiguration(cfg =>
             {
-                cfg.AddMaps(Assembly.GetAssembly(typeof(EAVService)));
+                cfg.AddMaps(Assembly.GetAssembly(typeof(EAVEntityInstanceService)));
             }
         );
-        IMapper? mapper = configuration.CreateMapper();
-
+        
+        var cConfiguration = new MapperConfiguration(cfg =>
+            {
+                cfg.AddMaps(Assembly.GetAssembly(typeof(EAVCategoryService)));
+            }
+        );
+        IMapper? eiMapper = eiConfiguration.CreateMapper();
+        IMapper? cMapper = eiConfiguration.CreateMapper();
+        
         _eventStore = GetEventStore();
         await _eventStore.Initialize();
 
@@ -67,10 +78,23 @@ public abstract class BaseQueryTests
 
         await projectionsEngine.StartAsync("TestInstance");
 
-        _eavService = new EAVService(
-            _logger,
-            mapper,
-            new JsonSerializerOptions()
+        _eavEntityInstanceService = new EAVEntityInstanceService(
+            _eiLogger,
+            eiMapper,
+            new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                DictionaryKeyPolicy = JsonNamingPolicy.CamelCase
+            },
+            aggregateRepositoryFactory,
+            projectionRepositoryFactory,
+            new EventUserInfo(Guid.NewGuid())
+        );
+        
+        _eavCategoryService = new EAVCategoryService(
+            _cLogger,
+            cMapper,
+            new JsonSerializerOptions
             {
                 PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
                 DictionaryKeyPolicy = JsonNamingPolicy.CamelCase
