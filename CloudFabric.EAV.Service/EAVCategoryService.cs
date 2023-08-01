@@ -609,55 +609,81 @@ public class EAVCategoryService: EAVService<CategoryUpdateRequest, Category, Cat
                 cancellationToken
             ).ConfigureAwait(false);
 
-        var treeElements = treeElementsQueryResult.Records.Select(x => x.Document!).ToList();
+        var treeElements = treeElementsQueryResult.Records
+            .Select(x => x.Document!)
+            .Select(x =>
+            {
+                x.CategoryPaths = x.CategoryPaths.Where(cp => cp.TreeId == treeId).ToList();
+                return x;
+            }).ToList();
+
+
+        return BuildTreeView(treeElements, notDeeperThanCategoryId);
+
+    }
+
+    private List<EntityTreeInstanceViewModel> BuildTreeView(List<CategoryViewModel> categories, Guid? notDeeperThanCategoryId)
+    {
 
         int searchedLevelPathLenght;
 
         if (notDeeperThanCategoryId != null)
         {
-            var category = treeElements.FirstOrDefault(x => x.Id == notDeeperThanCategoryId);
+            var category = categories.FirstOrDefault(x => x.Id == notDeeperThanCategoryId);
 
             if (category == null)
             {
                 throw new NotFoundException("Category not found");
             }
 
-            searchedLevelPathLenght = category.CategoryPaths.FirstOrDefault(x => x.TreeId == treeId)!.Path.Length;
+            searchedLevelPathLenght = category.CategoryPaths.FirstOrDefault()!.Path.Length;
 
-            treeElements = treeElements
-                .Where(x => x.CategoryPaths.FirstOrDefault(x => x.TreeId == treeId)!.Path.Length <= searchedLevelPathLenght).ToList();
+            categories = categories
+                .Where(x => x.CategoryPaths.FirstOrDefault()!.Path.Length <= searchedLevelPathLenght).ToList();
         }
 
         var treeViewModel = new List<EntityTreeInstanceViewModel>();
 
         // Go through each instance once
-        foreach (CategoryViewModel treeElement in treeElements
-                     .OrderBy(x => x.CategoryPaths.FirstOrDefault(cp => cp.TreeId == treeId)?.Path.Length))
+        foreach (CategoryViewModel treeElement in categories
+                     .OrderBy(x => x.CategoryPaths.FirstOrDefault()?.Path.Length))
         {
             var treeElementViewModel = _mapper.Map<EntityTreeInstanceViewModel>(treeElement);
-            var categoryPath = treeElement.CategoryPaths.FirstOrDefault(cp => cp.TreeId == treeId)?.Path;
+            var categoryPath = treeElement.CategoryPaths.FirstOrDefault()?.Path;
 
+            // If categoryPath is empty, that this is a root model -> add it directly to the tree
             if (string.IsNullOrEmpty(categoryPath))
             {
                 treeViewModel.Add(treeElementViewModel);
             }
             else
             {
+                // Else split categoryPath and extract each parent machine name
                 IEnumerable<string> categoryPathElements =
                     categoryPath.Split('/').Where(x => !string.IsNullOrEmpty(x));
+
+                // Go through each element of the path, remembering where we are atm, and passing current version of treeViewModel
+                // Applies an accumulator function over a sequence of paths.
                 EntityTreeInstanceViewModel? currentLevel = null;
-                categoryPathElements.Aggregate(treeViewModel,
-                    (acc, pathComponent) =>
+
+                categoryPathElements.Aggregate(
+                    treeViewModel, // initial value
+                    (treeViewModelCurrent, pathComponent) => // apply function to a sequence
                     {
+                        // try to find parent with current pathComponent in the current version of treeViewModel in case
+                        // it had already been added to our tree model on previous iterations
                         EntityTreeInstanceViewModel? parent =
-                            acc.FirstOrDefault(y => y.Id.ToString() == pathComponent);
+                            treeViewModelCurrent.FirstOrDefault(y => y.MachineName == pathComponent);
+
+                        // If it is not still there -> find it in the global list of categories and add to our treeViewModel
                         if (parent == null)
                         {
-                            EntityInstanceViewModel? parentInstance = treeElements.FirstOrDefault(x => x.Id.ToString() == pathComponent);
+                            CategoryViewModel? parentInstance = categories.FirstOrDefault(y => y.MachineName == pathComponent);
                             parent = _mapper.Map<EntityTreeInstanceViewModel>(parentInstance);
-                            acc.Add(parent);
+                            treeViewModelCurrent.Add(parent);
                         }
 
+                        // Move to the next level
                         currentLevel = parent;
                         return parent.Children;
                     }
@@ -665,8 +691,8 @@ public class EAVCategoryService: EAVService<CategoryUpdateRequest, Category, Cat
                 currentLevel?.Children.Add(treeElementViewModel);
             }
         }
-
         return treeViewModel;
+
     }
 
     /// <summary>

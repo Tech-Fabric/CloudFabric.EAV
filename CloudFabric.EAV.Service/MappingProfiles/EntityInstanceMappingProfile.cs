@@ -15,9 +15,7 @@ public class EntityInstanceProfile : Profile
 
         CreateMap<EntityInstance, EntityInstanceViewModel>();
         CreateMap<EntityInstanceViewModel, EntityInstance>();
-        CreateMap<EntityInstanceViewModel, EntityTreeInstanceViewModel>().ForMember(o => o.Children,
-            opt => opt.MapFrom(_ => new List<EntityTreeInstanceViewModel>())
-        );
+
 
         CreateMap<CategoryTreeCreateRequest, CategoryTree>();
         CreateMap<CategoryTree, HierarchyViewModel>();
@@ -25,6 +23,9 @@ public class EntityInstanceProfile : Profile
         CreateMap<CategoryInstanceCreateRequest, Category>();
         CreateMap<Category, CategoryViewModel>();
         CreateMap<Category, EntityInstanceViewModel>();
+        CreateMap<CategoryViewModel, EntityTreeInstanceViewModel>().ForMember(o => o.Children,
+            opt => opt.MapFrom(_ => new List<EntityTreeInstanceViewModel>())
+        );
 
         CreateMap<EntityInstance, Category>();
         CreateMap<Category, EntityInstance>();

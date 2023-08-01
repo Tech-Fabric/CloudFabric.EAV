@@ -37,6 +37,14 @@ public abstract class InstanceFromDictionaryDeserializer<T> where T: EntityInsta
                         {
                             categoryPath.TreeId = (Guid)pathItem.Value;
                         }
+                        else if (pathItem.Key == "parentId")
+                        {
+                            categoryPath.ParentId = (Guid)pathItem.Value;
+                        }
+                        else if (pathItem.Key == "parentMachineName")
+                        {
+                            categoryPath.ParentMachineName = (string)pathItem.Value;
+                        }
                     }
 
                     categoryPaths.Add(categoryPath);
@@ -254,7 +262,8 @@ public class CategoryFromDictionaryDeserializer : InstanceFromDictionaryDeserial
                 .ToList(),
             CategoryPaths = record.ContainsKey("CategoryPaths")
                 ? ParseCategoryPaths(record["CategoryPaths"])
-                : new List<CategoryPathViewModel>()
+                : new List<CategoryPathViewModel>(),
+            MachineName = (string)record["MachineName"]!
         };
         return category;
     }
