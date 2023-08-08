@@ -1,8 +1,12 @@
-﻿namespace CloudFabric.EAV.Domain.Models.Attributes;
+namespace CloudFabric.EAV.Domain.Models.Attributes;
 
 public class SerialAttributeInstance : AttributeInstance
 {
-    public long Value { get; set; }
+    /// <summary>
+    /// Nullable because it's auto-generated
+    /// and should be stored before auto-generated value can be calculated.
+    /// /// </summary>
+    public long? Value { get; set; }
 
     public override object? GetValue()
     {

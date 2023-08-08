@@ -1,4 +1,4 @@
-﻿using CloudFabric.EAV.Enums;
+using CloudFabric.EAV.Enums;
 using CloudFabric.EAV.Domain.Events.Configuration.Attributes;
 using CloudFabric.EAV.Domain.Models.Base;
 using CloudFabric.EventSourcing.EventStore;
@@ -33,10 +33,11 @@ public class SerialAttributeConfiguration : AttributeConfiguration
 
     public override List<string> ValidateInstance(AttributeInstance? instance, bool requiredAttributesCanBeNull = false)
     {
-        List<string> errors = base.ValidateInstance(instance, requiredAttributesCanBeNull);
+        List<string> errors = new();
 
         if (instance == null)
         {
+            errors = base.ValidateInstance(instance, requiredAttributesCanBeNull);
             return errors;
         }
 

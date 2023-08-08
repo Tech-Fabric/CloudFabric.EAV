@@ -74,7 +74,7 @@ public class EntityInstanceFactory
                 ""players_max"": 4,
                 ""avg_time_mins"": 15,
                 ""price"": 31.50,
-                ""release_date"": { ""from"": ""2023-03-16T16:12:56"" },
+                ""release_date"": { ""from"": ""2023-03-16T16:12:56"", ""to"": """" },
                 ""images"": [
                     {
                         ""title"": ""Photo 1"",

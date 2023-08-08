@@ -67,9 +67,17 @@ public class DateRangeAttributeConfiguration : AttributeConfiguration
             return errors;
         }
 
-        if (instance is not DateRangeAttributeInstance)
+        if (instance is not DateRangeAttributeInstance dateRangeAttribute)
         {
-            errors.Add("Cannot validate attribute. Expected attribute type: DateRange)");
+            errors.Add("Cannot validate attribute. Expected attribute type: DateRange");
+            return errors;
+        }
+
+        if (dateRangeAttribute.Value != null
+            && (DateRangeAttributeType == DateRangeAttributeType.DateRange && dateRangeAttribute.Value.To == null)
+        )
+        {
+            errors.Add("DateRange attribute value To is missing");
             return errors;
         }
 

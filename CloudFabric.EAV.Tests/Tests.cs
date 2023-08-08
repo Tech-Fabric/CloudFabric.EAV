@@ -1061,7 +1061,7 @@ public class Tests
         errors.As<ValidationErrorResponse>().Errors.Count.Should().Be(1);
         errors.As<ValidationErrorResponse>().Errors.First().Value.First().Should().Be("Max length can't be negative or zero");
 
-        // check for negative max length 
+        // check for negative max length
         textAttrbiuteRequest.MaxLength = -10;
 
         (_, errors) = await _eavEntityInstanceService.CreateEntityConfiguration(configCreateRequest, CancellationToken.None);
@@ -2180,10 +2180,7 @@ public class Tests
         };
 
         (EntityInstanceViewModel updatedInstance, _) =
-            await _eavEntityInstanceService.UpdateEntityInstance(createdConfiguration.Id.ToString(),
-                updateRequest,
-                CancellationToken.None
-            );
+            await _eavEntityInstanceService.UpdateEntityInstance(createdConfiguration.Id.ToString(),updateRequest);
         updatedInstance.Attributes.First(a => a.ConfigurationAttributeMachineName == changedAttributeName)
             .As<NumberAttributeInstanceViewModel>().Value.Should().Be(10);
     }
@@ -2222,10 +2219,7 @@ public class Tests
         };
 
         (EntityInstanceViewModel updatedInstance, ProblemDetails validationErrors) =
-            await _eavEntityInstanceService.UpdateEntityInstance(createdConfiguration.Id.ToString(),
-                updateRequest,
-                CancellationToken.None
-            );
+            await _eavEntityInstanceService.UpdateEntityInstance(createdConfiguration.Id.ToString(), updateRequest);
         updatedInstance.Should().BeNull();
         validationErrors.As<ValidationErrorResponse>().Errors.Should().ContainKey(changedAttributeName);
     }
@@ -2264,10 +2258,7 @@ public class Tests
         };
 
         (EntityInstanceViewModel updatedInstance, _) =
-            await _eavEntityInstanceService.UpdateEntityInstance(createdConfiguration.Id.ToString(),
-                updateRequest,
-                CancellationToken.None
-            );
+            await _eavEntityInstanceService.UpdateEntityInstance(createdConfiguration.Id.ToString(), updateRequest);
         updatedInstance.Attributes.First(a => a.ConfigurationAttributeMachineName == changedAttributeName)
             .As<NumberAttributeInstanceViewModel>().Value.Should().Be(30);
     }
@@ -2305,10 +2296,7 @@ public class Tests
             Id = createdInstance.Id
         };
 
-        await _eavEntityInstanceService.UpdateEntityInstance(createdConfiguration.Id.ToString(),
-            updateRequest,
-            CancellationToken.None
-        );
+        await _eavEntityInstanceService.UpdateEntityInstance(createdConfiguration.Id.ToString(), updateRequest);
 
         ProjectionQueryResult<AttributeConfigurationListItemViewModel> attributeConfigurations =
             await _eavEntityInstanceService.ListAttributes(
@@ -2403,10 +2391,7 @@ public class Tests
         };
 
         (EntityInstanceViewModel updatedInstance, _) =
-            await _eavEntityInstanceService.UpdateEntityInstance(createdConfiguration.Id.ToString(),
-                updateRequest,
-                CancellationToken.None
-            );
+            await _eavEntityInstanceService.UpdateEntityInstance(createdConfiguration.Id.ToString(), updateRequest);
         updatedInstance.Attributes.FirstOrDefault(a => a.ConfigurationAttributeMachineName == changedAttributeName)
             .Should().BeNull();
     }
@@ -2442,10 +2427,7 @@ public class Tests
         };
 
         (EntityInstanceViewModel updatedInstance, _) =
-            await _eavEntityInstanceService.UpdateEntityInstance(createdConfiguration.Id.ToString(),
-                updateRequest,
-                CancellationToken.None
-            );
+            await _eavEntityInstanceService.UpdateEntityInstance(createdConfiguration.Id.ToString(), updateRequest);
         updatedInstance.Attributes.FirstOrDefault(a => a.ConfigurationAttributeMachineName == changedAttributeName)
             .Should().BeNull();
     }
@@ -2483,12 +2465,173 @@ public class Tests
         };
 
         (EntityInstanceViewModel updatedInstance, ProblemDetails errors) =
-            await _eavEntityInstanceService.UpdateEntityInstance(createdConfiguration.Id.ToString(),
-                updateRequest,
-                CancellationToken.None
-            );
+            await _eavEntityInstanceService.UpdateEntityInstance(createdConfiguration.Id.ToString(), updateRequest);
         updatedInstance.Should().BeNull();
         errors.As<ValidationErrorResponse>().Errors.Should().ContainKey(changedAttributeName);
+    }
+
+    [TestMethod]
+    public async Task UpdateInstanceSerialAttributeExternalValue_Success()
+    {
+        // create entity configuration with serial attribute
+        var cultureInfoId = CultureInfo.GetCultureInfo("en-US").LCID;
+        var serialAttributeCreateRequest = new SerialAttributeConfigurationCreateRequest
+        {
+            MachineName = "serialAttr",
+            Description =
+                new List<LocalizedStringCreateRequest>
+                {
+                    new() { CultureInfoId = cultureInfoId, String = "SerialAttributeDescription" }
+                },
+            Name = new List<LocalizedStringCreateRequest>
+            {
+                new() { CultureInfoId = cultureInfoId, String = "serialAttributeName" }
+            },
+            IsRequired = true,
+            StartingNumber = 10,
+            Increment = 1
+        };
+
+        var entityConfigurationCreateRequest = new EntityConfigurationCreateRequest
+        {
+            MachineName = "test",
+            Name = new List<LocalizedStringCreateRequest>
+            {
+                new() { CultureInfoId = cultureInfoId, String = "test" }
+            },
+            Attributes = new List<EntityAttributeConfigurationCreateUpdateRequest> { serialAttributeCreateRequest }
+        };
+
+        (EntityConfigurationViewModel? created, _) =
+            await _eavEntityInstanceService.CreateEntityConfiguration(entityConfigurationCreateRequest, CancellationToken.None);
+
+        // create entity instance for further update
+        var entityInstanceCreateRequest = new EntityInstanceCreateRequest
+        {
+            EntityConfigurationId = created.Id,
+            TenantId = created.TenantId,
+            Attributes = new List<AttributeInstanceCreateUpdateRequest>
+            {
+                new SerialAttributeInstanceCreateUpdateRequest
+                {
+                    ConfigurationAttributeMachineName = serialAttributeCreateRequest.MachineName,
+                    ValueType = serialAttributeCreateRequest.ValueType,
+                    Value = -10
+                }
+            }
+        };
+        (EntityInstanceViewModel createdItem, _) = await _eavEntityInstanceService.CreateEntityInstance(entityInstanceCreateRequest);
+
+        // update entity instance
+        var updateSerialInstanceRequest = new SerialAttributeInstanceCreateUpdateRequest
+        {
+            ConfigurationAttributeMachineName = serialAttributeCreateRequest.MachineName,
+            ValueType = serialAttributeCreateRequest.ValueType,
+            Value = 100
+        };
+
+        var entityInstanceUpdateRequest = new EntityInstanceUpdateRequest
+        {
+            AttributesToAddOrUpdate = new List<AttributeInstanceCreateUpdateRequest>() { updateSerialInstanceRequest },
+            EntityConfigurationId = createdItem.EntityConfigurationId,
+            Id = createdItem.Id,
+        };
+
+        (EntityInstanceViewModel updatedinstance, _) = await _eavEntityInstanceService.UpdateEntityInstance(
+            createdItem.EntityConfigurationId.ToString(),
+            entityInstanceUpdateRequest
+        );
+
+        updatedinstance.Attributes.FirstOrDefault().As<SerialAttributeInstanceViewModel>().Value
+            .Should().Be(updateSerialInstanceRequest.Value);
+    }
+
+    [TestMethod]
+    public async Task UpdateInstanceSerialExternalValue_WrongValue()
+    {
+        // create entity configuration with serial attribute
+        var cultureInfoId = CultureInfo.GetCultureInfo("en-US").LCID;
+        var serialAttributeCreateRequest = new SerialAttributeConfigurationCreateRequest
+        {
+            MachineName = "serialAttr",
+            Description =
+                new List<LocalizedStringCreateRequest>
+                {
+                    new() { CultureInfoId = cultureInfoId, String = "SerialAttributeDescription" }
+                },
+            Name = new List<LocalizedStringCreateRequest>
+            {
+                new() { CultureInfoId = cultureInfoId, String = "serialAttributeName" }
+            },
+            IsRequired = true,
+            StartingNumber = 10,
+            Increment = 1
+        };
+
+        var entityConfigurationCreateRequest = new EntityConfigurationCreateRequest
+        {
+            MachineName = "test",
+            Name = new List<LocalizedStringCreateRequest>
+            {
+                new() { CultureInfoId = cultureInfoId, String = "test" }
+            },
+            Attributes = new List<EntityAttributeConfigurationCreateUpdateRequest> { serialAttributeCreateRequest }
+        };
+
+        (EntityConfigurationViewModel? created, _) =
+            await _eavEntityInstanceService.CreateEntityConfiguration(entityConfigurationCreateRequest, CancellationToken.None);
+
+        // create entity instance for further update
+        var entityInstanceCreateRequest = new EntityInstanceCreateRequest
+        {
+            EntityConfigurationId = created.Id,
+            TenantId = created.TenantId,
+            Attributes = new List<AttributeInstanceCreateUpdateRequest>
+            {
+                new SerialAttributeInstanceCreateUpdateRequest
+                {
+                    ConfigurationAttributeMachineName = serialAttributeCreateRequest.MachineName,
+                    ValueType = serialAttributeCreateRequest.ValueType,
+                    Value = -10
+                }
+            }
+        };
+        (EntityInstanceViewModel? createdItem, _) = await _eavEntityInstanceService.CreateEntityInstance(entityInstanceCreateRequest);
+
+        // update entity instance
+        var updateSerialInstanceRequest = new SerialAttributeInstanceCreateUpdateRequest
+        {
+            ConfigurationAttributeMachineName = serialAttributeCreateRequest.MachineName,
+            ValueType = serialAttributeCreateRequest.ValueType,
+            Value = createdItem!.Attributes.FirstOrDefault().As<SerialAttributeInstanceViewModel>().Value
+        };
+
+        var entityInstanceUpdateRequest = new EntityInstanceUpdateRequest
+        {
+            AttributesToAddOrUpdate = new List<AttributeInstanceCreateUpdateRequest>() { updateSerialInstanceRequest },
+            EntityConfigurationId = createdItem.EntityConfigurationId,
+            Id = createdItem.Id,
+        };
+
+        (_, ProblemDetails updateErrors) = await _eavEntityInstanceService.UpdateEntityInstance(
+            createdItem.EntityConfigurationId.ToString(),
+            entityInstanceUpdateRequest
+        );
+        updateErrors.Should().NotBeNull();
+
+        updateSerialInstanceRequest.Value = updateSerialInstanceRequest.Value - DateTime.UtcNow.Ticks;
+        (_, updateErrors) = await _eavEntityInstanceService.UpdateEntityInstance(
+            createdItem.EntityConfigurationId.ToString(),
+            entityInstanceUpdateRequest
+        );
+        updateErrors.Should().NotBeNull();
+
+        updateSerialInstanceRequest.Value = null;
+        (_, updateErrors) = await _eavEntityInstanceService.UpdateEntityInstance(
+            createdItem.EntityConfigurationId.ToString(),
+            entityInstanceUpdateRequest
+        );
+        updateErrors.Should().NotBeNull();
     }
 
     [TestMethod]
