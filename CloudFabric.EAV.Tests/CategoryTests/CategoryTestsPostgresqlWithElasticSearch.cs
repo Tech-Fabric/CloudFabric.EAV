@@ -12,6 +12,7 @@ namespace CloudFabric.EAV.Tests.CategoryTests;
 public class CategoryTestsPostgresqlWithElasticSearch : CategoryTests
 {
     private readonly ProjectionRepositoryFactory _projectionRepositoryFactory;
+    private readonly ILogger<PostgresqlEventStoreEventObserver> _logger;
 
     public CategoryTestsPostgresqlWithElasticSearch()
     {
@@ -23,7 +24,8 @@ public class CategoryTestsPostgresqlWithElasticSearch : CategoryTests
 
         _eventStore = new PostgresqlEventStore(
             connectionString,
-            "eav_tests_event_store"
+            "eav_tests_event_store",
+            "eav_tests_item_store"
         );
 
         _projectionRepositoryFactory = new ElasticSearchProjectionRepositoryFactory(
@@ -32,8 +34,14 @@ public class CategoryTestsPostgresqlWithElasticSearch : CategoryTests
             "",
             "",
             ""),
-            new LoggerFactory()
+            new LoggerFactory(),
+            true
         );
+
+        _store = new PostgresqlStore(connectionString, "eav_tests_item_store");
+
+        var loggerFactory = new LoggerFactory();
+        _logger = loggerFactory.CreateLogger<PostgresqlEventStoreEventObserver>();
     }
 
     protected override TimeSpan ProjectionsUpdateDelay { get; set; } = TimeSpan.FromMilliseconds(1000);
@@ -43,9 +51,14 @@ public class CategoryTestsPostgresqlWithElasticSearch : CategoryTests
         return _eventStore;
     }
 
-    protected override IEventsObserver GetEventStoreEventsObserver()
+    protected override IStore GetStore()
     {
-        return new PostgresqlEventStoreEventObserver((PostgresqlEventStore)_eventStore);
+        return _store;
+    }
+
+    protected override EventsObserver GetEventStoreEventsObserver()
+    {
+        return new PostgresqlEventStoreEventObserver((PostgresqlEventStore)_eventStore, _logger);
     }
 
     protected override ProjectionRepositoryFactory GetProjectionRepositoryFactory()

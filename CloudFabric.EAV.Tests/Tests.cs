@@ -23,11 +23,13 @@ using CloudFabric.Projections;
 using CloudFabric.Projections.InMemory;
 using CloudFabric.Projections.Postgresql;
 using CloudFabric.Projections.Queries;
+using CloudFabric.Projections.Worker;
 
 using FluentAssertions;
 
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 // ReSharper disable AsyncConverter.ConfigureAwaitHighlighting
@@ -42,6 +44,7 @@ public class Tests
     private EAVEntityInstanceService _eavEntityInstanceService;
 
     private IEventStore _eventStore;
+    private IStore _store;
     private ILogger<EAVEntityInstanceService> _eiLogger;
     private PostgresqlProjectionRepositoryFactory _projectionRepositoryFactory;
     private IMapper _mapper;
@@ -67,18 +70,19 @@ public class Tests
 
         _eventStore = new PostgresqlEventStore(
             connectionString,
-            "eav_tests_event_store"
+            "eav_tests_event_store",
+            "eav_tests_item_store"
         );
+
+        _store = new PostgresqlStore(connectionString, "eav_tests_item_store");
 
         await _eventStore.Initialize();
 
         _aggregateRepositoryFactory = new AggregateRepositoryFactory(_eventStore);
-        _projectionRepositoryFactory = new PostgresqlProjectionRepositoryFactory(connectionString);
+        _projectionRepositoryFactory = new PostgresqlProjectionRepositoryFactory(new LoggerFactory(), connectionString);
 
         // Projections engine - takes events from events observer and passes them to multiple projection builders
-        var projectionsEngine = new ProjectionsEngine(
-            _projectionRepositoryFactory.GetProjectionRepository<ProjectionRebuildState>()
-        );
+        var projectionsEngine = new ProjectionsEngine();
         projectionsEngine.SetEventsObserver(GetEventStoreEventsObserver());
 
         var attributeConfigurationProjectionBuilder = new AttributeConfigurationProjectionBuilder(
@@ -91,9 +95,41 @@ public class Tests
         projectionsEngine.AddProjectionBuilder(attributeConfigurationProjectionBuilder);
         projectionsEngine.AddProjectionBuilder(ordersListProjectionBuilder);
 
+        var ProjectionsRebuildProcessor = new ProjectionsRebuildProcessor(
+            _projectionRepositoryFactory.GetProjectionsIndexStateRepository(),
+            async (string connectionId) =>
+            {
+                var rebuildProjectionsEngine = new ProjectionsEngine();
+                rebuildProjectionsEngine.SetEventsObserver(GetEventStoreEventsObserver());
+
+                var attributeConfigurationProjectionBuilder2 = new AttributeConfigurationProjectionBuilder(
+                    _projectionRepositoryFactory, _aggregateRepositoryFactory
+                );
+
+                var ordersListProjectionBuilder2 = new EntityConfigurationProjectionBuilder(
+                    _projectionRepositoryFactory, _aggregateRepositoryFactory
+                );
+
+
+                rebuildProjectionsEngine.AddProjectionBuilder(attributeConfigurationProjectionBuilder2);
+                rebuildProjectionsEngine.AddProjectionBuilder(ordersListProjectionBuilder2);
+
+                return rebuildProjectionsEngine;
+            },
+            NullLogger<ProjectionsRebuildProcessor>.Instance
+        );
+
+        var attributeConfigurationProjectionRepository =
+            _projectionRepositoryFactory.GetProjectionRepository<AttributeConfigurationProjectionDocument>();
+        await attributeConfigurationProjectionRepository.EnsureIndex();
+
+        var entityConfigurationProjectionRepository =
+            _projectionRepositoryFactory.GetProjectionRepository<EntityConfigurationProjectionDocument>();
+        await entityConfigurationProjectionRepository.EnsureIndex();
+
+        await ProjectionsRebuildProcessor.RebuildProjectionsThatRequireRebuild();
 
         await projectionsEngine.StartAsync("TestInstance");
-
 
         _eavEntityInstanceService = new EAVEntityInstanceService(
             _eiLogger,
@@ -3026,11 +3062,16 @@ public class Tests
 
     private IProjectionRepository<ProjectionRebuildState> GetProjectionRebuildStateRepository()
     {
-        return new InMemoryProjectionRepository<ProjectionRebuildState>();
+        return new InMemoryProjectionRepository<ProjectionRebuildState>(new LoggerFactory());
     }
 
-    private IEventsObserver GetEventStoreEventsObserver()
+    private EventsObserver GetEventStoreEventsObserver()
     {
-        return new PostgresqlEventStoreEventObserver((PostgresqlEventStore)_eventStore);
+        var loggerFactory = new LoggerFactory();
+
+        return new PostgresqlEventStoreEventObserver(
+            (PostgresqlEventStore)_eventStore,
+            loggerFactory.CreateLogger<PostgresqlEventStoreEventObserver>()
+        );
     }
 }

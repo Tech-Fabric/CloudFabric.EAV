@@ -3,15 +3,19 @@ using System.Text.Json;
 
 using AutoMapper;
 
+using CloudFabric.EAV.Domain.Models;
 using CloudFabric.EAV.Domain.Projections.AttributeConfigurationProjection;
+using CloudFabric.EAV.Domain.Projections.EntityConfigurationProjection;
 using CloudFabric.EAV.Domain.Projections.EntityInstanceProjection;
 using CloudFabric.EAV.Service;
 using CloudFabric.EventSourcing.Domain;
 using CloudFabric.EventSourcing.EventStore;
 using CloudFabric.EventSourcing.EventStore.Persistence;
 using CloudFabric.Projections;
+using CloudFabric.Projections.Worker;
 
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace CloudFabric.EAV.Tests.BaseQueryTests;
@@ -20,16 +24,18 @@ public abstract class BaseQueryTests
 {
     protected EAVEntityInstanceService _eavEntityInstanceService;
     protected EAVCategoryService _eavCategoryService;
-    
+
     protected IEventStore _eventStore;
+    protected IStore _store;
     protected ILogger<EAVEntityInstanceService> _eiLogger;
     protected ILogger<EAVCategoryService> _cLogger;
 
     protected virtual TimeSpan ProjectionsUpdateDelay { get; set; } = TimeSpan.FromMilliseconds(0);
 
     protected abstract IEventStore GetEventStore();
+    protected abstract IStore GetStore();
     protected abstract ProjectionRepositoryFactory GetProjectionRepositoryFactory();
-    protected abstract IEventsObserver GetEventStoreEventsObserver();
+    protected abstract EventsObserver GetEventStoreEventsObserver();
 
     [TestInitialize]
     public async Task SetUp()
@@ -37,13 +43,13 @@ public abstract class BaseQueryTests
         var loggerFactory = new LoggerFactory();
         _eiLogger = loggerFactory.CreateLogger<EAVEntityInstanceService>();
         _cLogger = loggerFactory.CreateLogger<EAVCategoryService>();
-        
+
         var eiConfiguration = new MapperConfiguration(cfg =>
             {
                 cfg.AddMaps(Assembly.GetAssembly(typeof(EAVEntityInstanceService)));
             }
         );
-        
+
         var cConfiguration = new MapperConfiguration(cfg =>
             {
                 cfg.AddMaps(Assembly.GetAssembly(typeof(EAVCategoryService)));
@@ -51,21 +57,25 @@ public abstract class BaseQueryTests
         );
         IMapper? eiMapper = eiConfiguration.CreateMapper();
         IMapper? cMapper = eiConfiguration.CreateMapper();
-        
         _eventStore = GetEventStore();
         await _eventStore.Initialize();
+
+        _store = GetStore();
+        await _store.Initialize();
 
         var aggregateRepositoryFactory = new AggregateRepositoryFactory(_eventStore);
 
         ProjectionRepositoryFactory projectionRepositoryFactory = GetProjectionRepositoryFactory();
 
         // Projections engine - takes events from events observer and passes them to multiple projection builders
-        var projectionsEngine = new ProjectionsEngine(
-            projectionRepositoryFactory.GetProjectionRepository<ProjectionRebuildState>()
-        );
+        var projectionsEngine = new ProjectionsEngine();
         projectionsEngine.SetEventsObserver(GetEventStoreEventsObserver());
 
         var attributeConfigurationProjectionBuilder = new AttributeConfigurationProjectionBuilder(
+            projectionRepositoryFactory, aggregateRepositoryFactory
+        );
+
+        var entityConfigurationProjectionBuilder = new EntityConfigurationProjectionBuilder(
             projectionRepositoryFactory, aggregateRepositoryFactory
         );
 
@@ -74,9 +84,48 @@ public abstract class BaseQueryTests
         );
 
         projectionsEngine.AddProjectionBuilder(attributeConfigurationProjectionBuilder);
+        projectionsEngine.AddProjectionBuilder(entityConfigurationProjectionBuilder);
         projectionsEngine.AddProjectionBuilder(entityInstanceProjectionBuilder);
 
         await projectionsEngine.StartAsync("TestInstance");
+
+        var projectionsRebuildProcessor = new ProjectionsRebuildProcessor(
+            GetProjectionRepositoryFactory().GetProjectionsIndexStateRepository(),
+            async (string connectionId) =>
+            {
+                var rebuildProjectionsEngine = new ProjectionsEngine();
+                rebuildProjectionsEngine.SetEventsObserver(GetEventStoreEventsObserver());
+
+                var attributeConfigurationProjectionBuilder2 = new AttributeConfigurationProjectionBuilder(
+                    projectionRepositoryFactory, aggregateRepositoryFactory
+                );
+
+                var entityConfigurationProjectionBuilder2 = new EntityConfigurationProjectionBuilder(
+                    projectionRepositoryFactory, aggregateRepositoryFactory
+                );
+
+                var entityInstanceProjectionBuilder2 = new EntityInstanceProjectionBuilder(
+                    projectionRepositoryFactory, aggregateRepositoryFactory
+                );
+
+                rebuildProjectionsEngine.AddProjectionBuilder(attributeConfigurationProjectionBuilder2);
+                rebuildProjectionsEngine.AddProjectionBuilder(entityConfigurationProjectionBuilder2);
+                rebuildProjectionsEngine.AddProjectionBuilder(entityInstanceProjectionBuilder2);
+
+                return rebuildProjectionsEngine;
+            },
+            NullLogger<ProjectionsRebuildProcessor>.Instance
+        );
+
+        var attributeConfigurationProjectionRepository =
+            projectionRepositoryFactory.GetProjectionRepository<AttributeConfigurationProjectionDocument>();
+        await attributeConfigurationProjectionRepository.EnsureIndex();
+
+        var entityConfigurationProjectionRepository =
+            projectionRepositoryFactory.GetProjectionRepository<EntityConfigurationProjectionDocument>();
+        await entityConfigurationProjectionRepository.EnsureIndex();
+
+        await projectionsRebuildProcessor.RebuildProjectionsThatRequireRebuild();
 
         _eavEntityInstanceService = new EAVEntityInstanceService(
             _eiLogger,
@@ -90,7 +139,7 @@ public abstract class BaseQueryTests
             projectionRepositoryFactory,
             new EventUserInfo(Guid.NewGuid())
         );
-        
+
         _eavCategoryService = new EAVCategoryService(
             _cLogger,
             cMapper,

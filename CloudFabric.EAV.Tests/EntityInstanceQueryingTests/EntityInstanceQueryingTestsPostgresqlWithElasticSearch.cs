@@ -12,6 +12,7 @@ namespace CloudFabric.EAV.Tests.EntityInstanceQueryingTests;
 public class EntityInstanceQueryingTestsPostgresqlWithElasticSearch : EntityInstanceQueryingTests
 {
     private readonly ProjectionRepositoryFactory _projectionRepositoryFactory;
+    private readonly ILogger<PostgresqlEventStoreEventObserver> _logger;
 
     public EntityInstanceQueryingTestsPostgresqlWithElasticSearch()
     {
@@ -23,8 +24,11 @@ public class EntityInstanceQueryingTestsPostgresqlWithElasticSearch : EntityInst
 
         _eventStore = new PostgresqlEventStore(
             connectionString,
-            "eav_tests_event_store"
+            "eav_tests_event_store",
+            "eav_tests_item_store"
         );
+
+        var loggerFactory = new LoggerFactory();
 
         _projectionRepositoryFactory = new ElasticSearchProjectionRepositoryFactory(
             new ElasticSearchBasicAuthConnectionSettings(
@@ -32,8 +36,12 @@ public class EntityInstanceQueryingTestsPostgresqlWithElasticSearch : EntityInst
             "",
             "",
             ""),
-            new LoggerFactory()
+            loggerFactory
         );
+
+        _store = new PostgresqlStore(connectionString, "eav_tests_item_store");
+
+        _logger = loggerFactory.CreateLogger<PostgresqlEventStoreEventObserver>();
     }
 
     protected override TimeSpan ProjectionsUpdateDelay { get; set; } = TimeSpan.FromMilliseconds(1000);
@@ -43,9 +51,14 @@ public class EntityInstanceQueryingTestsPostgresqlWithElasticSearch : EntityInst
         return _eventStore;
     }
 
-    protected override IEventsObserver GetEventStoreEventsObserver()
+    protected override IStore GetStore()
     {
-        return new PostgresqlEventStoreEventObserver((PostgresqlEventStore)_eventStore);
+        return _store;
+    }
+
+    protected override EventsObserver GetEventStoreEventsObserver()
+    {
+        return new PostgresqlEventStoreEventObserver((PostgresqlEventStore)_eventStore, _logger);
     }
 
     protected override ProjectionRepositoryFactory GetProjectionRepositoryFactory()

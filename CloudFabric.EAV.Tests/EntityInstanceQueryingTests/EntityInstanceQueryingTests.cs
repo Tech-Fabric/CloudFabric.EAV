@@ -50,7 +50,6 @@ public abstract class EntityInstanceQueryingTests : BaseQueryTests.BaseQueryTest
         createdInstance.Attributes.Should()
             .BeEquivalentTo(instanceCreateRequest.Attributes, x => x.Excluding(w => w.ValueType));
 
-
         var query = new ProjectionQuery
         {
             Filters = new List<Filter> { new("Id", FilterOperator.Equal, createdInstance.Id) }

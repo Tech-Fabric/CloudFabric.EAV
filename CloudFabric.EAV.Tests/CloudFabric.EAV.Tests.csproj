@@ -11,11 +11,12 @@
 
     <ItemGroup>
         <PackageReference Include="AutoMapper" Version="12.0.1" />
-        <PackageReference Include="CloudFabric.EventSourcing.EventStore.InMemory" Version="0.1.2" />
-        <PackageReference Include="CloudFabric.EventSourcing.EventStore.Postgresql" Version="0.1.2" />
-        <PackageReference Include="CloudFabric.Projections.ElasticSearch" Version="0.1.2" />
-        <PackageReference Include="CloudFabric.Projections.InMemory" Version="0.1.2" />
-        <PackageReference Include="CloudFabric.Projections.Postgresql" Version="0.1.2" />
+        <PackageReference Include="CloudFabric.EventSourcing.EventStore.InMemory" Version="0.1.6" />
+        <PackageReference Include="CloudFabric.EventSourcing.EventStore.Postgresql" Version="0.1.6" />
+        <PackageReference Include="CloudFabric.Projections.ElasticSearch" Version="0.1.6" />
+        <PackageReference Include="CloudFabric.Projections.InMemory" Version="0.1.6" />
+        <PackageReference Include="CloudFabric.Projections.Postgresql" Version="0.1.6" />
+        <PackageReference Include="CloudFabric.Projections.Worker" Version="0.1.6" />
         <PackageReference Include="coverlet.collector" Version="6.0.0">
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
