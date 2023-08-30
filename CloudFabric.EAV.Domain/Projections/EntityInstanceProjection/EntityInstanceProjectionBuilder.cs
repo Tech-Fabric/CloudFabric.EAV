@@ -42,8 +42,9 @@ public class EntityInstanceProjectionBuilder : ProjectionBuilder,
 
     public EntityInstanceProjectionBuilder(
         ProjectionRepositoryFactory projectionRepositoryFactory,
-        AggregateRepositoryFactory aggregateRepositoryFactory
-    ) : base(projectionRepositoryFactory)
+        AggregateRepositoryFactory aggregateRepositoryFactory,
+        ProjectionOperationIndexSelector indexSelector
+    ) : base(projectionRepositoryFactory, indexSelector)
     {
         _aggregateRepositoryFactory = aggregateRepositoryFactory;
     }

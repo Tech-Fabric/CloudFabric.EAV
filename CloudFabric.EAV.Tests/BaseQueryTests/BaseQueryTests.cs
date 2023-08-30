@@ -37,6 +37,8 @@ public abstract class BaseQueryTests
     protected abstract ProjectionRepositoryFactory GetProjectionRepositoryFactory();
     protected abstract EventsObserver GetEventStoreEventsObserver();
 
+    protected ProjectionsRebuildProcessor ProjectionsRebuildProcessor;
+
     [TestInitialize]
     public async Task SetUp()
     {
@@ -72,15 +74,15 @@ public abstract class BaseQueryTests
         projectionsEngine.SetEventsObserver(GetEventStoreEventsObserver());
 
         var attributeConfigurationProjectionBuilder = new AttributeConfigurationProjectionBuilder(
-            projectionRepositoryFactory, aggregateRepositoryFactory
+            projectionRepositoryFactory, ProjectionOperationIndexSelector.Write
         );
 
         var entityConfigurationProjectionBuilder = new EntityConfigurationProjectionBuilder(
-            projectionRepositoryFactory, aggregateRepositoryFactory
+            projectionRepositoryFactory, ProjectionOperationIndexSelector.Write
         );
 
         var entityInstanceProjectionBuilder = new EntityInstanceProjectionBuilder(
-            projectionRepositoryFactory, aggregateRepositoryFactory
+            projectionRepositoryFactory, aggregateRepositoryFactory, ProjectionOperationIndexSelector.Write
         );
 
         projectionsEngine.AddProjectionBuilder(attributeConfigurationProjectionBuilder);
@@ -89,7 +91,7 @@ public abstract class BaseQueryTests
 
         await projectionsEngine.StartAsync("TestInstance");
 
-        var projectionsRebuildProcessor = new ProjectionsRebuildProcessor(
+        ProjectionsRebuildProcessor = new ProjectionsRebuildProcessor(
             GetProjectionRepositoryFactory().GetProjectionsIndexStateRepository(),
             async (string connectionId) =>
             {
@@ -97,15 +99,15 @@ public abstract class BaseQueryTests
                 rebuildProjectionsEngine.SetEventsObserver(GetEventStoreEventsObserver());
 
                 var attributeConfigurationProjectionBuilder2 = new AttributeConfigurationProjectionBuilder(
-                    projectionRepositoryFactory, aggregateRepositoryFactory
+                    projectionRepositoryFactory, ProjectionOperationIndexSelector.Write
                 );
 
                 var entityConfigurationProjectionBuilder2 = new EntityConfigurationProjectionBuilder(
-                    projectionRepositoryFactory, aggregateRepositoryFactory
+                    projectionRepositoryFactory, ProjectionOperationIndexSelector.Write
                 );
 
                 var entityInstanceProjectionBuilder2 = new EntityInstanceProjectionBuilder(
-                    projectionRepositoryFactory, aggregateRepositoryFactory
+                    projectionRepositoryFactory, aggregateRepositoryFactory, ProjectionOperationIndexSelector.Write
                 );
 
                 rebuildProjectionsEngine.AddProjectionBuilder(attributeConfigurationProjectionBuilder2);
@@ -125,7 +127,7 @@ public abstract class BaseQueryTests
             projectionRepositoryFactory.GetProjectionRepository<EntityConfigurationProjectionDocument>();
         await entityConfigurationProjectionRepository.EnsureIndex();
 
-        await projectionsRebuildProcessor.RebuildProjectionsThatRequireRebuild();
+        await ProjectionsRebuildProcessor.RebuildProjectionsThatRequireRebuild();
 
         _eavEntityInstanceService = new EAVEntityInstanceService(
             _eiLogger,

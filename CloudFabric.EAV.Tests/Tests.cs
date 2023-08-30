@@ -86,10 +86,10 @@ public class Tests
         projectionsEngine.SetEventsObserver(GetEventStoreEventsObserver());
 
         var attributeConfigurationProjectionBuilder = new AttributeConfigurationProjectionBuilder(
-            _projectionRepositoryFactory, _aggregateRepositoryFactory
+            _projectionRepositoryFactory, ProjectionOperationIndexSelector.Write
         );
         var ordersListProjectionBuilder = new EntityConfigurationProjectionBuilder(
-            _projectionRepositoryFactory, _aggregateRepositoryFactory
+            _projectionRepositoryFactory, ProjectionOperationIndexSelector.Write
         );
 
         projectionsEngine.AddProjectionBuilder(attributeConfigurationProjectionBuilder);
@@ -103,11 +103,11 @@ public class Tests
                 rebuildProjectionsEngine.SetEventsObserver(GetEventStoreEventsObserver());
 
                 var attributeConfigurationProjectionBuilder2 = new AttributeConfigurationProjectionBuilder(
-                    _projectionRepositoryFactory, _aggregateRepositoryFactory
+                    _projectionRepositoryFactory, ProjectionOperationIndexSelector.ProjectionRebuild
                 );
 
                 var ordersListProjectionBuilder2 = new EntityConfigurationProjectionBuilder(
-                    _projectionRepositoryFactory, _aggregateRepositoryFactory
+                    _projectionRepositoryFactory, ProjectionOperationIndexSelector.ProjectionRebuild
                 );
 
 

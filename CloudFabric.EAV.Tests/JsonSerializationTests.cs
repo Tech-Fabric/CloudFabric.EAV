@@ -68,6 +68,8 @@ public class JsonSerializationTests : BaseQueryTests.BaseQueryTests
             CancellationToken.None
         );
 
+        await ProjectionsRebuildProcessor.RebuildProjectionsThatRequireRebuild();
+
         EntityConfigurationViewModel configuration = await _eavEntityInstanceService.GetEntityConfiguration(
             createdConfiguration!.Id
         );
@@ -290,6 +292,8 @@ public class JsonSerializationTests : BaseQueryTests.BaseQueryTests
                 TenantId = categoryConfigurationRequest.TenantId
             },
             categoryConfigurationRequest.TenantId);
+
+        await ProjectionsRebuildProcessor.RebuildProjectionsThatRequireRebuild();
 
         EntityConfigurationViewModel configuration = await _eavEntityInstanceService.GetEntityConfiguration(
             createdCategoryConfiguration!.Id
