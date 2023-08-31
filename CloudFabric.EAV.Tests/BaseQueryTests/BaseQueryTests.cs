@@ -24,6 +24,7 @@ public abstract class BaseQueryTests
 {
     protected EAVEntityInstanceService _eavEntityInstanceService;
     protected EAVCategoryService _eavCategoryService;
+    protected EntitySerialCounterService _counterService;
 
     protected IEventStore _eventStore;
     protected IStore _store;
@@ -129,6 +130,11 @@ public abstract class BaseQueryTests
 
         await ProjectionsRebuildProcessor.RebuildProjectionsThatRequireRebuild();
 
+        _counterService = new EntitySerialCounterService(
+            new StoreRepository(_store),
+            eiMapper)
+        ;
+
         _eavEntityInstanceService = new EAVEntityInstanceService(
             _eiLogger,
             eiMapper,
@@ -139,7 +145,8 @@ public abstract class BaseQueryTests
             },
             aggregateRepositoryFactory,
             projectionRepositoryFactory,
-            new EventUserInfo(Guid.NewGuid())
+            new EventUserInfo(Guid.NewGuid()),
+            _counterService
         );
 
         _eavCategoryService = new EAVCategoryService(
@@ -152,7 +159,8 @@ public abstract class BaseQueryTests
             },
             aggregateRepositoryFactory,
             projectionRepositoryFactory,
-            new EventUserInfo(Guid.NewGuid())
+            new EventUserInfo(Guid.NewGuid()),
+            _counterService
         );
     }
 }

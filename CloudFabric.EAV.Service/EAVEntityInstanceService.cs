@@ -1,28 +1,25 @@
-﻿using System.Text.Json;
+using System.Text.Json;
 
 using AutoMapper;
 
+using CloudFabric.EAV.Domain;
 using CloudFabric.EAV.Domain.Models;
-using CloudFabric.EAV.Domain.Models.Attributes;
 using CloudFabric.EAV.Enums;
 using CloudFabric.EAV.Models.RequestModels;
 using CloudFabric.EAV.Models.ViewModels;
-using CloudFabric.EAV.Options;
 using CloudFabric.EAV.Service.Serialization;
 using CloudFabric.EventSourcing.Domain;
-using CloudFabric.EventSourcing.EventStore;
 using CloudFabric.EventSourcing.EventStore.Persistence;
 using CloudFabric.Projections;
 
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
 using ProjectionDocumentSchemaFactory =
     CloudFabric.EAV.Domain.Projections.EntityInstanceProjection.ProjectionDocumentSchemaFactory;
 namespace CloudFabric.EAV.Service;
 
-public class EAVEntityInstanceService: EAVService<EntityInstanceUpdateRequest, EntityInstance, EntityInstanceViewModel>
+public class EAVEntityInstanceService : EAVService<EntityInstanceUpdateRequest, EntityInstance, EntityInstanceViewModel>
 {
 
     public EAVEntityInstanceService(ILogger<EAVService<EntityInstanceUpdateRequest, EntityInstance, EntityInstanceViewModel>> logger,
@@ -30,13 +27,15 @@ public class EAVEntityInstanceService: EAVService<EntityInstanceUpdateRequest, E
         JsonSerializerOptions jsonSerializerOptions,
         AggregateRepositoryFactory aggregateRepositoryFactory,
         ProjectionRepositoryFactory projectionRepositoryFactory,
-        EventUserInfo userInfo) : base(logger,
+        EventUserInfo userInfo,
+        EntitySerialCounterService counterService) : base(logger,
         new EntityInstanceFromDictionaryDeserializer(mapper),
         mapper,
         jsonSerializerOptions,
         aggregateRepositoryFactory,
         projectionRepositoryFactory,
-        userInfo)
+        userInfo,
+        counterService)
     {
     }
 
@@ -390,9 +389,11 @@ public class EAVEntityInstanceService: EAVService<EntityInstanceUpdateRequest, E
     }
 
 
-
-     public async Task<(EntityInstanceViewModel?, ProblemDetails?)> CreateEntityInstance(
-        EntityInstanceCreateRequest entity, bool dryRun = false, bool requiredAttributesCanBeNull = false, CancellationToken cancellationToken = default
+    public async Task<(EntityInstanceViewModel?, ProblemDetails?)> CreateEntityInstance(
+         EntityInstanceCreateRequest entity,
+         bool dryRun = false,
+         bool requiredAttributesCanBeNull = false,
+         CancellationToken cancellationToken = default
     )
     {
         EntityConfiguration? entityConfiguration = await _entityConfigurationRepository.LoadAsync(
@@ -421,6 +422,7 @@ public class EAVEntityInstanceService: EAVService<EntityInstanceUpdateRequest, E
         );
 
         var validationErrors = new Dictionary<string, string[]>();
+        List<Counter?> entityCounters = new();
         foreach (AttributeConfiguration a in attributeConfigurations)
         {
             AttributeInstance? attributeValue = entityInstance.Attributes
@@ -432,10 +434,9 @@ public class EAVEntityInstanceService: EAVService<EntityInstanceUpdateRequest, E
                 validationErrors.Add(a.MachineName, attrValidationErrors.ToArray());
             }
 
-            // Note that this method updates entityConfiguration state (for serial attribute it increments the number
-            // stored in externalvalues) but does not save entity configuration, we need to do that manually outside of
-            // the loop
-            InitializeAttributeInstanceWithExternalValuesFromEntity(entityConfiguration, a, attributeValue);
+            var counter = await InitializeAttributeInstanceWithCounterValue(entityConfiguration, a, attributeValue);
+
+            entityCounters.Add(counter);
         }
 
         if (validationErrors.Count > 0)
@@ -445,15 +446,30 @@ public class EAVEntityInstanceService: EAVService<EntityInstanceUpdateRequest, E
 
         if (!dryRun)
         {
-            var entityConfigurationSaved = await _entityConfigurationRepository
-                .SaveAsync(_userInfo, entityConfiguration, cancellationToken)
-                .ConfigureAwait(false);
+            // Save counters 
+            var counterResponse = new List<CounterActionResponce>();
 
-            if (!entityConfigurationSaved)
+            foreach (var counter in entityCounters.Where(x => x != null))
             {
-                throw new Exception("Entity was not saved");
+                counterResponse.Add(await _counterService.SaveCounter(entityConfiguration.Id, counter.AttributeConfidurationId, counter));
             }
 
+            foreach (var responce in counterResponse.Where(x => x.Status == CounterActionStatus.Conflict))
+            {
+                do
+                {
+                    var counter = await _counterService.LoadCounter(responce.EntityConfigurationId, responce.AttributeConfigurationId);
+
+                    counter!.Step(counter.LastIncrement!.Value);
+
+                    var repeatedCounterSaveResponce = await _counterService.SaveCounter(entityConfiguration.Id, counter.AttributeConfidurationId, counter);
+
+                    responce.Status = repeatedCounterSaveResponce.Status;
+
+                } while (responce.Status != CounterActionStatus.Saved);
+            }
+
+            // Save instance
             ProjectionDocumentSchema schema = ProjectionDocumentSchemaFactory
                 .FromEntityConfiguration(entityConfiguration, attributeConfigurations);
 

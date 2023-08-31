@@ -28,6 +28,7 @@ using CloudFabric.Projections.Worker;
 using FluentAssertions;
 
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -42,6 +43,8 @@ public class Tests
     private AggregateRepositoryFactory _aggregateRepositoryFactory;
 
     private EAVEntityInstanceService _eavEntityInstanceService;
+
+    private EntitySerialCounterService _entitySerialCounterService;
 
     private IEventStore _eventStore;
     private IStore _store;
@@ -131,6 +134,8 @@ public class Tests
 
         await projectionsEngine.StartAsync("TestInstance");
 
+        _entitySerialCounterService = new EntitySerialCounterService(new StoreRepository(_store), _mapper);
+
         _eavEntityInstanceService = new EAVEntityInstanceService(
             _eiLogger,
             _mapper,
@@ -141,7 +146,8 @@ public class Tests
             },
             _aggregateRepositoryFactory,
             _projectionRepositoryFactory,
-            new EventUserInfo(Guid.NewGuid())
+            new EventUserInfo(Guid.NewGuid()),
+            _entitySerialCounterService
         );
     }
 
@@ -171,7 +177,6 @@ public class Tests
         {
         }
     }
-
 
     [TestMethod]
     public async Task CreateInstance_Success()
@@ -1999,7 +2004,15 @@ public class Tests
         (EntityConfigurationViewModel? entityConfig, _) =
             await _eavEntityInstanceService.CreateEntityConfiguration(entityConfigurationCreateRequest, CancellationToken.None);
 
-        (EntityInstanceViewModel result, ProblemDetails _) = await _eavEntityInstanceService.CreateEntityInstance(
+        // Check counter for attribute was initialized
+        var counter = await _entitySerialCounterService.LoadCounter(
+            entityConfig.Id, entityConfig.Attributes.First().AttributeConfigurationId
+        );
+        counter.NextValue.Should().Be(serialAttributeCreateRequest.StartingNumber);
+        counter.LastIncrement.Should().BeNull();
+
+        // Create entity instance and check it and counter
+        (EntityInstanceViewModel? result, ProblemDetails _) = await _eavEntityInstanceService.CreateEntityInstance(
             new EntityInstanceCreateRequest
             {
                 EntityConfigurationId = entityConfig.Id,
@@ -2012,33 +2025,17 @@ public class Tests
                 }
             }
         );
-        result.Attributes.FirstOrDefault().ConfigurationAttributeMachineName.Should()
-            .Be(serialAttributeCreateRequest.MachineName);
+        var serialAttributeInstance = result.Attributes
+            .FirstOrDefault(x => x.ConfigurationAttributeMachineName == serialAttributeCreateRequest.MachineName)
+            .As<SerialAttributeInstanceViewModel>();
+        serialAttributeInstance.Should().NotBeNull();
+        serialAttributeInstance.Value.Should().Be(counter.NextValue);
 
-        // check attribute override value in entity configuration
-        EntityConfiguration entity = await entityRepository.LoadAsyncOrThrowNotFound(entityConfig.Id,
-            entityConfig.PartitionKey,
-            CancellationToken.None
-        );
-        var attributeExternalValue = JsonSerializer.Deserialize<long>(
-            entity.Attributes.FirstOrDefault().AttributeConfigurationExternalValues.FirstOrDefault().ToString()
-        );
+        var counterAfterFirstSerial =
+            await _entitySerialCounterService.LoadCounter(entityConfig.Id, entityConfig.Attributes.First().AttributeConfigurationId);
+        counterAfterFirstSerial!.NextValue.Should().Be(serialAttributeInstance.Value + serialAttributeCreateRequest.Increment);
 
-        attributeExternalValue.Should()
-            .Be(serialAttributeCreateRequest
-                .As<SerialAttributeConfigurationCreateRequest>().StartingNumber
-            );
-
-        // check entity instance
-        EntityInstance entityInstance =
-            await entityInstanceRepository.LoadAsyncOrThrowNotFound(result.Id, result.PartitionKey);
-
-        entityInstance.Attributes.FirstOrDefault(x =>
-                x.ConfigurationAttributeMachineName == serialAttributeCreateRequest.MachineName
-            )
-            .As<SerialAttributeInstance>().Value.Should().Be(serialAttributeCreateRequest.StartingNumber);
-
-        // create another entity instance
+        // Create another entity instance and check it and counter
         (result, _) = await _eavEntityInstanceService.CreateEntityInstance(new EntityInstanceCreateRequest
         {
             EntityConfigurationId = entityConfig.Id,
@@ -2051,30 +2048,15 @@ public class Tests
                 }
         }
         );
+        serialAttributeInstance = result.Attributes
+            .FirstOrDefault(x => x.ConfigurationAttributeMachineName == serialAttributeCreateRequest.MachineName)
+            .As<SerialAttributeInstanceViewModel>();
+        serialAttributeInstance.Should().NotBeNull();
+        serialAttributeInstance.Value.Should().Be(counterAfterFirstSerial.NextValue);
 
-        // check that override value in entity configuration was updated
-        entity = await entityRepository.LoadAsyncOrThrowNotFound(entityConfig.Id,
-            entityConfig.PartitionKey,
-            CancellationToken.None
-        );
-        attributeExternalValue = JsonSerializer.Deserialize<long>(
-            entity.Attributes.FirstOrDefault().AttributeConfigurationExternalValues.FirstOrDefault().ToString()
-        );
-
-        attributeExternalValue.Should()
-            .Be(serialAttributeCreateRequest
-                    .As<SerialAttributeConfigurationCreateRequest>().StartingNumber
-                + serialAttributeCreateRequest.Increment
-            );
-
-        //check another entity instance
-        entityInstance = await entityInstanceRepository.LoadAsyncOrThrowNotFound(result.Id, result.PartitionKey);
-        entityInstance.Attributes.FirstOrDefault(x =>
-                x.ConfigurationAttributeMachineName == serialAttributeCreateRequest.MachineName
-            )
-            .As<SerialAttributeInstance>().Value.Should().Be(serialAttributeCreateRequest.StartingNumber
-                                                             + serialAttributeCreateRequest.Increment
-            );
+        var counterAfterSecondSerial =
+            await _entitySerialCounterService.LoadCounter(entityConfig.Id, entityConfig.Attributes.First().AttributeConfigurationId);
+        counterAfterSecondSerial!.NextValue.Should().Be(serialAttributeInstance.Value + serialAttributeCreateRequest.Increment);
     }
 
     [TestMethod]
@@ -2131,6 +2113,57 @@ public class Tests
         updatedEntityConfiguration.Attributes.Any(x => x.AttributeConfigurationId == createdAttribute.Id)
             .Should()
             .BeTrue();
+    }
+
+    [TestMethod]
+    public async Task AddSerialAttributeToEntityConfiguration_CounterInitialized()
+    {
+        var cultureInfoId = CultureInfo.GetCultureInfo("en-US").LCID;
+
+        var configCreateRequest = new EntityConfigurationCreateRequest
+        {
+            MachineName = "test",
+            Name = new List<LocalizedStringCreateRequest>
+            {
+                new() { CultureInfoId = cultureInfoId, String = "test" }
+            },
+            Attributes = new List<EntityAttributeConfigurationCreateUpdateRequest>()
+        };
+
+        (EntityConfigurationViewModel? createdEntityConfiguration, _) =
+            await _eavEntityInstanceService.CreateEntityConfiguration(configCreateRequest, CancellationToken.None);
+
+        var serialAttributeCreateRequest = new SerialAttributeConfigurationCreateRequest
+        {
+            MachineName = "serialAttr",
+            Description =
+                new List<LocalizedStringCreateRequest>
+                {
+                    new() { CultureInfoId = cultureInfoId, String = "SerialAttributeDescription" }
+                },
+            Name = new List<LocalizedStringCreateRequest>
+            {
+                new() { CultureInfoId = cultureInfoId, String = "serialAttributeName" }
+            },
+            IsRequired = true,
+            StartingNumber = 100,
+            Increment = 555
+        };
+
+        (AttributeConfigurationViewModel? createdAttribute, _) =
+            await _eavEntityInstanceService.CreateAttribute(serialAttributeCreateRequest, CancellationToken.None);
+
+        await _eavEntityInstanceService.AddAttributeToEntityConfiguration(
+            createdAttribute.Id,
+            createdEntityConfiguration.Id,
+            CancellationToken.None
+        );
+
+        // Check counter was initialized
+        var counter = await _entitySerialCounterService.LoadCounter(createdEntityConfiguration.Id, createdAttribute.Id);
+        counter.Should().NotBeNull();
+        counter.NextValue.Should().Be(serialAttributeCreateRequest.StartingNumber);
+        counter.LastIncrement.Should().BeNull();
     }
 
     [TestMethod]
@@ -2507,7 +2540,7 @@ public class Tests
     }
 
     [TestMethod]
-    public async Task UpdateInstanceSerialAttributeExternalValue_Success()
+    public async Task UpdateInstanceSerialAttribute_Success()
     {
         // create entity configuration with serial attribute
         var cultureInfoId = CultureInfo.GetCultureInfo("en-US").LCID;
@@ -2538,25 +2571,26 @@ public class Tests
             Attributes = new List<EntityAttributeConfigurationCreateUpdateRequest> { serialAttributeCreateRequest }
         };
 
-        (EntityConfigurationViewModel? created, _) =
+        (EntityConfigurationViewModel? createdEntityConfiguration, _) =
             await _eavEntityInstanceService.CreateEntityConfiguration(entityConfigurationCreateRequest, CancellationToken.None);
 
         // create entity instance for further update
         var entityInstanceCreateRequest = new EntityInstanceCreateRequest
         {
-            EntityConfigurationId = created.Id,
-            TenantId = created.TenantId,
+            EntityConfigurationId = createdEntityConfiguration.Id,
+            TenantId = createdEntityConfiguration.TenantId,
             Attributes = new List<AttributeInstanceCreateUpdateRequest>
             {
                 new SerialAttributeInstanceCreateUpdateRequest
                 {
                     ConfigurationAttributeMachineName = serialAttributeCreateRequest.MachineName,
                     ValueType = serialAttributeCreateRequest.ValueType,
+                    // this value should be ignored
                     Value = -10
                 }
             }
         };
-        (EntityInstanceViewModel createdItem, _) = await _eavEntityInstanceService.CreateEntityInstance(entityInstanceCreateRequest);
+        (EntityInstanceViewModel createdItem, var smth) = await _eavEntityInstanceService.CreateEntityInstance(entityInstanceCreateRequest);
 
         // update entity instance
         var updateSerialInstanceRequest = new SerialAttributeInstanceCreateUpdateRequest
@@ -2580,10 +2614,80 @@ public class Tests
 
         updatedinstance.Attributes.FirstOrDefault().As<SerialAttributeInstanceViewModel>().Value
             .Should().Be(updateSerialInstanceRequest.Value);
+
+        var counter = await _entitySerialCounterService.LoadCounter(
+            createdEntityConfiguration.Id,
+            createdEntityConfiguration.Attributes.First().AttributeConfigurationId
+        );
+
+        counter.NextValue.Should().Be(updateSerialInstanceRequest.Value + serialAttributeCreateRequest.Increment);
     }
 
     [TestMethod]
-    public async Task UpdateInstanceSerialExternalValue_WrongValue()
+    public async Task CreateEntityInstance_EnsureCounterOneForAll()
+    {
+        // create entity configuration with serial attribute
+        var cultureInfoId = CultureInfo.GetCultureInfo("en-US").LCID;
+        var serialAttributeCreateRequest = new SerialAttributeConfigurationCreateRequest
+        {
+            MachineName = "serialAttr",
+            Description =
+                new List<LocalizedStringCreateRequest>
+                {
+                    new() { CultureInfoId = cultureInfoId, String = "SerialAttributeDescription" }
+                },
+            Name = new List<LocalizedStringCreateRequest>
+            {
+                new() { CultureInfoId = cultureInfoId, String = "serialAttributeName" }
+            },
+            IsRequired = true,
+            StartingNumber = 10,
+            Increment = 1
+        };
+
+        var entityConfigurationCreateRequest = new EntityConfigurationCreateRequest
+        {
+            MachineName = $"test",
+            Name = new List<LocalizedStringCreateRequest>
+            {
+                new() { CultureInfoId = cultureInfoId, String = "test" }
+            },
+            Attributes = new List<EntityAttributeConfigurationCreateUpdateRequest> { serialAttributeCreateRequest }
+        };
+
+        (EntityConfigurationViewModel? createdEntityConfiguration, _) =
+            await _eavEntityInstanceService.CreateEntityConfiguration(entityConfigurationCreateRequest, CancellationToken.None);
+
+        int instanceCount = 50;
+
+        for (int i = 0; i < instanceCount; i++)
+        {
+            var entityInstanceCreateRequest = new EntityInstanceCreateRequest
+            {
+                EntityConfigurationId = createdEntityConfiguration.Id,
+                TenantId = createdEntityConfiguration.TenantId,
+                Attributes = new List<AttributeInstanceCreateUpdateRequest>
+                {
+                    new SerialAttributeInstanceCreateUpdateRequest
+                    {
+                        ConfigurationAttributeMachineName = serialAttributeCreateRequest.MachineName,
+                        ValueType = serialAttributeCreateRequest.ValueType
+                    }
+                }
+            };
+            await _eavEntityInstanceService.CreateEntityInstance(entityInstanceCreateRequest);
+        }
+
+        var counter = await _entitySerialCounterService.LoadCounter(
+            createdEntityConfiguration.Id,
+            createdEntityConfiguration.Attributes.First().AttributeConfigurationId
+        );
+
+        counter.NextValue.Should().Be(serialAttributeCreateRequest.StartingNumber + instanceCount);
+    }
+
+    [TestMethod]
+    public async Task UpdateInstanceSerialAttribute_WrongValue()
     {
         // create entity configuration with serial attribute
         var cultureInfoId = CultureInfo.GetCultureInfo("en-US").LCID;

@@ -1,4 +1,4 @@
-﻿using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 
 using AutoMapper;
@@ -34,13 +34,15 @@ public class EAVCategoryService: EAVService<CategoryUpdateRequest, Category, Cat
         AggregateRepositoryFactory aggregateRepositoryFactory,
         ProjectionRepositoryFactory projectionRepositoryFactory,
         EventUserInfo userInfo,
+        EntitySerialCounterService counterService,
         IOptions<ElasticSearchQueryOptions>? elasticSearchQueryOptions = null) : base(logger,
         new CategoryFromDictionaryDeserializer(mapper),
         mapper,
         jsonSerializerOptions,
         aggregateRepositoryFactory,
         projectionRepositoryFactory,
-        userInfo)
+        userInfo,
+        counterService)
     {
 
         _elasticSearchQueryOptions = elasticSearchQueryOptions != null
