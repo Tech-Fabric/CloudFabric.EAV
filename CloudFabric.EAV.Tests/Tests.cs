@@ -145,7 +145,9 @@ public class Tests
         );
     }
 
+
     [TestCleanup]
+    [TestInitialize]
     public async Task Cleanup()
     {
         await _eventStore.DeleteAll();
@@ -167,8 +169,9 @@ public class Tests
                 GetProjectionRebuildStateRepository();
             await rebuildStateRepository.DeleteAll();
         }
-        catch
+        catch(Exception ex)
         {
+            Console.WriteLine("Failed to clear projection repository {0} {1}", ex.Message, ex.StackTrace);
         }
     }
 

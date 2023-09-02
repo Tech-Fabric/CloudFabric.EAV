@@ -33,6 +33,8 @@ public abstract class EntityInstanceQueryingTests : BaseQueryTests.BaseQueryTest
             CancellationToken.None
         );
 
+        await ProjectionsRebuildProcessor.RebuildProjectionsThatRequireRebuild();
+
         EntityConfigurationViewModel configuration = await _eavEntityInstanceService.GetEntityConfiguration(
             createdConfiguration.Id
         );

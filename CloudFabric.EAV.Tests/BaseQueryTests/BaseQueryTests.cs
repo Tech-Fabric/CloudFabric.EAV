@@ -61,6 +61,7 @@ public abstract class BaseQueryTests
         IMapper? cMapper = eiConfiguration.CreateMapper();
         _eventStore = GetEventStore();
         await _eventStore.Initialize();
+        await _eventStore.DeleteAll();
 
         _store = GetStore();
         await _store.Initialize();
@@ -68,6 +69,14 @@ public abstract class BaseQueryTests
         var aggregateRepositoryFactory = new AggregateRepositoryFactory(_eventStore);
 
         ProjectionRepositoryFactory projectionRepositoryFactory = GetProjectionRepositoryFactory();
+        var projectionRepository = projectionRepositoryFactory
+            .GetProjectionRepository(
+                new ProjectionDocumentSchema
+                {
+                    SchemaName = ""
+                }
+            );
+        await projectionRepository.DeleteAll();
 
         // Projections engine - takes events from events observer and passes them to multiple projection builders
         var projectionsEngine = new ProjectionsEngine();

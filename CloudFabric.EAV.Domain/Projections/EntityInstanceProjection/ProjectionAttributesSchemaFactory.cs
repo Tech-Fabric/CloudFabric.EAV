@@ -240,6 +240,7 @@ public static class ProjectionAttributesSchemaFactory
             EavAttributeType.HtmlText => null,
             EavAttributeType.EntityReference => null,
             EavAttributeType.ValueFromList => null,
+            EavAttributeType.Money => null,
             EavAttributeType.LocalizedText => GetLocalizedTextAttributeNestedProperties(),
             EavAttributeType.DateRange => GetDateAttributeNestedProperties(),
             EavAttributeType.Image => GetImageAttributeNestedProperties(),
