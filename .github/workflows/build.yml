@@ -25,6 +25,10 @@ jobs:
       run: echo "$GITHUB_HEAD_REF"
     - name: Print GITHUB_REF
       run: echo "$GITHUB_REF"
+    - name: Cache Docker images.
+      uses: ScribeMD/docker-cache@0.3.4
+      with:
+        key: docker-${{ runner.os }}-${{ hashFiles('Dockerfile') }}
     - name: Build the Docker image
       run: |
         docker build . --file Dockerfile \
