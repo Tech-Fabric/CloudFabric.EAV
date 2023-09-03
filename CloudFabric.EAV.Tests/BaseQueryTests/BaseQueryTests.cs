@@ -3,7 +3,6 @@ using System.Text.Json;
 
 using AutoMapper;
 
-using CloudFabric.EAV.Domain.Models;
 using CloudFabric.EAV.Domain.Projections.AttributeConfigurationProjection;
 using CloudFabric.EAV.Domain.Projections.EntityConfigurationProjection;
 using CloudFabric.EAV.Domain.Projections.EntityInstanceProjection;
@@ -132,8 +131,8 @@ public abstract class BaseQueryTests
 
         _counterService = new EntitySerialCounterService(
             new StoreRepository(_store),
-            eiMapper)
-        ;
+            eiMapper
+        );
 
         _eavEntityInstanceService = new EAVEntityInstanceService(
             _eiLogger,

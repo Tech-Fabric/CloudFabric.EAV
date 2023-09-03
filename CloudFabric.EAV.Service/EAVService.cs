@@ -1145,26 +1145,26 @@ public abstract class EAVService<TUpdateRequest, TEntityType, TViewModel> where 
         if (!dryRun)
         {
             // Save counters 
-            var counterResponse = new List<CounterActionResponce>();
+            var counterResponse = new List<CounterActionResponse>();
 
             foreach (var counter in entityCounters.Where(x => x != null))
             {
                 counterResponse.Add(await _counterService.SaveCounter(entityConfiguration.Id, counter.AttributeConfidurationId, counter));
             }
 
-            foreach (var responce in counterResponse.Where(x => x.Status == CounterActionStatus.Conflict))
+            foreach (var response in counterResponse.Where(x => x.Status == CounterActionStatus.Conflict))
             {
                 do
                 {
-                    var counter = await _counterService.LoadCounter(responce.EntityConfigurationId, responce.AttributeConfigurationId);
+                    var counter = await _counterService.LoadCounter(response.EntityConfigurationId, response.AttributeConfigurationId);
 
                     counter!.Step(counter.LastIncrement!.Value);
 
-                    var repeatedCounterSaveResponce = await _counterService.SaveCounter(entityConfiguration.Id, counter.AttributeConfidurationId, counter);
+                    var repeatedCounterSaveResponse = await _counterService.SaveCounter(entityConfiguration.Id, counter.AttributeConfidurationId, counter);
 
-                    responce.Status = repeatedCounterSaveResponce.Status;
+                    response.Status = repeatedCounterSaveResponse.Status;
 
-                } while (responce.Status != CounterActionStatus.Saved);
+                } while (response.Status != CounterActionStatus.Saved);
             }
 
             var entityInstanceSaved = await _entityInstanceRepository

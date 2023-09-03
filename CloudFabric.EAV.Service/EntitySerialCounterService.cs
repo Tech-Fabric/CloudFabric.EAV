@@ -9,9 +9,9 @@ using CloudFabric.EventSourcing.Domain;
 
 namespace CloudFabric.EAV.Service;
 
-public class CounterActionResponce
+public class CounterActionResponse
 {
-    public CounterActionResponce(Guid entityConfiguration, Guid attributeConfigurationId)
+    public CounterActionResponse(Guid entityConfiguration, Guid attributeConfigurationId)
     {
         EntityConfigurationId = entityConfiguration;
         AttributeConfigurationId = attributeConfigurationId;
@@ -186,11 +186,11 @@ public class EntitySerialCounterService
     /// <param name="entityConfigurationId"></param>
     /// <param name="attributeConfigurationId"></param>
     /// <param name="updatedCounter"></param>
-    /// <returns>Counter action responce with status to indicate result.</returns>
+    /// <returns>Counter action response with status to indicate result.</returns>
     /// <exception cref="ArgumentNullException"></exception>
-    public async Task<CounterActionResponce> SaveCounter(Guid entityConfigurationId, Guid attributeConfigurationId, Counter updatedCounter)
+    public async Task<CounterActionResponse> SaveCounter(Guid entityConfigurationId, Guid attributeConfigurationId, Counter updatedCounter)
     {
-        CounterActionResponce response = new(entityConfigurationId, attributeConfigurationId);
+        CounterActionResponse response = new(entityConfigurationId, attributeConfigurationId);
 
         Counter? counter = await LoadCounter(entityConfigurationId, attributeConfigurationId);
 
@@ -199,14 +199,14 @@ public class EntitySerialCounterService
             throw new ArgumentNullException("Failed to save counter - make sure it was initialized");
         }
 
-        if (updatedCounter.TimeStamp != counter.TimeStamp)
+        if (updatedCounter.Timestamp != counter.Timestamp)
         {
             response.Status = CounterActionStatus.Conflict;
 
             return response;
         }
 
-        counter.SetTimeStamp(DateTime.UtcNow);
+        counter.SetTimestamp(DateTime.UtcNow);
 
         await _storeRepository.UpsertItem(
             string.Concat(entityConfigurationId, attributeConfigurationId),

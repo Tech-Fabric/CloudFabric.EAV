@@ -11,11 +11,11 @@ public class Counter
         init { _lastIncrement = value; }
     }
 
-    private DateTime _timeStamp;
-    public DateTime TimeStamp
+    private DateTime _timestamp;
+    public DateTime Timestamp
     {
-        get { return _timeStamp; }
-        init { _timeStamp = value; }
+        get { return _timestamp; }
+        init { _timestamp = value; }
     }
 
     public Guid AttributeConfidurationId { get; init; }
@@ -25,17 +25,17 @@ public class Counter
     {
     }
 
-    public Counter(long nextValue, DateTime timeStamp, Guid attributeConfigurationId, int? lastIncrement = null)
+    public Counter(long nextValue, DateTime timestamp, Guid attributeConfigurationId, int? lastIncrement = null)
     {
         NextValue = nextValue;
-        TimeStamp = timeStamp;
+        Timestamp = timestamp;
         AttributeConfidurationId = attributeConfigurationId;
         LastIncrement = lastIncrement;
     }
 
-    public void SetTimeStamp(DateTime timeStamp)
+    public void SetTimestamp(DateTime timestamp)
     {
-        _timeStamp = timeStamp;
+        _timestamp = timestamp;
     }
 
     public long Step(int increment)
