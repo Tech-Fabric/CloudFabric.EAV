@@ -18,7 +18,7 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - name: Set Version Variable
-      run: echo "PACKAGE_VERSION=$([ "$GITHUB_REF" = "refs/heads/main" ] && echo "$PACKAGE_VERSION" || echo "$PACKAGE_VERSION-$GITHUB_HEAD_REF-$(date '+%Y%d%m%H%M%S')")" >> $GITHUB_ENV
+      run: echo "PACKAGE_VERSION=$([ "$GITHUB_REF" = "refs/heads/main" ] && echo "$PACKAGE_VERSION" | tr "/" - || echo "$PACKAGE_VERSION-$GITHUB_HEAD_REF-$(date '+%Y%d%m%H%M%S')")" | tr "/" - >> $GITHUB_ENV
     - name: Print Version Variable
       run: echo "$PACKAGE_VERSION"
     - name: Print GITHUB_HEAD_REF
