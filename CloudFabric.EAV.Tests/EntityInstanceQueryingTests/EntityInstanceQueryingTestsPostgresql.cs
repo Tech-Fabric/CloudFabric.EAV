@@ -3,6 +3,7 @@ using CloudFabric.EventSourcing.EventStore.Postgresql;
 using CloudFabric.Projections;
 using CloudFabric.Projections.Postgresql;
 
+using Microsoft.Extensions.Logging;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace CloudFabric.EAV.Tests.EntityInstanceQueryingTests;
@@ -11,6 +12,7 @@ namespace CloudFabric.EAV.Tests.EntityInstanceQueryingTests;
 public class EntityInstanceQueryingTestsPostgresql : EntityInstanceQueryingTests
 {
     private readonly ProjectionRepositoryFactory _projectionRepositoryFactory;
+    private readonly ILogger<PostgresqlEventStoreEventObserver> _logger;
 
     public EntityInstanceQueryingTestsPostgresql()
     {
@@ -22,9 +24,17 @@ public class EntityInstanceQueryingTestsPostgresql : EntityInstanceQueryingTests
 
         _eventStore = new PostgresqlEventStore(
             connectionString,
-            "eav_tests_event_store"
+            "eav_tests_event_store",
+            "eav_tests_item_store"
         );
-        _projectionRepositoryFactory = new PostgresqlProjectionRepositoryFactory(connectionString);
+
+        var loggerFactory = new LoggerFactory();
+
+        _projectionRepositoryFactory = new PostgresqlProjectionRepositoryFactory(loggerFactory, connectionString);
+
+        _store = new PostgresqlStore(connectionString, "eav_tests_item_store");
+
+        _logger = loggerFactory.CreateLogger<PostgresqlEventStoreEventObserver>();
     }
 
     protected override IEventStore GetEventStore()
@@ -32,9 +42,14 @@ public class EntityInstanceQueryingTestsPostgresql : EntityInstanceQueryingTests
         return _eventStore;
     }
 
-    protected override IEventsObserver GetEventStoreEventsObserver()
+    protected override IStore GetStore()
     {
-        return new PostgresqlEventStoreEventObserver((PostgresqlEventStore)_eventStore);
+        return _store;
+    }
+
+    protected override EventsObserver GetEventStoreEventsObserver()
+    {
+        return new PostgresqlEventStoreEventObserver((PostgresqlEventStore)_eventStore, _logger);
     }
 
     protected override ProjectionRepositoryFactory GetProjectionRepositoryFactory()

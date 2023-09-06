@@ -37,6 +37,8 @@ public abstract class CategoryTests : BaseQueryTests.BaseQueryTests
             CancellationToken.None
         );
 
+        await ProjectionsRebuildProcessor.RebuildProjectionsThatRequireRebuild();
+
         // Create a tree
         var treeRequest = new CategoryTreeCreateRequest
         {
@@ -252,6 +254,8 @@ public abstract class CategoryTests : BaseQueryTests.BaseQueryTests
             itemEntityConfig,
             CancellationToken.None
         );
+
+        await ProjectionsRebuildProcessor.RebuildProjectionsThatRequireRebuild();
 
         EntityInstanceCreateRequest itemInstanceRequest =
             EntityInstanceFactory.CreateValidBoardGameEntityInstanceCreateRequest(itemEntityConfiguration.Id);

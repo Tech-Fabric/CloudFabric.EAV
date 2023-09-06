@@ -3,6 +3,7 @@ using CloudFabric.EventSourcing.EventStore.Postgresql;
 using CloudFabric.Projections;
 using CloudFabric.Projections.Postgresql;
 
+using Microsoft.Extensions.Logging;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace CloudFabric.EAV.Tests.CategoryTests;
@@ -11,6 +12,7 @@ namespace CloudFabric.EAV.Tests.CategoryTests;
 public class CategoryTestsPostgresql : CategoryTests
 {
     private readonly ProjectionRepositoryFactory _projectionRepositoryFactory;
+    private readonly ILogger<PostgresqlEventStoreEventObserver> _logger;
 
     public CategoryTestsPostgresql()
     {
@@ -22,9 +24,15 @@ public class CategoryTestsPostgresql : CategoryTests
 
         _eventStore = new PostgresqlEventStore(
             connectionString,
-            "eav_tests_event_store"
+            "eav_tests_event_store",
+            "eav_tests_items_store"
         );
-        _projectionRepositoryFactory = new PostgresqlProjectionRepositoryFactory(connectionString);
+        _projectionRepositoryFactory = new PostgresqlProjectionRepositoryFactory(new LoggerFactory(), connectionString);
+
+        _store = new PostgresqlStore(connectionString, "eav_tests_item_store");
+
+        using var loggerFactory = new LoggerFactory();
+        _logger = loggerFactory.CreateLogger<PostgresqlEventStoreEventObserver>();
     }
 
     protected override IEventStore GetEventStore()
@@ -32,9 +40,14 @@ public class CategoryTestsPostgresql : CategoryTests
         return _eventStore;
     }
 
-    protected override IEventsObserver GetEventStoreEventsObserver()
+    protected override IStore GetStore()
     {
-        return new PostgresqlEventStoreEventObserver((PostgresqlEventStore)_eventStore);
+        return _store;
+    }
+
+    protected override EventsObserver GetEventStoreEventsObserver()
+    {
+        return new PostgresqlEventStoreEventObserver((PostgresqlEventStore)_eventStore, _logger);
     }
 
     protected override ProjectionRepositoryFactory GetProjectionRepositoryFactory()

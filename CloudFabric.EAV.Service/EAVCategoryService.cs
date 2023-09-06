@@ -404,11 +404,7 @@ public class EAVCategoryService: EAVService<CategoryUpdateRequest, Category, Cat
             return (null, new ValidationErrorResponse(validationErrors))!;
         }
 
-        ProjectionDocumentSchema schema = ProjectionDocumentSchemaFactory
-            .FromEntityConfiguration(entityConfiguration, attributeConfigurations);
 
-        IProjectionRepository projectionRepository = _projectionRepositoryFactory.GetProjectionRepository(schema);
-        await projectionRepository.EnsureIndex(cancellationToken).ConfigureAwait(false);
 
         var saved = await _categoryInstanceRepository.SaveAsync(_userInfo, categoryInstance, cancellationToken)
             .ConfigureAwait(false);

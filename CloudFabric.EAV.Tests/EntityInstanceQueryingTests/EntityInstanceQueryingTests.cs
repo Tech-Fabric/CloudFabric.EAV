@@ -33,6 +33,8 @@ public abstract class EntityInstanceQueryingTests : BaseQueryTests.BaseQueryTest
             CancellationToken.None
         );
 
+        await ProjectionsRebuildProcessor.RebuildProjectionsThatRequireRebuild();
+
         EntityConfigurationViewModel configuration = await _eavEntityInstanceService.GetEntityConfiguration(
             createdConfiguration.Id
         );
@@ -49,7 +51,6 @@ public abstract class EntityInstanceQueryingTests : BaseQueryTests.BaseQueryTest
         createdInstance.TenantId.Should().Be(instanceCreateRequest.TenantId);
         createdInstance.Attributes.Should()
             .BeEquivalentTo(instanceCreateRequest.Attributes, x => x.Excluding(w => w.ValueType));
-
 
         var query = new ProjectionQuery
         {

@@ -590,13 +590,14 @@ public abstract class EAVService<TUpdateRequest,TEntityType,TViewModel> where TV
                 new ValidationErrorResponse(entityConfiguration.MachineName, entityValidationErrors.ToArray()));
         }
 
-        await _entityConfigurationProjectionRepository.EnsureIndex(cancellationToken).ConfigureAwait(false);
 
         await _entityConfigurationRepository.SaveAsync(
             _userInfo,
             entityConfiguration,
             cancellationToken
         ).ConfigureAwait(false);
+
+        await EnsureProjectionIndexForEntityConfiguration(entityConfiguration);
 
         return (_mapper.Map<EntityConfigurationViewModel>(entityConfiguration), null);
     }
@@ -746,11 +747,26 @@ public abstract class EAVService<TUpdateRequest,TEntityType,TViewModel> where TV
                 new ValidationErrorResponse(entityConfiguration.MachineName, entityValidationErrors.ToArray()));
         }
 
-        await _entityConfigurationProjectionRepository.EnsureIndex(cancellationToken).ConfigureAwait(false);
+        //await _entityConfigurationProjectionRepository.EnsureIndex(cancellationToken).ConfigureAwait(false);
         await _entityConfigurationRepository.SaveAsync(_userInfo, entityConfiguration, cancellationToken)
             .ConfigureAwait(false);
 
+        await EnsureProjectionIndexForEntityConfiguration(entityConfiguration);
+
         return (_mapper.Map<EntityConfigurationViewModel>(entityConfiguration), null);
+    }
+
+    private async Task EnsureProjectionIndexForEntityConfiguration(EntityConfiguration entityConfiguration)
+    {
+        // when entity configuration is created or updated, we need to create a projections index for it. EnsureIndex
+        // will just create a record that such index is needed. Then, it will be picked up by background processor
+        List<AttributeConfiguration> attributeConfigurations = await GetAttributeConfigurationsForEntityConfiguration(
+            entityConfiguration
+        );
+        var schema = ProjectionDocumentSchemaFactory
+            .FromEntityConfiguration(entityConfiguration, attributeConfigurations);
+        IProjectionRepository projectionRepository = _projectionRepositoryFactory.GetProjectionRepository(schema);
+        await projectionRepository.EnsureIndex();
     }
 
     public async Task<(EntityConfigurationViewModel?, ProblemDetails?)> AddAttributeToEntityConfiguration(

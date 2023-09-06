@@ -13,6 +13,7 @@ using CloudFabric.Projections.Queries;
 using FluentAssertions;
 
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace CloudFabric.EAV.Tests;
@@ -21,21 +22,34 @@ namespace CloudFabric.EAV.Tests;
 public class JsonSerializationTests : BaseQueryTests.BaseQueryTests
 {
     private readonly ProjectionRepositoryFactory _projectionRepositoryFactory;
+    private readonly ILogger<InMemoryEventStoreEventObserver> _logger;
 
     public JsonSerializationTests()
     {
-        _eventStore = new InMemoryEventStore(new Dictionary<(Guid, string), List<string>>());
-        _projectionRepositoryFactory = new InMemoryProjectionRepositoryFactory();
+        _eventStore = new InMemoryEventStore(
+            new Dictionary<(Guid, string), List<string>>()
+        );
+        _projectionRepositoryFactory = new InMemoryProjectionRepositoryFactory(new LoggerFactory());
+
+        _store = new InMemoryStore(new Dictionary<(string, string), string>());
+
+        using var loggerFactory = new LoggerFactory();
+        _logger = loggerFactory.CreateLogger<InMemoryEventStoreEventObserver>();
     }
 
-    protected override IEventsObserver GetEventStoreEventsObserver()
+    protected override EventsObserver GetEventStoreEventsObserver()
     {
-        return new InMemoryEventStoreEventObserver((InMemoryEventStore)_eventStore);
+        return new InMemoryEventStoreEventObserver((InMemoryEventStore)_eventStore, _logger);
     }
 
     protected override IEventStore GetEventStore()
     {
         return _eventStore;
+    }
+
+    protected override IStore GetStore()
+    {
+        return _store;
     }
 
     protected override ProjectionRepositoryFactory GetProjectionRepositoryFactory()
@@ -53,6 +67,8 @@ public class JsonSerializationTests : BaseQueryTests.BaseQueryTests
             configurationCreateRequest,
             CancellationToken.None
         );
+
+        await ProjectionsRebuildProcessor.RebuildProjectionsThatRequireRebuild();
 
         EntityConfigurationViewModel configuration = await _eavEntityInstanceService.GetEntityConfiguration(
             createdConfiguration!.Id
@@ -276,6 +292,8 @@ public class JsonSerializationTests : BaseQueryTests.BaseQueryTests
                 TenantId = categoryConfigurationRequest.TenantId
             },
             categoryConfigurationRequest.TenantId);
+
+        await ProjectionsRebuildProcessor.RebuildProjectionsThatRequireRebuild();
 
         EntityConfigurationViewModel configuration = await _eavEntityInstanceService.GetEntityConfiguration(
             createdCategoryConfiguration!.Id
