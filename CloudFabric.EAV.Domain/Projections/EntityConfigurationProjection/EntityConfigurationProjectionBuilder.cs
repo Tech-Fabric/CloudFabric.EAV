@@ -15,8 +15,9 @@ public class EntityConfigurationProjectionBuilder : ProjectionBuilder<EntityConf
     IHandleEvent<AggregateUpdatedEvent<EntityConfiguration>>
 {
     public EntityConfigurationProjectionBuilder(
-        ProjectionRepositoryFactory projectionRepositoryFactory, AggregateRepositoryFactory _
-    ) : base(projectionRepositoryFactory)
+        ProjectionRepositoryFactory projectionRepositoryFactory,
+        ProjectionOperationIndexSelector indexSelector
+    ) : base(projectionRepositoryFactory, indexSelector)
     {
     }
 

@@ -31,7 +31,8 @@ namespace CloudFabric.EAV.Domain.Projections.EntityInstanceProjection;
 /// </summary>
 public class EntityInstanceProjectionBuilder : ProjectionBuilder,
     IHandleEvent<EntityInstanceCreated>,
-    // IHandleEvent<AttributeInstanceAdded>,
+    IHandleEvent<CategoryCreated>,
+// IHandleEvent<AttributeInstanceAdded>,
     IHandleEvent<AttributeInstanceUpdated>,
     // IHandleEvent<AttributeInstanceRemoved>,
     IHandleEvent<EntityCategoryPathChanged>,
@@ -41,8 +42,9 @@ public class EntityInstanceProjectionBuilder : ProjectionBuilder,
 
     public EntityInstanceProjectionBuilder(
         ProjectionRepositoryFactory projectionRepositoryFactory,
-        AggregateRepositoryFactory aggregateRepositoryFactory
-    ) : base(projectionRepositoryFactory)
+        AggregateRepositoryFactory aggregateRepositoryFactory,
+        ProjectionOperationIndexSelector indexSelector
+    ) : base(projectionRepositoryFactory, indexSelector)
     {
         _aggregateRepositoryFactory = aggregateRepositoryFactory;
     }
@@ -134,14 +136,20 @@ public class EntityInstanceProjectionBuilder : ProjectionBuilder,
                 List<CategoryPath> categoryPaths =
                     categoryPathsObj as List<CategoryPath> ?? new List<CategoryPath>();
                 CategoryPath? categoryPath = categoryPaths.FirstOrDefault(x => x.TreeId == @event.CategoryTreeId);
+
                 if (categoryPath == null)
                 {
-                    categoryPaths.Add(new CategoryPath { Path = @event.CategoryPath, TreeId = @event.CategoryTreeId }
-                    );
+                    categoryPaths.Add(new CategoryPath { TreeId = @event.CategoryTreeId,
+                        Path = @event.CategoryPath,
+                        ParentId = @event.ParentId,
+                        ParentMachineName = @event.ParentMachineName
+                    });
                 }
                 else
                 {
                     categoryPath.Path = @event.CategoryPath;
+                    categoryPath.ParentMachineName = @event.ParentMachineName;
+                    categoryPath.ParentId = @event.ParentId;
                 }
 
                 document["CategoryPaths"] = categoryPaths;
@@ -162,6 +170,35 @@ public class EntityInstanceProjectionBuilder : ProjectionBuilder,
             { "EntityConfigurationId", @event.EntityConfigurationId },
             { "TenantId", @event.TenantId },
             { "CategoryPaths", new List<CategoryPath>() }
+        };
+
+        foreach (AttributeInstance attribute in @event.Attributes)
+        {
+            document.Add(attribute.ConfigurationAttributeMachineName, attribute.GetValue());
+        }
+
+        await UpsertDocument(
+            projectionDocumentSchema,
+            document,
+            @event.PartitionKey,
+            @event.Timestamp
+        );
+    }
+
+    public async Task On(CategoryCreated @event)
+    {
+        ProjectionDocumentSchema projectionDocumentSchema =
+            await BuildProjectionDocumentSchemaForEntityConfigurationIdAsync(
+                @event.EntityConfigurationId
+            ).ConfigureAwait(false);
+
+        var document = new Dictionary<string, object?>
+        {
+            { "Id", @event.AggregateId },
+            { "EntityConfigurationId", @event.EntityConfigurationId },
+            { "TenantId", @event.TenantId },
+            { "CategoryPaths", new List<CategoryPath>() },
+            { "MachineName", @event.MachineName},
         };
 
         foreach (AttributeInstance attribute in @event.Attributes)

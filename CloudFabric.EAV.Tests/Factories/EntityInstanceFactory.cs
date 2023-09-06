@@ -11,6 +11,7 @@ public class EntityInstanceFactory
         Guid treeId,
         Guid? parentId,
         Guid? tenantId,
+        string machineName,
         int attributeIndexFrom = 0,
         int attributeIndexTo = 1)
     {
@@ -30,7 +31,8 @@ public class EntityInstanceFactory
             Attributes = attributeInstances,
             ParentId = parentId,
             TenantId = tenantId,
-            CategoryTreeId = treeId
+            CategoryTreeId = treeId,
+            MachineName = machineName
         };
     }
 

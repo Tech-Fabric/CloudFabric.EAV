@@ -23,11 +23,13 @@ using CloudFabric.Projections;
 using CloudFabric.Projections.InMemory;
 using CloudFabric.Projections.Postgresql;
 using CloudFabric.Projections.Queries;
+using CloudFabric.Projections.Worker;
 
 using FluentAssertions;
 
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 // ReSharper disable AsyncConverter.ConfigureAwaitHighlighting
@@ -39,10 +41,11 @@ public class Tests
 {
     private AggregateRepositoryFactory _aggregateRepositoryFactory;
 
-    private EAVService _eavService;
+    private EAVEntityInstanceService _eavEntityInstanceService;
 
     private IEventStore _eventStore;
-    private ILogger<EAVService> _logger;
+    private IStore _store;
+    private ILogger<EAVEntityInstanceService> _eiLogger;
     private PostgresqlProjectionRepositoryFactory _projectionRepositoryFactory;
     private IMapper _mapper;
 
@@ -50,11 +53,11 @@ public class Tests
     public async Task SetUp()
     {
         var loggerFactory = new LoggerFactory();
-        _logger = loggerFactory.CreateLogger<EAVService>();
+        _eiLogger = loggerFactory.CreateLogger<EAVEntityInstanceService>();
 
         var configuration = new MapperConfiguration(cfg =>
             {
-                cfg.AddMaps(Assembly.GetAssembly(typeof(EAVService)));
+                cfg.AddMaps(Assembly.GetAssembly(typeof(EAVEntityInstanceService)));
             }
         );
         _mapper = configuration.CreateMapper();
@@ -67,36 +70,69 @@ public class Tests
 
         _eventStore = new PostgresqlEventStore(
             connectionString,
-            "eav_tests_event_store"
+            "eav_tests_event_store",
+            "eav_tests_item_store"
         );
+
+        _store = new PostgresqlStore(connectionString, "eav_tests_item_store");
 
         await _eventStore.Initialize();
 
         _aggregateRepositoryFactory = new AggregateRepositoryFactory(_eventStore);
-        _projectionRepositoryFactory = new PostgresqlProjectionRepositoryFactory(connectionString);
+        _projectionRepositoryFactory = new PostgresqlProjectionRepositoryFactory(new LoggerFactory(), connectionString);
 
         // Projections engine - takes events from events observer and passes them to multiple projection builders
-        var projectionsEngine = new ProjectionsEngine(
-            _projectionRepositoryFactory.GetProjectionRepository<ProjectionRebuildState>()
-        );
+        var projectionsEngine = new ProjectionsEngine();
         projectionsEngine.SetEventsObserver(GetEventStoreEventsObserver());
 
         var attributeConfigurationProjectionBuilder = new AttributeConfigurationProjectionBuilder(
-            _projectionRepositoryFactory, _aggregateRepositoryFactory
+            _projectionRepositoryFactory, ProjectionOperationIndexSelector.Write
         );
         var ordersListProjectionBuilder = new EntityConfigurationProjectionBuilder(
-            _projectionRepositoryFactory, _aggregateRepositoryFactory
+            _projectionRepositoryFactory, ProjectionOperationIndexSelector.Write
         );
 
         projectionsEngine.AddProjectionBuilder(attributeConfigurationProjectionBuilder);
         projectionsEngine.AddProjectionBuilder(ordersListProjectionBuilder);
 
+        var ProjectionsRebuildProcessor = new ProjectionsRebuildProcessor(
+            _projectionRepositoryFactory.GetProjectionsIndexStateRepository(),
+            async (string connectionId) =>
+            {
+                var rebuildProjectionsEngine = new ProjectionsEngine();
+                rebuildProjectionsEngine.SetEventsObserver(GetEventStoreEventsObserver());
+
+                var attributeConfigurationProjectionBuilder2 = new AttributeConfigurationProjectionBuilder(
+                    _projectionRepositoryFactory, ProjectionOperationIndexSelector.ProjectionRebuild
+                );
+
+                var ordersListProjectionBuilder2 = new EntityConfigurationProjectionBuilder(
+                    _projectionRepositoryFactory, ProjectionOperationIndexSelector.ProjectionRebuild
+                );
+
+
+                rebuildProjectionsEngine.AddProjectionBuilder(attributeConfigurationProjectionBuilder2);
+                rebuildProjectionsEngine.AddProjectionBuilder(ordersListProjectionBuilder2);
+
+                return rebuildProjectionsEngine;
+            },
+            NullLogger<ProjectionsRebuildProcessor>.Instance
+        );
+
+        var attributeConfigurationProjectionRepository =
+            _projectionRepositoryFactory.GetProjectionRepository<AttributeConfigurationProjectionDocument>();
+        await attributeConfigurationProjectionRepository.EnsureIndex();
+
+        var entityConfigurationProjectionRepository =
+            _projectionRepositoryFactory.GetProjectionRepository<EntityConfigurationProjectionDocument>();
+        await entityConfigurationProjectionRepository.EnsureIndex();
+
+        await ProjectionsRebuildProcessor.RebuildProjectionsThatRequireRebuild();
 
         await projectionsEngine.StartAsync("TestInstance");
 
-
-        _eavService = new EAVService(
-            _logger,
+        _eavEntityInstanceService = new EAVEntityInstanceService(
+            _eiLogger,
             _mapper,
             new JsonSerializerOptions()
             {
@@ -109,7 +145,9 @@ public class Tests
         );
     }
 
+
     [TestCleanup]
+    [TestInitialize]
     public async Task Cleanup()
     {
         await _eventStore.DeleteAll();
@@ -131,8 +169,9 @@ public class Tests
                 GetProjectionRebuildStateRepository();
             await rebuildStateRepository.DeleteAll();
         }
-        catch
+        catch(Exception ex)
         {
+            Console.WriteLine("Failed to clear projection repository {0} {1}", ex.Message, ex.StackTrace);
         }
     }
 
@@ -143,19 +182,19 @@ public class Tests
         EntityConfigurationCreateRequest configurationCreateRequest =
             EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
 
-        (EntityConfigurationViewModel? createdConfiguration, _) = await _eavService.CreateEntityConfiguration(
+        (EntityConfigurationViewModel? createdConfiguration, _) = await _eavEntityInstanceService.CreateEntityConfiguration(
             configurationCreateRequest,
             CancellationToken.None
         );
 
         EntityConfigurationViewModel configuration =
-            await _eavService.GetEntityConfiguration(createdConfiguration.Id);
+            await _eavEntityInstanceService.GetEntityConfiguration(createdConfiguration.Id);
 
         EntityInstanceCreateRequest entityInstanceCreateRequest =
             EntityInstanceFactory.CreateValidBoardGameEntityInstanceCreateRequest(createdConfiguration.Id);
 
         (EntityInstanceViewModel createdInstance, ProblemDetails validationErrors) =
-            await _eavService.CreateEntityInstance(entityInstanceCreateRequest);
+            await _eavEntityInstanceService.CreateEntityInstance(entityInstanceCreateRequest);
 
         validationErrors.Should().BeNull();
         createdInstance.Id.Should().NotBeEmpty();
@@ -168,7 +207,7 @@ public class Tests
         EntityInstanceCreateRequest entityInstanceCreateRequest =
             EntityInstanceFactory.CreateValidBoardGameEntityInstanceCreateRequest(Guid.NewGuid());
         (EntityInstanceViewModel result, ProblemDetails validationErrors) =
-            await _eavService.CreateEntityInstance(entityInstanceCreateRequest);
+            await _eavEntityInstanceService.CreateEntityInstance(entityInstanceCreateRequest);
         result.Should().BeNull();
         validationErrors.Should().BeOfType<ValidationErrorResponse>();
         validationErrors.As<ValidationErrorResponse>().Errors.Should().ContainKey("EntityConfigurationId");
@@ -182,20 +221,20 @@ public class Tests
         EntityConfigurationCreateRequest configurationCreateRequest =
             EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
 
-        (EntityConfigurationViewModel? createdConfiguration, _) = await _eavService.CreateEntityConfiguration(
+        (EntityConfigurationViewModel? createdConfiguration, _) = await _eavEntityInstanceService.CreateEntityConfiguration(
             configurationCreateRequest,
             CancellationToken.None
         );
 
         EntityConfigurationViewModel configuration =
-            await _eavService.GetEntityConfiguration(createdConfiguration.Id);
+            await _eavEntityInstanceService.GetEntityConfiguration(createdConfiguration.Id);
         var requiredAttributeMachineName = "players_min";
         EntityInstanceCreateRequest entityInstanceCreateRequest =
             EntityInstanceFactory.CreateValidBoardGameEntityInstanceCreateRequest(createdConfiguration.Id);
         entityInstanceCreateRequest.Attributes = entityInstanceCreateRequest.Attributes
             .Where(a => a.ConfigurationAttributeMachineName != requiredAttributeMachineName).ToList();
         (EntityInstanceViewModel createdInstance, ProblemDetails validationErrors) =
-            await _eavService.CreateEntityInstance(entityInstanceCreateRequest);
+            await _eavEntityInstanceService.CreateEntityInstance(entityInstanceCreateRequest);
         createdInstance.Should().BeNull();
 
         validationErrors.As<ValidationErrorResponse>().Errors.Should().ContainKey(requiredAttributeMachineName);
@@ -224,13 +263,13 @@ public class Tests
                 }
             }
         });
-        (EntityConfigurationViewModel? createdConfiguration, _) = await _eavService.CreateEntityConfiguration(
+        (EntityConfigurationViewModel? createdConfiguration, _) = await _eavEntityInstanceService.CreateEntityConfiguration(
             configurationCreateRequest,
             CancellationToken.None
         );
 
         EntityConfigurationViewModel configuration =
-            await _eavService.GetEntityConfiguration(createdConfiguration.Id);
+            await _eavEntityInstanceService.GetEntityConfiguration(createdConfiguration.Id);
         EntityInstanceCreateRequest entityInstanceCreateRequest =
             EntityInstanceFactory.CreateValidBoardGameEntityInstanceCreateRequest(createdConfiguration.Id);
         entityInstanceCreateRequest.Attributes.Add(
@@ -241,7 +280,7 @@ public class Tests
             });
 
         (EntityInstanceViewModel createdInstance, ProblemDetails validationErrors) =
-            await _eavService.CreateEntityInstance(entityInstanceCreateRequest);
+            await _eavEntityInstanceService.CreateEntityInstance(entityInstanceCreateRequest);
         createdInstance.Should().BeNull();
     }
 
@@ -266,12 +305,12 @@ public class Tests
                 }
             }
         });
-        (EntityConfigurationViewModel? createdConfiguration, _) = await _eavService.CreateEntityConfiguration(
+        (EntityConfigurationViewModel? createdConfiguration, _) = await _eavEntityInstanceService.CreateEntityConfiguration(
             configurationCreateRequest,
             CancellationToken.None
         );
 
-        await _eavService.GetEntityConfiguration(createdConfiguration.Id);
+        await _eavEntityInstanceService.GetEntityConfiguration(createdConfiguration.Id);
         EntityInstanceCreateRequest entityInstanceCreateRequest =
             EntityInstanceFactory.CreateValidBoardGameEntityInstanceCreateRequest(createdConfiguration.Id);
         entityInstanceCreateRequest.Attributes.Add(
@@ -282,7 +321,7 @@ public class Tests
             });
 
         (EntityInstanceViewModel? createdInstance, ProblemDetails? validationErrors) =
-            await _eavService.CreateEntityInstance(entityInstanceCreateRequest, requiredAttributesCanBeNull: true);
+            await _eavEntityInstanceService.CreateEntityInstance(entityInstanceCreateRequest, requiredAttributesCanBeNull: true);
         validationErrors.Should().BeNull();
         createdInstance.Should().NotBeNull();
     }
@@ -293,7 +332,7 @@ public class Tests
         EntityConfigurationCreateRequest configurationCreateRequest =
             EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
         (EntityConfigurationViewModel? createdConfiguration, ProblemDetails? errors) =
-            await _eavService.CreateEntityConfiguration(
+            await _eavEntityInstanceService.CreateEntityConfiguration(
                 configurationCreateRequest,
                 CancellationToken.None
             );
@@ -311,7 +350,7 @@ public class Tests
         createdConfiguration.Attributes.Count.Should().Be(configurationCreateRequest.Attributes.Count);
 
         var configurationWithAttributes =
-            await _eavService.GetEntityConfigurationWithAttributes(createdConfiguration.Id);
+            await _eavEntityInstanceService.GetEntityConfigurationWithAttributes(createdConfiguration.Id);
 
         configurationWithAttributes.Should().BeEquivalentTo(configurationCreateRequest);
     }
@@ -323,7 +362,7 @@ public class Tests
             EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
         configurationCreateRequest.Name = new List<LocalizedStringCreateRequest>();
         (EntityConfigurationViewModel? createdConfiguration, ProblemDetails? errors) =
-            await _eavService.CreateEntityConfiguration(
+            await _eavEntityInstanceService.CreateEntityConfiguration(
                 configurationCreateRequest,
                 CancellationToken.None
             );
@@ -354,7 +393,7 @@ public class Tests
         );
 
         (EntityConfigurationViewModel? entityConfig, ProblemDetails? error) =
-            await _eavService.CreateEntityConfiguration(
+            await _eavEntityInstanceService.CreateEntityConfiguration(
                 configurationCreateRequest,
                 CancellationToken.None
             );
@@ -372,12 +411,12 @@ public class Tests
         EntityConfigurationCreateRequest configurationCreateRequest =
             EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
 
-        (EntityConfigurationViewModel? createdConfiguration, _) = await _eavService.CreateEntityConfiguration(
+        (EntityConfigurationViewModel? createdConfiguration, _) = await _eavEntityInstanceService.CreateEntityConfiguration(
             configurationCreateRequest,
             CancellationToken.None
         );
 
-        EntityConfigurationViewModel configuration = await _eavService.GetEntityConfiguration(
+        EntityConfigurationViewModel configuration = await _eavEntityInstanceService.GetEntityConfiguration(
             createdConfiguration.Id
         );
 
@@ -417,7 +456,7 @@ public class Tests
         };
 
         (EntityConfigurationViewModel? created, _) =
-            await _eavService.CreateEntityConfiguration(configCreateRequest, CancellationToken.None);
+            await _eavEntityInstanceService.CreateEntityConfiguration(configCreateRequest, CancellationToken.None);
         created.Attributes.Count.Should().Be(1);
 
         // update added attribute
@@ -426,7 +465,7 @@ public class Tests
         numberAttribute.MinimumValue = 0;
         numberAttribute.MaximumValue = 50;
 
-        (AttributeConfigurationViewModel? _, ProblemDetails? error) = await _eavService.UpdateAttribute(
+        (AttributeConfigurationViewModel? _, ProblemDetails? error) = await _eavEntityInstanceService.UpdateAttribute(
             created.Attributes[0].AttributeConfigurationId,
             numberAttribute,
             CancellationToken.None
@@ -434,7 +473,7 @@ public class Tests
 
         error.Should().BeNull();
 
-        AttributeConfigurationViewModel updatedAttribute = await _eavService.GetAttribute(
+        AttributeConfigurationViewModel updatedAttribute = await _eavEntityInstanceService.GetAttribute(
             created.Attributes[0].AttributeConfigurationId,
             CancellationToken.None
         );
@@ -480,14 +519,14 @@ public class Tests
         };
 
         (EntityConfigurationViewModel? created, _) =
-            await _eavService.CreateEntityConfiguration(configCreateRequest, CancellationToken.None);
+            await _eavEntityInstanceService.CreateEntityConfiguration(configCreateRequest, CancellationToken.None);
         created.Attributes.Count.Should().Be(1);
 
         // update added attribute
         numberAttribute.Name = new List<LocalizedStringCreateRequest>();
 
         (AttributeConfigurationViewModel? updatedResult, ProblemDetails? errors) =
-            await _eavService.UpdateAttribute(
+            await _eavEntityInstanceService.UpdateAttribute(
                 created.Attributes[0].AttributeConfigurationId,
                 numberAttribute,
                 CancellationToken.None
@@ -506,21 +545,21 @@ public class Tests
         EntityConfigurationCreateRequest configurationCreateRequest =
             EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
         (EntityConfigurationViewModel entityConfig, ProblemDetails? _) =
-            await _eavService.CreateEntityConfiguration(configurationCreateRequest, CancellationToken.None);
+            await _eavEntityInstanceService.CreateEntityConfiguration(configurationCreateRequest, CancellationToken.None);
 
         Guid attributeToDelete = entityConfig.Attributes.Select(x => x.AttributeConfigurationId).FirstOrDefault();
 
-        await _eavService.DeleteAttributes(new List<Guid> { attributeToDelete }, CancellationToken.None);
+        await _eavEntityInstanceService.DeleteAttributes(new List<Guid> { attributeToDelete }, CancellationToken.None);
 
         EntityConfigurationViewModel entityConfAfterAttributeDeleted =
-            await _eavService.GetEntityConfiguration(entityConfig.Id);
+            await _eavEntityInstanceService.GetEntityConfiguration(entityConfig.Id);
         entityConfAfterAttributeDeleted.Attributes.Count().Should().Be(entityConfig.Attributes.Count() - 1);
 
-        Func<Task> act = async () => await _eavService.GetAttribute(attributeToDelete);
+        Func<Task> act = async () => await _eavEntityInstanceService.GetAttribute(attributeToDelete);
         await act.Should().ThrowAsync<NotFoundException>();
 
         ProjectionQueryResult<AttributeConfigurationListItemViewModel> attributesProjections =
-            await _eavService.ListAttributes(new ProjectionQuery
+            await _eavEntityInstanceService.ListAttributes(new ProjectionQuery
             {
                 Filters = new List<Filter>
                     {
@@ -540,7 +579,7 @@ public class Tests
     public async Task DeleteEntityAttributeFromEntity_EntityNotFound()
     {
         Func<Task> act = async () =>
-            await _eavService.DeleteAttributesFromEntityConfiguration(new List<Guid> { Guid.NewGuid() },
+            await _eavEntityInstanceService.DeleteAttributesFromEntityConfiguration(new List<Guid> { Guid.NewGuid() },
                 Guid.NewGuid(),
                 CancellationToken.None
             );
@@ -553,13 +592,13 @@ public class Tests
         EntityConfigurationCreateRequest configurationCreateRequest =
             EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
         (EntityConfigurationViewModel entityConfig, ProblemDetails? _) =
-            await _eavService.CreateEntityConfiguration(configurationCreateRequest, CancellationToken.None);
+            await _eavEntityInstanceService.CreateEntityConfiguration(configurationCreateRequest, CancellationToken.None);
 
-        await _eavService.DeleteAttributesFromEntityConfiguration(new List<Guid> { Guid.NewGuid() },
+        await _eavEntityInstanceService.DeleteAttributesFromEntityConfiguration(new List<Guid> { Guid.NewGuid() },
             entityConfig.Id,
             CancellationToken.None
         );
-        EntityConfigurationViewModel entityConfigAfterDeletingNotExistingAttribute = await _eavService.GetEntityConfiguration(entityConfig.Id);
+        EntityConfigurationViewModel entityConfigAfterDeletingNotExistingAttribute = await _eavEntityInstanceService.GetEntityConfiguration(entityConfig.Id);
         entityConfigAfterDeletingNotExistingAttribute.Attributes.Count.Should().Be(entityConfig.Attributes.Count);
     }
 
@@ -583,7 +622,7 @@ public class Tests
             MaximumValue = 100,
             MinimumValue = -100
         };
-        (AttributeConfigurationViewModel numberAttribute, _) = await _eavService.CreateAttribute(numberAttributeRequest);
+        (AttributeConfigurationViewModel numberAttribute, _) = await _eavEntityInstanceService.CreateAttribute(numberAttributeRequest);
 
         var textAttributeRequest = new TextAttributeConfigurationCreateUpdateRequest
         {
@@ -597,7 +636,7 @@ public class Tests
             MaxLength = 100,
             DefaultValue = "-"
         };
-        (AttributeConfigurationViewModel textAttribute, _) = await _eavService.CreateAttribute(textAttributeRequest);
+        (AttributeConfigurationViewModel textAttribute, _) = await _eavEntityInstanceService.CreateAttribute(textAttributeRequest);
 
         // Create entity and add attributes
         var configurationCreateRequest = new EntityConfigurationCreateRequest
@@ -609,10 +648,10 @@ public class Tests
             }
         };
         (EntityConfigurationViewModel? createdFirstEntity, _) =
-            await _eavService.CreateEntityConfiguration(configurationCreateRequest, CancellationToken.None);
+            await _eavEntityInstanceService.CreateEntityConfiguration(configurationCreateRequest, CancellationToken.None);
 
-        await _eavService.AddAttributeToEntityConfiguration(numberAttribute.Id, createdFirstEntity.Id);
-        await _eavService.AddAttributeToEntityConfiguration(textAttribute.Id, createdFirstEntity.Id);
+        await _eavEntityInstanceService.AddAttributeToEntityConfiguration(numberAttribute.Id, createdFirstEntity.Id);
+        await _eavEntityInstanceService.AddAttributeToEntityConfiguration(textAttribute.Id, createdFirstEntity.Id);
 
         // Get attributes by UsedByEntityConfigurationIds
         ProjectionQuery query = new ProjectionQuery()
@@ -644,8 +683,8 @@ public class Tests
             }
         };
         (EntityConfigurationViewModel? createdSecondEntity, _) =
-            await _eavService.CreateEntityConfiguration(configurationCreateRequest, CancellationToken.None);
-        await _eavService.AddAttributeToEntityConfiguration(numberAttribute.Id, createdSecondEntity.Id);
+            await _eavEntityInstanceService.CreateEntityConfiguration(configurationCreateRequest, CancellationToken.None);
+        await _eavEntityInstanceService.AddAttributeToEntityConfiguration(numberAttribute.Id, createdSecondEntity.Id);
 
         // Get attribute by one of UsedByEntityConfigurationIds
         query.Filters = new()
@@ -663,7 +702,7 @@ public class Tests
         result.Records.FirstOrDefault().Document.UsedByEntityConfigurationIds.Count.Should().Be(2);
 
         // Get after delete
-        await _eavService.DeleteAttributes(new List<Guid>() { numberAttribute.Id });
+        await _eavEntityInstanceService.DeleteAttributes(new List<Guid>() { numberAttribute.Id });
         result = await projectionRepository.Query(query);
         result.TotalRecordsFound.Should().Be(0);
 
@@ -695,7 +734,7 @@ public class Tests
             Attributes = createAttrList
         };
         (EntityConfigurationViewModel? createdThirdEntity, _) =
-            await _eavService.CreateEntityConfiguration(configurationCreateRequest, CancellationToken.None);
+            await _eavEntityInstanceService.CreateEntityConfiguration(configurationCreateRequest, CancellationToken.None);
 
         query.Filters = new()
         {
@@ -781,7 +820,7 @@ public class Tests
             (configRequest.Attributes[0] as AttributeConfigurationCreateUpdateRequest)!.MachineName!;
 
         (EntityConfigurationViewModel? createdConfig, _) =
-            await _eavService.CreateEntityConfiguration(configRequest, CancellationToken.None);
+            await _eavEntityInstanceService.CreateEntityConfiguration(configRequest, CancellationToken.None);
 
         var newAttributeRequest = new NumberAttributeConfigurationCreateUpdateRequest
         {
@@ -806,7 +845,7 @@ public class Tests
         };
 
         (EntityConfigurationViewModel? entityConfig, ProblemDetails? error) =
-            await _eavService.UpdateEntityConfiguration(updateRequest, CancellationToken.None);
+            await _eavEntityInstanceService.UpdateEntityConfiguration(updateRequest, CancellationToken.None);
         entityConfig.Should().BeNull();
         error.Should().NotBeNull();
         error.Should().BeOfType<ValidationErrorResponse>();
@@ -822,7 +861,7 @@ public class Tests
         EntityConfigurationCreateRequest configRequest =
             EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
         (EntityConfigurationViewModel? createdConfig, _) =
-            await _eavService.CreateEntityConfiguration(configRequest, CancellationToken.None);
+            await _eavEntityInstanceService.CreateEntityConfiguration(configRequest, CancellationToken.None);
         const string newAttributeMachineName = "avg_time_mins";
 
         var newAttributeRequest = new NumberAttributeConfigurationCreateUpdateRequest
@@ -847,7 +886,7 @@ public class Tests
             Name = configRequest.Name
         };
 
-        _ = await _eavService.UpdateEntityConfiguration(updateRequest, CancellationToken.None);
+        _ = await _eavEntityInstanceService.UpdateEntityConfiguration(updateRequest, CancellationToken.None);
         //var newAttrIndex = updatedConfig.Attributes.FindIndex(a => a.MachineName == newAttributeMachineName);
         //newAttrIndex.Should().BePositive();
         //var newAttribute = updatedConfig.Attributes[newAttrIndex];
@@ -863,7 +902,7 @@ public class Tests
         EntityConfigurationCreateRequest configRequest =
             EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
         (EntityConfigurationViewModel? createdConfig, _) =
-            await _eavService.CreateEntityConfiguration(configRequest, CancellationToken.None);
+            await _eavEntityInstanceService.CreateEntityConfiguration(configRequest, CancellationToken.None);
         const string newAttributeMachineName = "some_new_attribute_name";
 
         var newAttributeRequest = new NumberAttributeConfigurationCreateUpdateRequest
@@ -891,7 +930,7 @@ public class Tests
         };
 
         (_, ProblemDetails? errors) =
-            await _eavService.UpdateEntityConfiguration(updateRequest, CancellationToken.None);
+            await _eavEntityInstanceService.UpdateEntityConfiguration(updateRequest, CancellationToken.None);
         errors.Should().NotBeNull();
         errors.As<ValidationErrorResponse>().Errors.Should().ContainKey(newAttributeMachineName);
         errors.As<ValidationErrorResponse>().Errors[newAttributeMachineName].Should()
@@ -906,7 +945,7 @@ public class Tests
         EntityConfigurationCreateRequest configRequest =
             EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
         (EntityConfigurationViewModel? createdConfig, _) =
-            await _eavService.CreateEntityConfiguration(configRequest, CancellationToken.None);
+            await _eavEntityInstanceService.CreateEntityConfiguration(configRequest, CancellationToken.None);
         var newNameRequest = new List<LocalizedStringCreateRequest>
         {
             new() { CultureInfoId = cultureId, String = newName }
@@ -919,7 +958,7 @@ public class Tests
             Name = configRequest.Name
         };
         (EntityConfigurationViewModel? updatedConfig, ProblemDetails? updateError) =
-            await _eavService.UpdateEntityConfiguration(updateRequest, CancellationToken.None);
+            await _eavEntityInstanceService.UpdateEntityConfiguration(updateRequest, CancellationToken.None);
 
         updateError.Should().NotBeNull();
         updateError.As<ValidationErrorResponse>().Errors.First().Key.Should().Be("Attributes[0]");
@@ -930,7 +969,7 @@ public class Tests
     public async Task EntityConfigurationProjectionCreated()
     {
         ProjectionQueryResult<EntityConfigurationViewModel> configurationItemsStart =
-            await _eavService.ListEntityConfigurations(
+            await _eavEntityInstanceService.ListEntityConfigurations(
                 ProjectionQueryExpressionExtensions.Where<EntityConfigurationProjectionDocument>(x =>
                     x.MachineName == "BoardGame"
                 ),
@@ -943,14 +982,14 @@ public class Tests
             EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
 
         (EntityConfigurationViewModel?, ProblemDetails?) createdConfiguration =
-            await _eavService.CreateEntityConfiguration(
+            await _eavEntityInstanceService.CreateEntityConfiguration(
                 configurationCreateRequest,
                 CancellationToken.None
             );
 
         // verify projection is created
         ProjectionQueryResult<EntityConfigurationViewModel> configurationItems =
-            await _eavService.ListEntityConfigurations(
+            await _eavEntityInstanceService.ListEntityConfigurations(
                 ProjectionQueryExpressionExtensions.Where<EntityConfigurationProjectionDocument>(x =>
                     x.MachineName == "BoardGame"
                 )
@@ -967,19 +1006,19 @@ public class Tests
         EntityConfigurationCreateRequest configurationCreateRequest2 =
             EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
 
-        (EntityConfigurationViewModel? createdConfiguration1, _) = await _eavService.CreateEntityConfiguration(
+        (EntityConfigurationViewModel? createdConfiguration1, _) = await _eavEntityInstanceService.CreateEntityConfiguration(
             configurationCreateRequest1,
             CancellationToken.None
         );
 
-        (EntityConfigurationViewModel? createdConfiguration2, _) = await _eavService.CreateEntityConfiguration(
+        (EntityConfigurationViewModel? createdConfiguration2, _) = await _eavEntityInstanceService.CreateEntityConfiguration(
             configurationCreateRequest2,
             CancellationToken.None
         );
 
         // verify projection is created
         ProjectionQueryResult<EntityConfigurationViewModel> configurationItems =
-            await _eavService.ListEntityConfigurations(
+            await _eavEntityInstanceService.ListEntityConfigurations(
                 ProjectionQueryExpressionExtensions.Where<EntityConfigurationProjectionDocument>(x =>
                     x.TenantId == createdConfiguration2.TenantId
                 )
@@ -1016,11 +1055,11 @@ public class Tests
         };
 
         (EntityConfigurationViewModel? created, _) =
-            await _eavService.CreateEntityConfiguration(configCreateRequest, CancellationToken.None);
+            await _eavEntityInstanceService.CreateEntityConfiguration(configCreateRequest, CancellationToken.None);
         created.Attributes.Count.Should().Be(1);
 
         ProjectionQueryResult<AttributeConfigurationListItemViewModel> allAttributes =
-            await _eavService.ListAttributes(new ProjectionQuery { Limit = 100 });
+            await _eavEntityInstanceService.ListAttributes(new ProjectionQuery { Limit = 100 });
 
         allAttributes.Records.First().As<QueryResultDocument<AttributeConfigurationListItemViewModel>>()
             .Document?.MachineName.Should().Be(textAttrbiuteRequest.MachineName);
@@ -1057,14 +1096,14 @@ public class Tests
         };
 
         // check
-        (_, ProblemDetails? errors) = await _eavService.CreateEntityConfiguration(configCreateRequest, CancellationToken.None);
+        (_, ProblemDetails? errors) = await _eavEntityInstanceService.CreateEntityConfiguration(configCreateRequest, CancellationToken.None);
         errors.As<ValidationErrorResponse>().Errors.Count.Should().Be(1);
         errors.As<ValidationErrorResponse>().Errors.First().Value.First().Should().Be("Max length can't be negative or zero");
 
-        // check for negative max length 
+        // check for negative max length
         textAttrbiuteRequest.MaxLength = -10;
 
-        (_, errors) = await _eavService.CreateEntityConfiguration(configCreateRequest, CancellationToken.None);
+        (_, errors) = await _eavEntityInstanceService.CreateEntityConfiguration(configCreateRequest, CancellationToken.None);
         errors.As<ValidationErrorResponse>().Errors.First().Value.First().Should().NotBeNullOrEmpty();
     }
 
@@ -1094,7 +1133,7 @@ public class Tests
             Attributes = new List<EntityAttributeConfigurationCreateUpdateRequest> { textAttrbiuteRequest }
         };
 
-        (_, ProblemDetails? errors) = await _eavService.CreateEntityConfiguration(configCreateRequest, CancellationToken.None);
+        (_, ProblemDetails? errors) = await _eavEntityInstanceService.CreateEntityConfiguration(configCreateRequest, CancellationToken.None);
 
         errors.As<ValidationErrorResponse>().Errors
             .First().Value.First().Should().Be("Default value length cannot be greater than MaxLength");
@@ -1129,11 +1168,11 @@ public class Tests
         };
 
         (EntityConfigurationViewModel? created, _) =
-            await _eavService.CreateEntityConfiguration(configCreateRequest, CancellationToken.None);
+            await _eavEntityInstanceService.CreateEntityConfiguration(configCreateRequest, CancellationToken.None);
         created.Attributes.Count.Should().Be(1);
 
         ProjectionQueryResult<AttributeConfigurationListItemViewModel> allAttributes =
-            await _eavService.ListAttributes(new ProjectionQuery { Limit = 100 });
+            await _eavEntityInstanceService.ListAttributes(new ProjectionQuery { Limit = 100 });
 
         allAttributes.Records.First().As<QueryResultDocument<AttributeConfigurationListItemViewModel>>()
             .Document?.Name.Should().BeEquivalentTo(numberAttribute.Name);
@@ -1145,7 +1184,7 @@ public class Tests
         var request = new NumberAttributeConfigurationCreateUpdateRequest { MachineName = "avg_time_mins" };
 
         (AttributeConfigurationViewModel? result, ValidationErrorResponse? errors) =
-            await _eavService.CreateAttribute(request);
+            await _eavEntityInstanceService.CreateAttribute(request);
         result.Should().BeNull();
         errors.Should().NotBeNull();
         errors.As<ValidationErrorResponse>().Errors.Should().ContainKey(request.MachineName);
@@ -1183,11 +1222,11 @@ public class Tests
         };
 
         (EntityConfigurationViewModel? created, _) =
-            await _eavService.CreateEntityConfiguration(configCreateRequest, CancellationToken.None);
+            await _eavEntityInstanceService.CreateEntityConfiguration(configCreateRequest, CancellationToken.None);
         created.Attributes.Count.Should().Be(1);
 
         ProjectionQueryResult<AttributeConfigurationListItemViewModel> allAttributes =
-            await _eavService.ListAttributes(new ProjectionQuery { Limit = 100 });
+            await _eavEntityInstanceService.ListAttributes(new ProjectionQuery { Limit = 100 });
 
         allAttributes.Records.First().As<QueryResultDocument<AttributeConfigurationListItemViewModel>>()
             .Document?.Name.Should().BeEquivalentTo(moneyAttribute.Name);
@@ -1233,11 +1272,11 @@ public class Tests
         };
 
         (EntityConfigurationViewModel? created, _) =
-            await _eavService.CreateEntityConfiguration(configCreateRequest, CancellationToken.None);
+            await _eavEntityInstanceService.CreateEntityConfiguration(configCreateRequest, CancellationToken.None);
         created.Attributes.Count.Should().Be(1);
 
         ProjectionQueryResult<AttributeConfigurationListItemViewModel> allAttributes =
-            await _eavService.ListAttributes(new ProjectionQuery { Limit = 100 });
+            await _eavEntityInstanceService.ListAttributes(new ProjectionQuery { Limit = 100 });
 
         allAttributes.Records.First().As<QueryResultDocument<AttributeConfigurationListItemViewModel>>()
             .Document?.Name.Should().BeEquivalentTo(moneyAttribute.Name);
@@ -1274,7 +1313,7 @@ public class Tests
         };
 
         (EntityConfigurationViewModel? created, ProblemDetails? errors) =
-            await _eavService.CreateEntityConfiguration(configCreateRequest, CancellationToken.None);
+            await _eavEntityInstanceService.CreateEntityConfiguration(configCreateRequest, CancellationToken.None);
         created.Should().BeNull();
         errors.Should().NotBeNull();
     }
@@ -1311,7 +1350,7 @@ public class Tests
         };
 
         (EntityConfigurationViewModel? created, ProblemDetails? errors) =
-            await _eavService.CreateEntityConfiguration(configCreateRequest, CancellationToken.None);
+            await _eavEntityInstanceService.CreateEntityConfiguration(configCreateRequest, CancellationToken.None);
         created.Should().BeNull();
         errors.Should().NotBeNull();
     }
@@ -1347,10 +1386,10 @@ public class Tests
         };
 
         (EntityConfigurationViewModel? created, _) =
-            await _eavService.CreateEntityConfiguration(configCreateRequest, CancellationToken.None);
+            await _eavEntityInstanceService.CreateEntityConfiguration(configCreateRequest, CancellationToken.None);
         created.Attributes.Count.Should().Be(1);
 
-        AttributeConfigurationViewModel createdAttribute = await _eavService.GetAttribute(
+        AttributeConfigurationViewModel createdAttribute = await _eavEntityInstanceService.GetAttribute(
             created.Attributes[0].AttributeConfigurationId,
             CancellationToken.None
         );
@@ -1386,19 +1425,19 @@ public class Tests
         };
 
         (EntityConfigurationViewModel? created, _) =
-            await _eavService.CreateEntityConfiguration(configCreateRequest, CancellationToken.None);
+            await _eavEntityInstanceService.CreateEntityConfiguration(configCreateRequest, CancellationToken.None);
         created!.Attributes.Count.Should().Be(1);
 
         fileAttribute.IsDownloadable = false;
         fileAttribute.IsRequired = false;
 
-        (AttributeConfigurationViewModel? updated, _) = await _eavService.UpdateAttribute(
+        (AttributeConfigurationViewModel? updated, _) = await _eavEntityInstanceService.UpdateAttribute(
             created.Attributes[0].AttributeConfigurationId,
             fileAttribute,
             CancellationToken.None
         );
 
-        AttributeConfigurationViewModel createdAttribute = await _eavService
+        AttributeConfigurationViewModel createdAttribute = await _eavEntityInstanceService
             .GetAttribute(updated!.Id, CancellationToken.None);
 
         createdAttribute.IsRequired.Should().Be(fileAttribute.IsRequired);
@@ -1432,7 +1471,7 @@ public class Tests
         };
 
         (EntityConfigurationViewModel? createdConfig, _) =
-            await _eavService.CreateEntityConfiguration(configCreateRequest, CancellationToken.None);
+            await _eavEntityInstanceService.CreateEntityConfiguration(configCreateRequest, CancellationToken.None);
         createdConfig!.Attributes.Count.Should().Be(1);
 
         var instanceRequest = new EntityInstanceCreateRequest
@@ -1453,11 +1492,11 @@ public class Tests
         };
 
         (EntityInstanceViewModel createdInstance, ProblemDetails _) =
-            await _eavService.CreateEntityInstance(instanceRequest);
+            await _eavEntityInstanceService.CreateEntityInstance(instanceRequest);
 
         createdInstance.Should().NotBeNull();
 
-        createdInstance = await _eavService.GetEntityInstance(createdInstance.Id, createdConfig.Id.ToString());
+        createdInstance = await _eavEntityInstanceService.GetEntityInstance(createdInstance.Id, createdConfig.Id.ToString());
         createdInstance.Attributes.Count.Should().Be(1);
         createdInstance.Attributes[0]
             .As<FileAttributeInstanceViewModel>()
@@ -1500,10 +1539,10 @@ public class Tests
         };
 
         (EntityConfigurationViewModel? created, _) =
-            await _eavService.CreateEntityConfiguration(configCreateRequest, CancellationToken.None);
+            await _eavEntityInstanceService.CreateEntityConfiguration(configCreateRequest, CancellationToken.None);
         created.Attributes.Count.Should().Be(1);
 
-        AttributeConfigurationViewModel createdAttribute = await _eavService.GetAttribute(
+        AttributeConfigurationViewModel createdAttribute = await _eavEntityInstanceService.GetAttribute(
             created.Attributes[0].AttributeConfigurationId
         );
 
@@ -1549,11 +1588,11 @@ public class Tests
         };
 
         (EntityConfigurationViewModel? created, _) =
-            await _eavService.CreateEntityConfiguration(entityConfigurationCreateRequest, CancellationToken.None);
+            await _eavEntityInstanceService.CreateEntityConfiguration(entityConfigurationCreateRequest, CancellationToken.None);
         created!.Attributes.Count.Should().Be(1);
 
         ProjectionQueryResult<AttributeConfigurationListItemViewModel> allAttributes =
-            await _eavService.ListAttributes(new ProjectionQuery { Limit = 100 });
+            await _eavEntityInstanceService.ListAttributes(new ProjectionQuery { Limit = 100 });
 
         allAttributes.Records.First().As<QueryResultDocument<AttributeConfigurationListItemViewModel>>()
             .Document?.Name.Should().BeEquivalentTo(valueFromListAttribute.Name);
@@ -1601,7 +1640,7 @@ public class Tests
 
         // case check repeated name
         (EntityConfigurationViewModel entity, ProblemDetails errors) =
-            await _eavService.CreateEntityConfiguration(entityConfigurationCreateRequest, CancellationToken.None);
+            await _eavEntityInstanceService.CreateEntityConfiguration(entityConfigurationCreateRequest, CancellationToken.None);
 
         entity.Should().BeNull();
         errors.Should().BeOfType<ValidationErrorResponse>();
@@ -1615,7 +1654,7 @@ public class Tests
         };
 
         (entity, errors) =
-            await _eavService.CreateEntityConfiguration(entityConfigurationCreateRequest, CancellationToken.None);
+            await _eavEntityInstanceService.CreateEntityConfiguration(entityConfigurationCreateRequest, CancellationToken.None);
 
         entity.Should().BeNull();
         errors.Should().BeOfType<ValidationErrorResponse>();
@@ -1626,7 +1665,7 @@ public class Tests
         valueFromListAttribute.ValuesList = new List<ValueFromListOptionCreateUpdateRequest>();
 
         (entity, errors) =
-            await _eavService.CreateEntityConfiguration(entityConfigurationCreateRequest, CancellationToken.None);
+            await _eavEntityInstanceService.CreateEntityConfiguration(entityConfigurationCreateRequest, CancellationToken.None);
 
         entity.Should().BeNull();
         errors.Should().BeOfType<ValidationErrorResponse>();
@@ -1661,7 +1700,7 @@ public class Tests
         };
 
         (AttributeConfigurationViewModel? valueFromListAttribute, _) =
-            await _eavService.CreateAttribute(valueFromListAttributeCreateRequest, CancellationToken.None);
+            await _eavEntityInstanceService.CreateAttribute(valueFromListAttributeCreateRequest, CancellationToken.None);
 
 
         // create request with changed properties and update attribute
@@ -1672,7 +1711,7 @@ public class Tests
         };
 
         (AttributeConfigurationViewModel? changedAttribute, _) =
-            await _eavService.UpdateAttribute(valueFromListAttribute.Id,
+            await _eavEntityInstanceService.UpdateAttribute(valueFromListAttribute.Id,
                 valueFromListAttributeCreateRequest!,
                 CancellationToken.None
             );
@@ -1718,10 +1757,10 @@ public class Tests
         };
 
         (EntityConfigurationViewModel? entityConfiguration, _) =
-            await _eavService.CreateEntityConfiguration(entityConfigurationCreateRequest, CancellationToken.None);
+            await _eavEntityInstanceService.CreateEntityConfiguration(entityConfigurationCreateRequest, CancellationToken.None);
 
         // create entity instance using wrong type of attribute
-        (EntityInstanceViewModel result, ProblemDetails validationErrors) = await _eavService.CreateEntityInstance(
+        (EntityInstanceViewModel result, ProblemDetails validationErrors) = await _eavEntityInstanceService.CreateEntityInstance(
             new EntityInstanceCreateRequest
             {
                 EntityConfigurationId = entityConfiguration.Id,
@@ -1740,7 +1779,7 @@ public class Tests
         validationErrors.As<ValidationErrorResponse>().Errors["testValueAttr"].First().Should()
             .Be("Cannot validate attribute. Expected attribute type: Value from list");
 
-        (result, validationErrors) = await _eavService.CreateEntityInstance(new EntityInstanceCreateRequest
+        (result, validationErrors) = await _eavEntityInstanceService.CreateEntityInstance(new EntityInstanceCreateRequest
         {
             EntityConfigurationId = entityConfiguration.Id,
             Attributes = new List<AttributeInstanceCreateUpdateRequest>
@@ -1794,11 +1833,11 @@ public class Tests
         };
 
         (EntityConfigurationViewModel? created, _) =
-            await _eavService.CreateEntityConfiguration(entityConfigurationCreateRequest, CancellationToken.None);
+            await _eavEntityInstanceService.CreateEntityConfiguration(entityConfigurationCreateRequest, CancellationToken.None);
         created!.Attributes.Count.Should().Be(1);
 
         ProjectionQueryResult<AttributeConfigurationListItemViewModel> allAttributes =
-            await _eavService.ListAttributes(new ProjectionQuery { Limit = 100 });
+            await _eavEntityInstanceService.ListAttributes(new ProjectionQuery { Limit = 100 });
 
         allAttributes.Records.First().As<QueryResultDocument<AttributeConfigurationListItemViewModel>>()
             .Document?.Name.Should().BeEquivalentTo(serialAttributeCreateRequest.Name);
@@ -1840,13 +1879,13 @@ public class Tests
         };
 
         (AttributeConfigurationViewModel _, ValidationErrorResponse errors) =
-            await _eavService.CreateAttribute(serialAttributeCreateRequest, CancellationToken.None);
+            await _eavEntityInstanceService.CreateAttribute(serialAttributeCreateRequest, CancellationToken.None);
         errors.Should().BeOfType<ValidationErrorResponse>();
         errors.Errors.Should().Contain(x => x.Value.Contains("Increment value must not be negative or 0"));
         errors.Errors.Should().Contain(x => x.Value.Contains("Statring number must not be negative"));
 
         serialAttributeCreateRequest.Increment = -1;
-        (_, errors) = await _eavService.CreateAttribute(serialAttributeCreateRequest, CancellationToken.None);
+        (_, errors) = await _eavEntityInstanceService.CreateAttribute(serialAttributeCreateRequest, CancellationToken.None);
         errors.Errors.Should().Contain(x => x.Value.Contains("Increment value must not be negative or 0"));
     }
 
@@ -1885,7 +1924,7 @@ public class Tests
         };
 
         (EntityConfigurationViewModel? created, _) =
-            await _eavService.CreateEntityConfiguration(entityConfigurationCreateRequest, CancellationToken.None);
+            await _eavEntityInstanceService.CreateEntityConfiguration(entityConfigurationCreateRequest, CancellationToken.None);
 
         // create update request and change attribute
         var serialAttributeUpdateRequest = new SerialAttributeConfigurationUpdateRequest
@@ -1904,7 +1943,7 @@ public class Tests
             Increment = 5
         };
 
-        (AttributeConfigurationViewModel? updatedAttribute, ProblemDetails _) = await _eavService.UpdateAttribute(
+        (AttributeConfigurationViewModel? updatedAttribute, ProblemDetails _) = await _eavEntityInstanceService.UpdateAttribute(
             created.Attributes.FirstOrDefault().AttributeConfigurationId,
             serialAttributeUpdateRequest,
             CancellationToken.None
@@ -1961,9 +2000,9 @@ public class Tests
         };
 
         (EntityConfigurationViewModel? entityConfig, _) =
-            await _eavService.CreateEntityConfiguration(entityConfigurationCreateRequest, CancellationToken.None);
+            await _eavEntityInstanceService.CreateEntityConfiguration(entityConfigurationCreateRequest, CancellationToken.None);
 
-        (EntityInstanceViewModel result, ProblemDetails _) = await _eavService.CreateEntityInstance(
+        (EntityInstanceViewModel result, ProblemDetails _) = await _eavEntityInstanceService.CreateEntityInstance(
             new EntityInstanceCreateRequest
             {
                 EntityConfigurationId = entityConfig.Id,
@@ -2003,7 +2042,7 @@ public class Tests
             .As<SerialAttributeInstance>().Value.Should().Be(serialAttributeCreateRequest.StartingNumber);
 
         // create another entity instance
-        (result, _) = await _eavService.CreateEntityInstance(new EntityInstanceCreateRequest
+        (result, _) = await _eavEntityInstanceService.CreateEntityInstance(new EntityInstanceCreateRequest
         {
             EntityConfigurationId = entityConfig.Id,
             Attributes = new List<AttributeInstanceCreateUpdateRequest>
@@ -2057,7 +2096,7 @@ public class Tests
         };
 
         (EntityConfigurationViewModel? createdEntityConfiguration, _) =
-            await _eavService.CreateEntityConfiguration(configCreateRequest, CancellationToken.None);
+            await _eavEntityInstanceService.CreateEntityConfiguration(configCreateRequest, CancellationToken.None);
 
         var numberAttribute = new NumberAttributeConfigurationCreateUpdateRequest
         {
@@ -2078,17 +2117,17 @@ public class Tests
         };
 
         (AttributeConfigurationViewModel? createdAttribute, _) =
-            await _eavService.CreateAttribute(numberAttribute, CancellationToken.None);
+            await _eavEntityInstanceService.CreateAttribute(numberAttribute, CancellationToken.None);
         createdAttribute.Should().NotBeNull();
 
-        await _eavService.AddAttributeToEntityConfiguration(
+        await _eavEntityInstanceService.AddAttributeToEntityConfiguration(
             createdAttribute.Id,
             createdEntityConfiguration.Id,
             CancellationToken.None
         );
 
         // check that attribute is added
-        EntityConfigurationViewModel updatedEntityConfiguration = await _eavService.GetEntityConfiguration(
+        EntityConfigurationViewModel updatedEntityConfiguration = await _eavEntityInstanceService.GetEntityConfiguration(
             createdEntityConfiguration.Id
         );
 
@@ -2108,7 +2147,7 @@ public class Tests
             (configCreateRequest.Attributes[0] as AttributeConfigurationCreateUpdateRequest)!.MachineName!;
 
         (EntityConfigurationViewModel? createdEntityConfiguration, _) =
-            await _eavService.CreateEntityConfiguration(configCreateRequest, CancellationToken.None);
+            await _eavEntityInstanceService.CreateEntityConfiguration(configCreateRequest, CancellationToken.None);
 
         var numberAttribute = new NumberAttributeConfigurationCreateUpdateRequest
         {
@@ -2129,11 +2168,11 @@ public class Tests
         };
 
         (AttributeConfigurationViewModel? createdAttribute, _) =
-            await _eavService.CreateAttribute(numberAttribute, CancellationToken.None);
+            await _eavEntityInstanceService.CreateAttribute(numberAttribute, CancellationToken.None);
         createdAttribute.Should().NotBeNull();
 
         (EntityConfigurationViewModel? entityConfig, ProblemDetails? error) =
-            await _eavService.AddAttributeToEntityConfiguration(
+            await _eavEntityInstanceService.AddAttributeToEntityConfiguration(
                 createdAttribute.Id,
                 createdEntityConfiguration.Id,
                 CancellationToken.None
@@ -2153,7 +2192,7 @@ public class Tests
 
         EntityConfigurationCreateRequest configurationCreateRequest =
             EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
-        (EntityConfigurationViewModel? createdConfiguration, _) = await _eavService.CreateEntityConfiguration(
+        (EntityConfigurationViewModel? createdConfiguration, _) = await _eavEntityInstanceService.CreateEntityConfiguration(
             configurationCreateRequest,
             CancellationToken.None
         );
@@ -2163,7 +2202,7 @@ public class Tests
 
         List<AttributeInstanceCreateUpdateRequest> attributesRequest = entityInstanceCreateRequest.Attributes;
         (EntityInstanceViewModel createdInstance, _) =
-            await _eavService.CreateEntityInstance(entityInstanceCreateRequest);
+            await _eavEntityInstanceService.CreateEntityInstance(entityInstanceCreateRequest);
 
         var playerMaxIndex =
             attributesRequest.FindIndex(a => a.ConfigurationAttributeMachineName == changedAttributeName);
@@ -2180,7 +2219,7 @@ public class Tests
         };
 
         (EntityInstanceViewModel updatedInstance, _) =
-            await _eavService.UpdateEntityInstance(createdConfiguration.Id.ToString(),updateRequest);
+            await _eavEntityInstanceService.UpdateEntityInstance(createdConfiguration.Id.ToString(),updateRequest);
         updatedInstance.Attributes.First(a => a.ConfigurationAttributeMachineName == changedAttributeName)
             .As<NumberAttributeInstanceViewModel>().Value.Should().Be(10);
     }
@@ -2192,7 +2231,7 @@ public class Tests
 
         EntityConfigurationCreateRequest configurationCreateRequest =
             EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
-        (EntityConfigurationViewModel? createdConfiguration, _) = await _eavService.CreateEntityConfiguration(
+        (EntityConfigurationViewModel? createdConfiguration, _) = await _eavEntityInstanceService.CreateEntityConfiguration(
             configurationCreateRequest,
             CancellationToken.None
         );
@@ -2202,7 +2241,7 @@ public class Tests
 
         List<AttributeInstanceCreateUpdateRequest> attributesRequest = entityInstanceCreateRequest.Attributes;
         (EntityInstanceViewModel createdInstance, _) =
-            await _eavService.CreateEntityInstance(entityInstanceCreateRequest);
+            await _eavEntityInstanceService.CreateEntityInstance(entityInstanceCreateRequest);
 
         var playerMaxIndex =
             attributesRequest.FindIndex(a => a.ConfigurationAttributeMachineName == changedAttributeName);
@@ -2219,7 +2258,7 @@ public class Tests
         };
 
         (EntityInstanceViewModel updatedInstance, ProblemDetails validationErrors) =
-            await _eavService.UpdateEntityInstance(createdConfiguration.Id.ToString(), updateRequest);
+            await _eavEntityInstanceService.UpdateEntityInstance(createdConfiguration.Id.ToString(), updateRequest);
         updatedInstance.Should().BeNull();
         validationErrors.As<ValidationErrorResponse>().Errors.Should().ContainKey(changedAttributeName);
     }
@@ -2231,7 +2270,7 @@ public class Tests
 
         EntityConfigurationCreateRequest configurationCreateRequest =
             EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
-        (EntityConfigurationViewModel? createdConfiguration, _) = await _eavService.CreateEntityConfiguration(
+        (EntityConfigurationViewModel? createdConfiguration, _) = await _eavEntityInstanceService.CreateEntityConfiguration(
             configurationCreateRequest,
             CancellationToken.None
         );
@@ -2241,7 +2280,7 @@ public class Tests
 
         List<AttributeInstanceCreateUpdateRequest> attributesRequest = entityInstanceCreateRequest.Attributes;
         (EntityInstanceViewModel createdInstance, _) =
-            await _eavService.CreateEntityInstance(entityInstanceCreateRequest);
+            await _eavEntityInstanceService.CreateEntityInstance(entityInstanceCreateRequest);
 
         attributesRequest.Add(new NumberAttributeInstanceCreateUpdateRequest
         {
@@ -2258,7 +2297,7 @@ public class Tests
         };
 
         (EntityInstanceViewModel updatedInstance, _) =
-            await _eavService.UpdateEntityInstance(createdConfiguration.Id.ToString(), updateRequest);
+            await _eavEntityInstanceService.UpdateEntityInstance(createdConfiguration.Id.ToString(), updateRequest);
         updatedInstance.Attributes.First(a => a.ConfigurationAttributeMachineName == changedAttributeName)
             .As<NumberAttributeInstanceViewModel>().Value.Should().Be(30);
     }
@@ -2270,7 +2309,7 @@ public class Tests
 
         EntityConfigurationCreateRequest configurationCreateRequest =
             EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
-        (EntityConfigurationViewModel? createdConfiguration, _) = await _eavService.CreateEntityConfiguration(
+        (EntityConfigurationViewModel? createdConfiguration, _) = await _eavEntityInstanceService.CreateEntityConfiguration(
             configurationCreateRequest,
             CancellationToken.None
         );
@@ -2280,7 +2319,7 @@ public class Tests
 
         List<AttributeInstanceCreateUpdateRequest> attributesRequest = entityInstanceCreateRequest.Attributes;
         (EntityInstanceViewModel createdInstance, _) =
-            await _eavService.CreateEntityInstance(entityInstanceCreateRequest);
+            await _eavEntityInstanceService.CreateEntityInstance(entityInstanceCreateRequest);
 
         attributesRequest.Add(new NumberAttributeInstanceCreateUpdateRequest
         {
@@ -2296,10 +2335,10 @@ public class Tests
             Id = createdInstance.Id
         };
 
-        await _eavService.UpdateEntityInstance(createdConfiguration.Id.ToString(), updateRequest);
+        await _eavEntityInstanceService.UpdateEntityInstance(createdConfiguration.Id.ToString(), updateRequest);
 
         ProjectionQueryResult<AttributeConfigurationListItemViewModel> attributeConfigurations =
-            await _eavService.ListAttributes(
+            await _eavEntityInstanceService.ListAttributes(
                 new ProjectionQuery
                 {
                     Filters = new List<Filter>
@@ -2333,7 +2372,7 @@ public class Tests
         (numberAttributeConfig as NumberAttributeConfigurationCreateUpdateRequest)!.NumberType =
             NumberAttributeType.Integer;
 
-        (EntityConfigurationViewModel? createdConfiguration, _) = await _eavService.CreateEntityConfiguration(
+        (EntityConfigurationViewModel? createdConfiguration, _) = await _eavEntityInstanceService.CreateEntityConfiguration(
             configurationCreateRequest,
             CancellationToken.None
         );
@@ -2351,7 +2390,7 @@ public class Tests
         );
 
         (EntityInstanceViewModel instance, ProblemDetails error) =
-            await _eavService.CreateEntityInstance(entityInstanceCreateRequest);
+            await _eavEntityInstanceService.CreateEntityInstance(entityInstanceCreateRequest);
         instance.Should().BeNull();
         error.As<ValidationErrorResponse>().Errors.Should()
             .Contain(x => x.Value.Contains("Value is not an integer value"));
@@ -2364,7 +2403,7 @@ public class Tests
 
         EntityConfigurationCreateRequest configurationCreateRequest =
             EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
-        (EntityConfigurationViewModel? createdConfiguration, _) = await _eavService.CreateEntityConfiguration(
+        (EntityConfigurationViewModel? createdConfiguration, _) = await _eavEntityInstanceService.CreateEntityConfiguration(
             configurationCreateRequest,
             CancellationToken.None
         );
@@ -2374,7 +2413,7 @@ public class Tests
 
         List<AttributeInstanceCreateUpdateRequest> attributesRequest = entityInstanceCreateRequest.Attributes;
         (EntityInstanceViewModel createdInstance, _) =
-            await _eavService.CreateEntityInstance(entityInstanceCreateRequest);
+            await _eavEntityInstanceService.CreateEntityInstance(entityInstanceCreateRequest);
 
         attributesRequest.Add(new NumberAttributeInstanceCreateUpdateRequest
         {
@@ -2391,7 +2430,7 @@ public class Tests
         };
 
         (EntityInstanceViewModel updatedInstance, _) =
-            await _eavService.UpdateEntityInstance(createdConfiguration.Id.ToString(), updateRequest);
+            await _eavEntityInstanceService.UpdateEntityInstance(createdConfiguration.Id.ToString(), updateRequest);
         updatedInstance.Attributes.FirstOrDefault(a => a.ConfigurationAttributeMachineName == changedAttributeName)
             .Should().BeNull();
     }
@@ -2403,7 +2442,7 @@ public class Tests
 
         EntityConfigurationCreateRequest configurationCreateRequest =
             EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
-        (EntityConfigurationViewModel? createdConfiguration, _) = await _eavService.CreateEntityConfiguration(
+        (EntityConfigurationViewModel? createdConfiguration, _) = await _eavEntityInstanceService.CreateEntityConfiguration(
             configurationCreateRequest,
             CancellationToken.None
         );
@@ -2413,7 +2452,7 @@ public class Tests
 
         List<AttributeInstanceCreateUpdateRequest> attributesRequest = entityInstanceCreateRequest.Attributes;
         (EntityInstanceViewModel createdInstance, _) =
-            await _eavService.CreateEntityInstance(entityInstanceCreateRequest);
+            await _eavEntityInstanceService.CreateEntityInstance(entityInstanceCreateRequest);
 
         var updateRequest = new EntityInstanceUpdateRequest
         {
@@ -2427,7 +2466,7 @@ public class Tests
         };
 
         (EntityInstanceViewModel updatedInstance, _) =
-            await _eavService.UpdateEntityInstance(createdConfiguration.Id.ToString(), updateRequest);
+            await _eavEntityInstanceService.UpdateEntityInstance(createdConfiguration.Id.ToString(), updateRequest);
         updatedInstance.Attributes.FirstOrDefault(a => a.ConfigurationAttributeMachineName == changedAttributeName)
             .Should().BeNull();
     }
@@ -2439,7 +2478,7 @@ public class Tests
 
         EntityConfigurationCreateRequest configurationCreateRequest =
             EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
-        (EntityConfigurationViewModel? createdConfiguration, _) = await _eavService.CreateEntityConfiguration(
+        (EntityConfigurationViewModel? createdConfiguration, _) = await _eavEntityInstanceService.CreateEntityConfiguration(
             configurationCreateRequest,
             CancellationToken.None
         );
@@ -2449,7 +2488,7 @@ public class Tests
 
         List<AttributeInstanceCreateUpdateRequest> attributesRequest = entityInstanceCreateRequest.Attributes;
         (EntityInstanceViewModel createdInstance, _) =
-            await _eavService.CreateEntityInstance(entityInstanceCreateRequest);
+            await _eavEntityInstanceService.CreateEntityInstance(entityInstanceCreateRequest);
 
         attributesRequest = attributesRequest
             .Where(a => a.ConfigurationAttributeMachineName != changedAttributeName).ToList();
@@ -2465,7 +2504,7 @@ public class Tests
         };
 
         (EntityInstanceViewModel updatedInstance, ProblemDetails errors) =
-            await _eavService.UpdateEntityInstance(createdConfiguration.Id.ToString(), updateRequest);
+            await _eavEntityInstanceService.UpdateEntityInstance(createdConfiguration.Id.ToString(), updateRequest);
         updatedInstance.Should().BeNull();
         errors.As<ValidationErrorResponse>().Errors.Should().ContainKey(changedAttributeName);
     }
@@ -2503,7 +2542,7 @@ public class Tests
         };
 
         (EntityConfigurationViewModel? created, _) =
-            await _eavService.CreateEntityConfiguration(entityConfigurationCreateRequest, CancellationToken.None);
+            await _eavEntityInstanceService.CreateEntityConfiguration(entityConfigurationCreateRequest, CancellationToken.None);
 
         // create entity instance for further update
         var entityInstanceCreateRequest = new EntityInstanceCreateRequest
@@ -2520,7 +2559,7 @@ public class Tests
                 }
             }
         };
-        (EntityInstanceViewModel createdItem, _) = await _eavService.CreateEntityInstance(entityInstanceCreateRequest);
+        (EntityInstanceViewModel createdItem, _) = await _eavEntityInstanceService.CreateEntityInstance(entityInstanceCreateRequest);
 
         // update entity instance
         var updateSerialInstanceRequest = new SerialAttributeInstanceCreateUpdateRequest
@@ -2537,7 +2576,7 @@ public class Tests
             Id = createdItem.Id,
         };
 
-        (EntityInstanceViewModel updatedinstance, _) = await _eavService.UpdateEntityInstance(
+        (EntityInstanceViewModel updatedinstance, _) = await _eavEntityInstanceService.UpdateEntityInstance(
             createdItem.EntityConfigurationId.ToString(),
             entityInstanceUpdateRequest
         );
@@ -2579,7 +2618,7 @@ public class Tests
         };
 
         (EntityConfigurationViewModel? created, _) =
-            await _eavService.CreateEntityConfiguration(entityConfigurationCreateRequest, CancellationToken.None);
+            await _eavEntityInstanceService.CreateEntityConfiguration(entityConfigurationCreateRequest, CancellationToken.None);
 
         // create entity instance for further update
         var entityInstanceCreateRequest = new EntityInstanceCreateRequest
@@ -2596,7 +2635,7 @@ public class Tests
                 }
             }
         };
-        (EntityInstanceViewModel? createdItem, _) = await _eavService.CreateEntityInstance(entityInstanceCreateRequest);
+        (EntityInstanceViewModel? createdItem, _) = await _eavEntityInstanceService.CreateEntityInstance(entityInstanceCreateRequest);
 
         // update entity instance
         var updateSerialInstanceRequest = new SerialAttributeInstanceCreateUpdateRequest
@@ -2613,21 +2652,21 @@ public class Tests
             Id = createdItem.Id,
         };
 
-        (_, ProblemDetails updateErrors) = await _eavService.UpdateEntityInstance(
+        (_, ProblemDetails updateErrors) = await _eavEntityInstanceService.UpdateEntityInstance(
             createdItem.EntityConfigurationId.ToString(),
             entityInstanceUpdateRequest
         );
         updateErrors.Should().NotBeNull();
 
         updateSerialInstanceRequest.Value = updateSerialInstanceRequest.Value - DateTime.UtcNow.Ticks;
-        (_, updateErrors) = await _eavService.UpdateEntityInstance(
+        (_, updateErrors) = await _eavEntityInstanceService.UpdateEntityInstance(
             createdItem.EntityConfigurationId.ToString(),
             entityInstanceUpdateRequest
         );
         updateErrors.Should().NotBeNull();
 
         updateSerialInstanceRequest.Value = null;
-        (_, updateErrors) = await _eavService.UpdateEntityInstance(
+        (_, updateErrors) = await _eavEntityInstanceService.UpdateEntityInstance(
             createdItem.EntityConfigurationId.ToString(),
             entityInstanceUpdateRequest
         );
@@ -2655,7 +2694,7 @@ public class Tests
 
 
         (AttributeConfigurationViewModel? priceAttributeCreated, _) =
-            await _eavService.CreateAttribute(priceAttribute, CancellationToken.None);
+            await _eavEntityInstanceService.CreateAttribute(priceAttribute, CancellationToken.None);
 
         var entityConfigurationCreateRequest = new EntityConfigurationCreateRequest
         {
@@ -2681,13 +2720,13 @@ public class Tests
             }
         };
 
-        _ = await _eavService.CreateEntityConfiguration(
+        _ = await _eavEntityInstanceService.CreateEntityConfiguration(
             entityConfigurationCreateRequest,
             CancellationToken.None
         );
 
         ProjectionQueryResult<AttributeConfigurationListItemViewModel> allAttributes =
-            await _eavService.ListAttributes(new ProjectionQuery { Limit = 1000 });
+            await _eavEntityInstanceService.ListAttributes(new ProjectionQuery { Limit = 1000 });
         allAttributes.Records.Count.Should().Be(2);
     }
 
@@ -2697,12 +2736,12 @@ public class Tests
         EntityConfigurationCreateRequest configurationCreateRequest =
             EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
 
-        (EntityConfigurationViewModel? createdConfiguration, _) = await _eavService.CreateEntityConfiguration(
+        (EntityConfigurationViewModel? createdConfiguration, _) = await _eavEntityInstanceService.CreateEntityConfiguration(
             configurationCreateRequest,
             CancellationToken.None
         );
 
-        EntityConfigurationViewModel configuration = await _eavService.GetEntityConfiguration(
+        EntityConfigurationViewModel configuration = await _eavEntityInstanceService.GetEntityConfiguration(
             createdConfiguration.Id
         );
 
@@ -2712,7 +2751,7 @@ public class Tests
             EntityInstanceFactory.CreateValidBoardGameEntityInstanceCreateRequest(createdConfiguration.Id);
 
         (EntityInstanceViewModel createdInstance, ProblemDetails createProblemDetails) =
-            await _eavService.CreateEntityInstance(instanceCreateRequest);
+            await _eavEntityInstanceService.CreateEntityInstance(instanceCreateRequest);
 
         createdInstance.EntityConfigurationId.Should().Be(instanceCreateRequest.EntityConfigurationId);
         createdInstance.TenantId.Should().Be(instanceCreateRequest.TenantId);
@@ -2724,7 +2763,7 @@ public class Tests
             Filters = new List<Filter> { new("Id", FilterOperator.Equal, createdInstance.Id) }
         };
 
-        await _eavService
+        await _eavEntityInstanceService
             .QueryInstances(createdConfiguration.Id, query);
     }
 
@@ -2841,10 +2880,10 @@ public class Tests
 
 
         (EntityConfigurationViewModel? createdConfig, _) =
-            await _eavService.CreateEntityConfiguration(entityConfigurationCreateRequest, CancellationToken.None);
+            await _eavEntityInstanceService.CreateEntityConfiguration(entityConfigurationCreateRequest, CancellationToken.None);
         createdConfig.Should().NotBeNull();
 
-        AttributeConfigurationViewModel attribute = await _eavService.GetAttribute(
+        AttributeConfigurationViewModel attribute = await _eavEntityInstanceService.GetAttribute(
             createdConfig!.Attributes[0].AttributeConfigurationId,
             CancellationToken.None
         );
@@ -2855,7 +2894,7 @@ public class Tests
 
         // check projections
         ProjectionQueryResult<AttributeConfigurationListItemViewModel> attributes =
-            await _eavService.ListAttributes(new ProjectionQuery());
+            await _eavEntityInstanceService.ListAttributes(new ProjectionQuery());
         attributes.Records.First().Document!.Metadata.Should().Be(attribute.Metadata);
     }
 
@@ -2891,12 +2930,12 @@ public class Tests
 
 
         (EntityConfigurationViewModel? createdConfig, _) =
-            await _eavService.CreateEntityConfiguration(entityConfigurationCreateRequest, CancellationToken.None);
+            await _eavEntityInstanceService.CreateEntityConfiguration(entityConfigurationCreateRequest, CancellationToken.None);
         createdConfig.Should().NotBeNull();
 
         // update attribute metadata
         priceAttribute.Metadata = "updated metadata";
-        (AttributeConfigurationViewModel? updatedAttribute, _) = await _eavService.UpdateAttribute(
+        (AttributeConfigurationViewModel? updatedAttribute, _) = await _eavEntityInstanceService.UpdateAttribute(
             createdConfig.Attributes[0].AttributeConfigurationId,
             priceAttribute,
             CancellationToken.None
@@ -2904,7 +2943,7 @@ public class Tests
 
         updatedAttribute.Should().NotBeNull();
 
-        AttributeConfigurationViewModel attribute = await _eavService.GetAttribute(
+        AttributeConfigurationViewModel attribute = await _eavEntityInstanceService.GetAttribute(
             updatedAttribute.Id,
             CancellationToken.None
         );
@@ -2913,7 +2952,7 @@ public class Tests
 
         // check projections
         ProjectionQueryResult<AttributeConfigurationListItemViewModel> attributesList =
-            await _eavService.ListAttributes(new ProjectionQuery());
+            await _eavEntityInstanceService.ListAttributes(new ProjectionQuery());
         attributesList.Records.First().Document!.Metadata.Should().Be(priceAttribute.Metadata);
     }
 
@@ -2998,13 +3037,13 @@ public class Tests
 
         // Act
         (EntityConfigurationViewModel? created, _) =
-            await _eavService.CreateEntityConfiguration(configCreateRequest, CancellationToken.None);
+            await _eavEntityInstanceService.CreateEntityConfiguration(configCreateRequest, CancellationToken.None);
 
         // Assert
         // Check domain models
         var createdArrayAttributeRef = created?.Attributes.First();
         createdArrayAttributeRef.Should().NotBeNull();
-        var createdAttribute = await _eavService.GetAttribute(createdArrayAttributeRef!.AttributeConfigurationId) as ArrayAttributeConfigurationViewModel;
+        var createdAttribute = await _eavEntityInstanceService.GetAttribute(createdArrayAttributeRef!.AttributeConfigurationId) as ArrayAttributeConfigurationViewModel;
 
         createdAttribute.Name.Should().BeEquivalentTo(arrayAttribute.Name);
         createdAttribute.Description.Should().BeEquivalentTo(arrayAttribute.Description);
@@ -3013,7 +3052,7 @@ public class Tests
         // Check element config
         var elementAttributeId = createdAttribute.ItemsAttributeConfigurationId;
         elementAttributeId.Should().NotBeEmpty();
-        var createdElementAttribute = await _eavService.GetAttribute(elementAttributeId);
+        var createdElementAttribute = await _eavEntityInstanceService.GetAttribute(elementAttributeId);
         var defaultConfigToCompare =
             DefaultAttributeConfigurationFactory.GetDefaultConfiguration(type,
                 createdElementAttribute.MachineName,
@@ -3026,11 +3065,16 @@ public class Tests
 
     private IProjectionRepository<ProjectionRebuildState> GetProjectionRebuildStateRepository()
     {
-        return new InMemoryProjectionRepository<ProjectionRebuildState>();
+        return new InMemoryProjectionRepository<ProjectionRebuildState>(new LoggerFactory());
     }
 
-    private IEventsObserver GetEventStoreEventsObserver()
+    private EventsObserver GetEventStoreEventsObserver()
     {
-        return new PostgresqlEventStoreEventObserver((PostgresqlEventStore)_eventStore);
+        var loggerFactory = new LoggerFactory();
+
+        return new PostgresqlEventStoreEventObserver(
+            (PostgresqlEventStore)_eventStore,
+            loggerFactory.CreateLogger<PostgresqlEventStoreEventObserver>()
+        );
     }
 }

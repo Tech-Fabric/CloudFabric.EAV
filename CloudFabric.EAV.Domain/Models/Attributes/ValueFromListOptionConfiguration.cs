@@ -1,5 +1,7 @@
 using System.Text.RegularExpressions;
 
+using CloudFabric.EAV.Domain.Utilities.Extensions;
+
 namespace CloudFabric.EAV.Domain.Models.Attributes;
 
 public class ValueFromListOptionConfiguration
@@ -11,9 +13,7 @@ public class ValueFromListOptionConfiguration
 
         if (string.IsNullOrEmpty(machineName))
         {
-            machineName = name.Replace(" ", "_");
-            var specSymbolsRegex = new Regex("[^\\d\\w_]*", RegexOptions.None, TimeSpan.FromMilliseconds(100));
-            machineName = specSymbolsRegex.Replace(machineName, "").ToLower();
+            machineName = name.SanitizeForMachineName();
         }
 
         MachineName = machineName;

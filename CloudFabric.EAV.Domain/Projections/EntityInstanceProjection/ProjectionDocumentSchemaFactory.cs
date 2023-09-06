@@ -45,8 +45,23 @@ public static class ProjectionDocumentSchemaFactory
         );
 
         schema.Properties.Add(
+            new ProjectionDocumentPropertySchema
+            {
+                PropertyName = "MachineName",
+                PropertyType = TypeCode.String,
+                IsKey = false,
+                IsSearchable = true,
+                IsRetrievable = true,
+                IsFilterable = true,
+                IsSortable = false,
+                IsFacetable = false
+            }
+        );
+
+        schema.Properties.Add(
             ProjectionAttributesSchemaFactory.GetCategoryPathsAttributeSchema()
         );
+
 
         schema.Properties.Add(
             new ProjectionDocumentPropertySchema

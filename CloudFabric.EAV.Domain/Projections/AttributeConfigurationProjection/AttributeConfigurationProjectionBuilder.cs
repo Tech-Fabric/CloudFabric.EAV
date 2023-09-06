@@ -26,8 +26,9 @@ public class AttributeConfigurationProjectionBuilder : ProjectionBuilder<Attribu
     IHandleEvent<EntityConfigurationAttributeRemoved>
 {
     public AttributeConfigurationProjectionBuilder(
-        ProjectionRepositoryFactory projectionRepositoryFactory, AggregateRepositoryFactory _
-    ) : base(projectionRepositoryFactory)
+        ProjectionRepositoryFactory projectionRepositoryFactory,
+        ProjectionOperationIndexSelector indexSelector
+    ) : base(projectionRepositoryFactory, indexSelector)
     {
     }
 

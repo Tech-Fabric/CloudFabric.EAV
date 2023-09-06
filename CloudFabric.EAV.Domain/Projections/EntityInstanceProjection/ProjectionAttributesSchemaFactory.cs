@@ -240,6 +240,7 @@ public static class ProjectionAttributesSchemaFactory
             EavAttributeType.HtmlText => null,
             EavAttributeType.EntityReference => null,
             EavAttributeType.ValueFromList => null,
+            EavAttributeType.Money => null,
             EavAttributeType.LocalizedText => GetLocalizedTextAttributeNestedProperties(),
             EavAttributeType.DateRange => GetDateAttributeNestedProperties(),
             EavAttributeType.Image => GetImageAttributeNestedProperties(),
@@ -438,6 +439,22 @@ public static class ProjectionAttributesSchemaFactory
             {
                 PropertyName = "Path",
                 PropertyType = TypeCode.String,
+                IsRetrievable = true,
+                IsFilterable = true,
+                IsSortable = true
+            },
+            new ()
+            {
+                PropertyName = "ParentMachineName",
+                PropertyType = TypeCode.String,
+                IsRetrievable = true,
+                IsFilterable = true,
+                IsSortable = true
+            },
+            new ()
+            {
+                PropertyName = "ParentId",
+                PropertyType = TypeCode.Object,
                 IsRetrievable = true,
                 IsFilterable = true,
                 IsSortable = true
