@@ -2,7 +2,7 @@ using System.Text.Json;
 
 using AutoMapper;
 
-using CloudFabric.EAV.Domain;
+using CloudFabric.EAV.Domain.GeneratedValues;
 using CloudFabric.EAV.Domain.Models;
 using CloudFabric.EAV.Enums;
 using CloudFabric.EAV.Models.RequestModels;
@@ -28,14 +28,14 @@ public class EAVEntityInstanceService : EAVService<EntityInstanceUpdateRequest, 
         AggregateRepositoryFactory aggregateRepositoryFactory,
         ProjectionRepositoryFactory projectionRepositoryFactory,
         EventUserInfo userInfo,
-        EntitySerialCounterService counterService) : base(logger,
+        ValueAttributeService valueAttributeService) : base(logger,
         new EntityInstanceFromDictionaryDeserializer(mapper),
         mapper,
         jsonSerializerOptions,
         aggregateRepositoryFactory,
         projectionRepositoryFactory,
         userInfo,
-        counterService)
+        valueAttributeService)
     {
     }
 
@@ -422,7 +422,8 @@ public class EAVEntityInstanceService : EAVService<EntityInstanceUpdateRequest, 
         );
 
         var validationErrors = new Dictionary<string, string[]>();
-        List<Counter?> entityCounters = new();
+        List<IGeneratedValueInfo?> generatedValues = new();
+
         foreach (AttributeConfiguration a in attributeConfigurations)
         {
             AttributeInstance? attributeValue = entityInstance.Attributes
@@ -434,9 +435,9 @@ public class EAVEntityInstanceService : EAVService<EntityInstanceUpdateRequest, 
                 validationErrors.Add(a.MachineName, attrValidationErrors.ToArray());
             }
 
-            var counter = await InitializeAttributeInstanceWithCounterValue(entityConfiguration, a, attributeValue);
+            var valueInfo = await _valueAttributeService.GenerateAttributeInstanceValue(entityConfiguration, a, attributeValue);
 
-            entityCounters.Add(counter);
+            generatedValues.Add(await _valueAttributeService.GenerateAttributeInstanceValue(entityConfiguration, a, attributeValue));
         }
 
         if (validationErrors.Count > 0)
@@ -446,30 +447,17 @@ public class EAVEntityInstanceService : EAVService<EntityInstanceUpdateRequest, 
 
         if (!dryRun)
         {
-            // Save counters 
-            var counterResponse = new List<CounterActionResponse>();
+            var response = await _valueAttributeService.SaveValues(entityConfiguration.Id, generatedValues);
 
-            foreach (var counter in entityCounters.Where(x => x != null))
+            foreach (var actionResponse in response.Where(x => x.Status == GeneratedValueActionStatus.Failed))
             {
-                counterResponse.Add(await _counterService.SaveCounter(entityConfiguration.Id, counter.AttributeConfidurationId, counter));
+                var attributeMachineName = attributeConfigurations.First(x => x.Id == actionResponse.AttributeConfigurationId).MachineName;
+
+                validationErrors.Add(
+                    attributeMachineName,
+                    new string[] { $"Failed to generate value: {actionResponse.GeneratedValueType?.Name}" });
             }
 
-            foreach (var response in counterResponse.Where(x => x.Status == CounterActionStatus.Conflict))
-            {
-                do
-                {
-                    var counter = await _counterService.LoadCounter(response.EntityConfigurationId, response.AttributeConfigurationId);
-
-                    counter!.Step(counter.LastIncrement!.Value);
-
-                    var repeatedCounterSaveResponse = await _counterService.SaveCounter(entityConfiguration.Id, counter.AttributeConfidurationId, counter);
-
-                    response.Status = repeatedCounterSaveResponse.Status;
-
-                } while (response.Status != CounterActionStatus.Saved);
-            }
-
-            // Save instance
             ProjectionDocumentSchema schema = ProjectionDocumentSchemaFactory
                 .FromEntityConfiguration(entityConfiguration, attributeConfigurations);
 

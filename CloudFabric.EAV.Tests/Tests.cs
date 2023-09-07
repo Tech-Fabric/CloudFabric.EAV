@@ -44,7 +44,7 @@ public class Tests
 
     private EAVEntityInstanceService _eavEntityInstanceService;
 
-    private EntitySerialCounterService _entitySerialCounterService;
+    private SerialCounterService _entitySerialCounterService;
 
     private IEventStore _eventStore;
     private IStore _store;
@@ -134,7 +134,7 @@ public class Tests
 
         await projectionsEngine.StartAsync("TestInstance");
 
-        _entitySerialCounterService = new EntitySerialCounterService(new StoreRepository(_store), _mapper);
+        _entitySerialCounterService = new SerialCounterService(new StoreRepository(_store));
 
         _eavEntityInstanceService = new EAVEntityInstanceService(
             _eiLogger,
@@ -147,7 +147,7 @@ public class Tests
             _aggregateRepositoryFactory,
             _projectionRepositoryFactory,
             new EventUserInfo(Guid.NewGuid()),
-            _entitySerialCounterService
+            new ValueAttributeService(_entitySerialCounterService, _mapper)
         );
     }
 
@@ -2005,7 +2005,7 @@ public class Tests
             await _eavEntityInstanceService.CreateEntityConfiguration(entityConfigurationCreateRequest, CancellationToken.None);
 
         // Check counter for attribute was initialized
-        var counter = await _entitySerialCounterService.LoadCounter(
+        var counter = await _entitySerialCounterService.Load(
             entityConfig.Id, entityConfig.Attributes.First().AttributeConfigurationId
         );
         counter.NextValue.Should().Be(serialAttributeCreateRequest.StartingNumber);
@@ -2032,7 +2032,7 @@ public class Tests
         serialAttributeInstance.Value.Should().Be(counter.NextValue);
 
         var counterAfterFirstSerial =
-            await _entitySerialCounterService.LoadCounter(entityConfig.Id, entityConfig.Attributes.First().AttributeConfigurationId);
+            await _entitySerialCounterService.Load(entityConfig.Id, entityConfig.Attributes.First().AttributeConfigurationId);
         counterAfterFirstSerial!.NextValue.Should().Be(serialAttributeInstance.Value + serialAttributeCreateRequest.Increment);
 
         // Create another entity instance and check it and counter
@@ -2055,7 +2055,7 @@ public class Tests
         serialAttributeInstance.Value.Should().Be(counterAfterFirstSerial.NextValue);
 
         var counterAfterSecondSerial =
-            await _entitySerialCounterService.LoadCounter(entityConfig.Id, entityConfig.Attributes.First().AttributeConfigurationId);
+            await _entitySerialCounterService.Load(entityConfig.Id, entityConfig.Attributes.First().AttributeConfigurationId);
         counterAfterSecondSerial!.NextValue.Should().Be(serialAttributeInstance.Value + serialAttributeCreateRequest.Increment);
     }
 
@@ -2160,7 +2160,7 @@ public class Tests
         );
 
         // Check counter was initialized
-        var counter = await _entitySerialCounterService.LoadCounter(createdEntityConfiguration.Id, createdAttribute.Id);
+        var counter = await _entitySerialCounterService.Load(createdEntityConfiguration.Id, createdAttribute.Id);
         counter.Should().NotBeNull();
         counter.NextValue.Should().Be(serialAttributeCreateRequest.StartingNumber);
         counter.LastIncrement.Should().BeNull();
@@ -2615,7 +2615,7 @@ public class Tests
         updatedinstance.Attributes.FirstOrDefault().As<SerialAttributeInstanceViewModel>().Value
             .Should().Be(updateSerialInstanceRequest.Value);
 
-        var counter = await _entitySerialCounterService.LoadCounter(
+        var counter = await _entitySerialCounterService.Load(
             createdEntityConfiguration.Id,
             createdEntityConfiguration.Attributes.First().AttributeConfigurationId
         );
@@ -2678,7 +2678,7 @@ public class Tests
             await _eavEntityInstanceService.CreateEntityInstance(entityInstanceCreateRequest);
         }
 
-        var counter = await _entitySerialCounterService.LoadCounter(
+        var counter = await _entitySerialCounterService.Load(
             createdEntityConfiguration.Id,
             createdEntityConfiguration.Attributes.First().AttributeConfigurationId
         );

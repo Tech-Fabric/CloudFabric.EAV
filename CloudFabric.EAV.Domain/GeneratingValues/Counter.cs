@@ -1,6 +1,6 @@
-namespace CloudFabric.EAV.Domain;
+namespace CloudFabric.EAV.Domain.GeneratedValues;
 
-public class Counter
+public class Counter : IGeneratedValueInfo
 {
     public long NextValue { get; set; }
 
@@ -41,6 +41,6 @@ public class Counter
     public long Step(int increment)
     {
         _lastIncrement = increment;
-        return this.NextValue += increment;
+        return NextValue += increment;
     }
 }

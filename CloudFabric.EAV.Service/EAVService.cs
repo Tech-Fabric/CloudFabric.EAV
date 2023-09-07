@@ -5,7 +5,7 @@ using System.Text.RegularExpressions;
 
 using AutoMapper;
 
-using CloudFabric.EAV.Domain;
+using CloudFabric.EAV.Domain.GeneratedValues;
 using CloudFabric.EAV.Domain.Models;
 using CloudFabric.EAV.Domain.Models.Attributes;
 using CloudFabric.EAV.Domain.Models.Base;
@@ -61,7 +61,7 @@ public abstract class EAVService<TUpdateRequest, TEntityType, TViewModel> where 
     internal readonly AggregateRepository<CategoryTree> _categoryTreeRepository;
     internal readonly AggregateRepository<Category> _categoryInstanceRepository;
 
-    internal readonly EntitySerialCounterService _counterService;
+    internal readonly ValueAttributeService _valueAttributeService;
 
     protected EAVService(
         ILogger<EAVService<TUpdateRequest, TEntityType, TViewModel>> logger,
@@ -71,7 +71,7 @@ public abstract class EAVService<TUpdateRequest, TEntityType, TViewModel> where 
         AggregateRepositoryFactory aggregateRepositoryFactory,
         ProjectionRepositoryFactory projectionRepositoryFactory,
         EventUserInfo userInfo,
-        EntitySerialCounterService counterService)
+        ValueAttributeService valueAttributeService)
     {
         _logger = logger;
         _mapper = mapper;
@@ -107,7 +107,7 @@ public abstract class EAVService<TUpdateRequest, TEntityType, TViewModel> where 
             .GetAggregateRepository<Category>();
         _categoryTreeRepository = aggregateRepositoryFactory
             .GetAggregateRepository<CategoryTree>();
-        _counterService = counterService;
+        _valueAttributeService = valueAttributeService;
     }
 
     private void EnsureAttributeMachineNameIsAdded(AttributeConfigurationCreateUpdateRequest attributeRequest)
@@ -509,7 +509,7 @@ public abstract class EAVService<TUpdateRequest, TEntityType, TViewModel> where 
                 new ValidationErrorResponse(entityConfiguration.MachineName, entityValidationErrors.ToArray()));
         }
 
-        await _counterService.InitializeEntityConfigurationCounters(entityConfiguration.Id, allCreatedAttributes);
+        await _valueAttributeService.InitializeEntityConfigurationGeneratedValues(entityConfiguration.Id, allCreatedAttributes);
 
         await _entityConfigurationRepository.SaveAsync(
             _userInfo,
@@ -601,7 +601,7 @@ public abstract class EAVService<TUpdateRequest, TEntityType, TViewModel> where 
 
                     reservedAttributes.Add(attributeConfiguration.Id);
 
-                    await _counterService.InitializeEntityConfigurationCounterIfSerialAttribute(entityConfiguration.Id, attributeConfiguration);
+                    await _valueAttributeService.InitializeGeneratedValue(entityConfiguration.Id, attributeConfiguration);
                 }
             }
             else if (attributeUpdate is AttributeConfigurationCreateUpdateRequest attributeCreateRequest)
@@ -636,7 +636,7 @@ public abstract class EAVService<TUpdateRequest, TEntityType, TViewModel> where 
                         entityConfiguration.AddAttribute(attributeCreated.Id);
                         reservedAttributes.Add(attributeCreated.Id);
 
-                        await _counterService.InitializeEntityConfigurationCounterIfSerialAttribute(entityConfiguration.Id, attributeCreated);
+                        await _valueAttributeService.InitializeGeneratedValue(entityConfiguration.Id, attributeCreated);
                     }
                 }
             }
@@ -739,7 +739,7 @@ public abstract class EAVService<TUpdateRequest, TEntityType, TViewModel> where 
         await _entityConfigurationRepository.SaveAsync(_userInfo, entityConfiguration, cancellationToken)
             .ConfigureAwait(false);
 
-        await _counterService.InitializeEntityConfigurationCounterIfSerialAttribute(entityConfigurationId, attributeConfiguration);
+        await _valueAttributeService.InitializeGeneratedValue(entityConfigurationId, attributeConfiguration);
 
         return (_mapper.Map<EntityConfigurationViewModel>(entityConfiguration), null);
     }
@@ -786,7 +786,7 @@ public abstract class EAVService<TUpdateRequest, TEntityType, TViewModel> where 
 
         await _entityConfigurationRepository.SaveAsync(_userInfo, entityConfiguration, cancellationToken);
 
-        await _counterService.InitializeEntityConfigurationCounterIfSerialAttribute(entityConfigurationId, createdAttribute);
+        await _valueAttributeService.InitializeGeneratedValue(entityConfigurationId, createdAttribute);
 
         return (createdAttribute, null)!;
     }
@@ -1084,7 +1084,7 @@ public abstract class EAVService<TUpdateRequest, TEntityType, TViewModel> where 
         }
 
         // Add or update attributes
-        List<Counter?> entityCounters = new();
+        List<IGeneratedValueInfo?> generatedValues = new();
 
         foreach (AttributeInstanceCreateUpdateRequest? newAttributeRequest in updateRequest.AttributesToAddOrUpdate)
         {
@@ -1108,23 +1108,24 @@ public abstract class EAVService<TUpdateRequest, TEntityType, TViewModel> where 
                 {
                     if (!newAttribute.Equals(currentAttribute))
                     {
-                        (Counter? counter, List<string>? counterErrors) = await UpdateCounterValueDuringInstanceUpdate(entityConfiguration, attrConfig, newAttribute);
+                        (IGeneratedValueInfo? valueInfo, List<string>? valueErrors) =
+                            await _valueAttributeService.UpdateGeneratedValueDuringInstanceUpdate(entityConfiguration, attrConfig, newAttribute);
 
-                        if (counterErrors == null)
+                        if (valueErrors == null)
                         {
                             entityInstance.UpdateAttributeInstance(newAttribute);
 
-                            entityCounters.Add(counter);
+                            generatedValues.Add(valueInfo);
                         }
                         else
                         {
-                            validationErrors.Add(newAttribute.ConfigurationAttributeMachineName, counterErrors.ToArray());
+                            validationErrors.Add(newAttribute.ConfigurationAttributeMachineName, valueErrors.ToArray());
                         }
                     }
                 }
                 else
                 {
-                    entityCounters.Add(await InitializeAttributeInstanceWithCounterValue(entityConfiguration, attrConfig, newAttribute));
+                    generatedValues.Add(await _valueAttributeService.GenerateAttributeInstanceValue(entityConfiguration, attrConfig, newAttribute));
 
                     entityInstance.AddAttributeInstance(
                         _mapper.Map<AttributeInstance>(newAttributeRequest)
@@ -1144,28 +1145,7 @@ public abstract class EAVService<TUpdateRequest, TEntityType, TViewModel> where 
 
         if (!dryRun)
         {
-            // Save counters 
-            var counterResponse = new List<CounterActionResponse>();
-
-            foreach (var counter in entityCounters.Where(x => x != null))
-            {
-                counterResponse.Add(await _counterService.SaveCounter(entityConfiguration.Id, counter.AttributeConfidurationId, counter));
-            }
-
-            foreach (var response in counterResponse.Where(x => x.Status == CounterActionStatus.Conflict))
-            {
-                do
-                {
-                    var counter = await _counterService.LoadCounter(response.EntityConfigurationId, response.AttributeConfigurationId);
-
-                    counter!.Step(counter.LastIncrement!.Value);
-
-                    var repeatedCounterSaveResponse = await _counterService.SaveCounter(entityConfiguration.Id, counter.AttributeConfidurationId, counter);
-
-                    response.Status = repeatedCounterSaveResponse.Status;
-
-                } while (response.Status != CounterActionStatus.Saved);
-            }
+            await _valueAttributeService.SaveValues(entityConfiguration.Id, generatedValues);
 
             var entityInstanceSaved = await _entityInstanceRepository
                 .SaveAsync(_userInfo, entityInstance, cancellationToken)
@@ -1364,145 +1344,4 @@ public abstract class EAVService<TUpdateRequest, TEntityType, TViewModel> where 
     }
 
     #endregion
-
-    /// <summary>
-    /// Initialize attribute instance value with counter value if serial attribute.
-    /// </summary>
-    /// <param name="entityConfiguration"></param>
-    /// <param name="attributeConfiguration"></param>
-    /// <param name="attributeInstance"></param>
-    /// <returns>Current counter with changed values if attribute value was initialized, otherwise null.</returns>
-    /// <exception cref="ArgumentException"></exception>
-    /// <exception cref="NotFoundException"></exception>
-    internal async Task<Counter?> InitializeAttributeInstanceWithCounterValue(
-        EntityConfiguration entityConfiguration,
-        AttributeConfiguration attributeConfiguration,
-        AttributeInstance? attributeInstance
-    )
-    {
-        switch (attributeConfiguration.ValueType)
-        {
-            case EavAttributeType.Serial:
-                {
-                    if (attributeInstance == null)
-                    {
-                        return null;
-                    }
-
-                    EntityConfigurationAttributeReference? entityAttribute = entityConfiguration.Attributes
-                        .FirstOrDefault(x => x.AttributeConfigurationId == attributeConfiguration.Id);
-
-                    if (entityAttribute == null)
-                    {
-                        return null;
-                    }
-
-                    var serialAttributeConfiguration = attributeConfiguration as SerialAttributeConfiguration;
-
-                    var serialInstance = attributeInstance as SerialAttributeInstance;
-
-                    if (serialAttributeConfiguration == null || serialInstance == null)
-                    {
-                        return null;
-                    }
-
-                    var counter = await _counterService.LoadCounter(entityConfiguration.Id, attributeConfiguration.Id);
-
-                    if (counter == null)
-                    {
-                        counter = await _counterService.InitializeEntityConfigurationSerialAttributeCounter(entityConfiguration.Id, serialAttributeConfiguration);
-                    }
-
-                    serialInstance.Value = counter!.NextValue;
-
-                    counter.Step(serialAttributeConfiguration.Increment);
-
-                    return counter;
-                }
-        }
-
-        return null;
-    }
-
-    /// <summary>
-    /// Update entity configuration counter.
-    /// </summary>
-    /// <remarks>
-    /// Specialized method to update entity configuration counter value with updating arrtibute instance value -
-    /// this means new instance value is not out of sequence logic, and can be overwritten to it.
-    /// Intended use: update next avaliable counter value with a new attribute instance value.
-    /// </remarks>
-    /// <param name="entityConfiguration"></param>
-    /// <param name="attributeConfiguration"></param>
-    /// <param name="attributeInstance"></param>
-    /// <returns>
-    /// List of validation errors or counter with changed values if everithing is okay.
-    /// </returns>
-    private async Task<(Counter?, List<string>?)> UpdateCounterValueDuringInstanceUpdate(
-        EntityConfiguration entityConfiguration,
-        AttributeConfiguration attributeConfiguration,
-        AttributeInstance? attributeInstance
-    )
-    {
-        switch (attributeConfiguration.ValueType)
-        {
-            case EavAttributeType.Serial:
-                {
-                    if (attributeInstance == null)
-                    {
-                        return (null, null);
-                    }
-
-                    var validationErrors = new List<string>();
-
-                    EntityConfigurationAttributeReference? entityAttribute = entityConfiguration.Attributes
-                        .FirstOrDefault(x => x.AttributeConfigurationId == attributeConfiguration.Id);
-
-                    if (entityAttribute == null)
-                    {
-                        validationErrors.Add("Attribute configuration is not found");
-                        return (null, validationErrors);
-                    }
-
-                    var serialAttributeConfiguration = attributeConfiguration as SerialAttributeConfiguration;
-
-                    var serialInstance = attributeInstance as SerialAttributeInstance;
-
-                    if (serialAttributeConfiguration == null || serialInstance == null)
-                    {
-                        validationErrors.Add("Invalid attribute type.");
-                    }
-
-                    if (serialInstance != null && !serialInstance.Value.HasValue)
-                    {
-                        validationErrors.Add("Updating serial number value can not be empty.");
-                    }
-
-                    if (validationErrors.Count > 0)
-                    {
-                        return (null, validationErrors);
-                    }
-
-                    var counter = await _counterService.LoadCounter(entityConfiguration.Id, serialAttributeConfiguration.Id);
-
-                    if (counter == null)
-                    {
-                        validationErrors.Add("Counter is not found.");
-                    }
-
-                    if (serialInstance!.Value <= counter!.NextValue)
-                    {
-                        // TO DO: Add validation and possibility to update serial value if value less than existing one
-                        validationErrors.Add("Serial number value can not be less or equal than the already existing one.");
-                        return (null, validationErrors);
-                    }
-
-                    counter.NextValue = serialInstance.Value.Value + serialAttributeConfiguration.Increment;
-
-                    return (counter, null);
-                }
-        }
-        return (null, null);
-    }
-
 }

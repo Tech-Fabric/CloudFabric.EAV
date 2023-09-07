@@ -34,7 +34,7 @@ public class EAVCategoryService: EAVService<CategoryUpdateRequest, Category, Cat
         AggregateRepositoryFactory aggregateRepositoryFactory,
         ProjectionRepositoryFactory projectionRepositoryFactory,
         EventUserInfo userInfo,
-        EntitySerialCounterService counterService,
+        ValueAttributeService valueAttributeService,
         IOptions<ElasticSearchQueryOptions>? elasticSearchQueryOptions = null) : base(logger,
         new CategoryFromDictionaryDeserializer(mapper),
         mapper,
@@ -42,7 +42,7 @@ public class EAVCategoryService: EAVService<CategoryUpdateRequest, Category, Cat
         aggregateRepositoryFactory,
         projectionRepositoryFactory,
         userInfo,
-        counterService)
+        valueAttributeService)
     {
 
         _elasticSearchQueryOptions = elasticSearchQueryOptions != null
