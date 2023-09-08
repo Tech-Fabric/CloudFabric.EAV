@@ -996,7 +996,7 @@ public abstract class EAVService<TUpdateRequest, TEntityType, TViewModel> where 
         return SerializeEntityInstanceToJsonSingleLanguage(entityInstanceViewModel, language, fallbackLanguage);
     }
 
-    protected JsonDocument SerializeEntityInstanceToJsonMultiLanguage(TViewModel? entityInstanceViewModel)
+    public JsonDocument SerializeEntityInstanceToJsonMultiLanguage(TViewModel? entityInstanceViewModel)
     {
         var serializerOptions = new JsonSerializerOptions(_jsonSerializerOptions);
         serializerOptions.Converters.Add(new LocalizedStringMultiLanguageSerializer());
@@ -1005,7 +1005,7 @@ public abstract class EAVService<TUpdateRequest, TEntityType, TViewModel> where 
         return JsonSerializer.SerializeToDocument(entityInstanceViewModel, serializerOptions);
     }
 
-    private JsonDocument SerializeEntityInstanceToJsonSingleLanguage(
+    public JsonDocument SerializeEntityInstanceToJsonSingleLanguage(
         TViewModel? entityInstanceViewModel, string language, string fallbackLanguage = "en-US"
     )
     {

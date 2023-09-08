@@ -435,8 +435,6 @@ public class EAVEntityInstanceService : EAVService<EntityInstanceUpdateRequest, 
                 validationErrors.Add(a.MachineName, attrValidationErrors.ToArray());
             }
 
-            var valueInfo = await _valueAttributeService.GenerateAttributeInstanceValue(entityConfiguration, a, attributeValue);
-
             generatedValues.Add(await _valueAttributeService.GenerateAttributeInstanceValue(entityConfiguration, a, attributeValue));
         }
 
