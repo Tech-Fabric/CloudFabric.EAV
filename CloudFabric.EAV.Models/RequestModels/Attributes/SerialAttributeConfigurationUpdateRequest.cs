@@ -1,4 +1,4 @@
-﻿using CloudFabric.EAV.Enums;
+using CloudFabric.EAV.Enums;
 
 namespace CloudFabric.EAV.Models.RequestModels.Attributes;
 

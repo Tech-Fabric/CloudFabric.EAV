@@ -5,12 +5,13 @@ using System.Text.RegularExpressions;
 
 using AutoMapper;
 
-using CloudFabric.EAV.Enums;
+using CloudFabric.EAV.Domain.GeneratedValues;
 using CloudFabric.EAV.Domain.Models;
 using CloudFabric.EAV.Domain.Models.Attributes;
 using CloudFabric.EAV.Domain.Models.Base;
 using CloudFabric.EAV.Domain.Projections.AttributeConfigurationProjection;
 using CloudFabric.EAV.Domain.Projections.EntityConfigurationProjection;
+using CloudFabric.EAV.Enums;
 using CloudFabric.EAV.Models.RequestModels;
 using CloudFabric.EAV.Models.RequestModels.Attributes;
 using CloudFabric.EAV.Models.ViewModels;
@@ -31,9 +32,9 @@ using ProjectionDocumentSchemaFactory =
 namespace CloudFabric.EAV.Service;
 
 [SuppressMessage("ReSharper", "InconsistentNaming")]
-public abstract class EAVService<TUpdateRequest,TEntityType,TViewModel> where TViewModel: EntityInstanceViewModel
-    where TUpdateRequest: EntityInstanceUpdateRequest
-    where TEntityType: EntityInstanceBase
+public abstract class EAVService<TUpdateRequest, TEntityType, TViewModel> where TViewModel : EntityInstanceViewModel
+    where TUpdateRequest : EntityInstanceUpdateRequest
+    where TEntityType : EntityInstanceBase
 {
     private readonly IProjectionRepository<AttributeConfigurationProjectionDocument>
         _attributeConfigurationProjectionRepository;
@@ -50,7 +51,7 @@ public abstract class EAVService<TUpdateRequest,TEntityType,TViewModel> where TV
     internal readonly EntityInstanceCreateUpdateRequestFromJsonDeserializer
         _entityInstanceCreateUpdateRequestFromJsonDeserializer;
     internal readonly AggregateRepository<TEntityType> _entityInstanceRepository;
-    private readonly ILogger<EAVService<TUpdateRequest,TEntityType,TViewModel>> _logger;
+    private readonly ILogger<EAVService<TUpdateRequest, TEntityType, TViewModel>> _logger;
     internal readonly IMapper _mapper;
     private readonly JsonSerializerOptions _jsonSerializerOptions;
     internal readonly ProjectionRepositoryFactory _projectionRepositoryFactory;
@@ -60,15 +61,17 @@ public abstract class EAVService<TUpdateRequest,TEntityType,TViewModel> where TV
     internal readonly AggregateRepository<CategoryTree> _categoryTreeRepository;
     internal readonly AggregateRepository<Category> _categoryInstanceRepository;
 
+    internal readonly ValueAttributeService _valueAttributeService;
+
     protected EAVService(
-        ILogger<EAVService<TUpdateRequest,TEntityType,TViewModel>> logger,
+        ILogger<EAVService<TUpdateRequest, TEntityType, TViewModel>> logger,
         InstanceFromDictionaryDeserializer<TViewModel> instanceFromDictionaryDeserializer,
         IMapper mapper,
         JsonSerializerOptions jsonSerializerOptions,
         AggregateRepositoryFactory aggregateRepositoryFactory,
         ProjectionRepositoryFactory projectionRepositoryFactory,
-        EventUserInfo userInfo
-    )
+        EventUserInfo userInfo,
+        ValueAttributeService valueAttributeService)
     {
         _logger = logger;
         _mapper = mapper;
@@ -104,6 +107,7 @@ public abstract class EAVService<TUpdateRequest,TEntityType,TViewModel> where TV
             .GetAggregateRepository<Category>();
         _categoryTreeRepository = aggregateRepositoryFactory
             .GetAggregateRepository<CategoryTree>();
+        _valueAttributeService = valueAttributeService;
     }
 
     private void EnsureAttributeMachineNameIsAdded(AttributeConfigurationCreateUpdateRequest attributeRequest)
@@ -183,93 +187,6 @@ public abstract class EAVService<TUpdateRequest,TEntityType,TViewModel> where TV
         }
 
         return true;
-    }
-
-
-
-    /// <summary>
-    /// Update entity configuration external values.
-    /// </summary>
-    /// <remarks>
-    /// Specialized method to update entity configuration external value with updating arrtibute instance value -
-    /// this means new instance value is not out of external value logic, and can be overwritten to it.
-    /// Intended use: update with a new value an attribute instance
-    /// whose value was initialized from the external entity configuration values.
-    ///
-    /// Note that after exetuting this method entity configuration aggregate repository has uncommited events,
-    /// use .SaveAsync() for saving.
-    /// </remarks>
-    /// <param name="entityConfiguration"></param>
-    /// <param name="attributeConfiguration"></param>
-    /// <param name="attributeInstance"></param>
-    /// <returns>
-    /// List of validation errors or null if everithing is fine.
-    /// </returns>
-    private List<string>? UpdateEntityExternalValuesDuringInstanceUpdate(
-        EntityConfiguration entityConfiguration,
-        AttributeConfiguration attributeConfiguration,
-        AttributeInstance? attributeInstance
-    )
-    {
-        switch (attributeConfiguration.ValueType)
-        {
-            case EavAttributeType.Serial:
-                {
-                    if (attributeInstance == null)
-                    {
-                        return null;
-                    }
-
-                    var validationErrors = new List<string>();
-
-                    var serialAttributeConfiguration = attributeConfiguration as SerialAttributeConfiguration;
-
-                    var serialInstance = attributeInstance as SerialAttributeInstance;
-
-                    if (serialAttributeConfiguration == null || serialInstance == null)
-                    {
-                        validationErrors.Add("Invalid attribute type.");
-                    }
-
-                    if (serialInstance != null && !serialInstance.Value.HasValue)
-                    {
-                        validationErrors.Add("Updating serial number value can not be empty.");
-                    }
-
-                    EntityConfigurationAttributeReference? entityAttribute = entityConfiguration.Attributes
-                        .FirstOrDefault(x => x.AttributeConfigurationId == attributeConfiguration.Id);
-
-                    if (entityAttribute == null)
-                    {
-                        validationErrors.Add("Attribute configuration is not found.");
-                    }
-
-                    if (validationErrors.Count > 0)
-                    {
-                        return validationErrors;
-                    }
-
-                    var existingAttributeValue =
-                        entityAttribute!.AttributeConfigurationExternalValues.First();
-
-                    long? deserializedValue = JsonSerializer.Deserialize<long>(existingAttributeValue!.ToString()!);
-
-                    if (serialInstance!.Value <= deserializedValue!.Value)
-                    {
-                        validationErrors.Add("Serial number value can not be less than the already existing one.");
-                        return validationErrors;
-                    }
-
-                    var newExternalValue = serialInstance.Value;
-
-                    entityConfiguration.UpdateAttrributeExternalValues(attributeConfiguration.Id,
-                        new List<object> { newExternalValue! }
-                    );
-
-                    return null;
-                }
-        }
-        return null;
     }
 
     private async Task<ProjectionQueryResult<AttributeConfigurationListItemViewModel>> GetAttributesByIds(
@@ -534,6 +451,7 @@ public abstract class EAVService<TUpdateRequest,TEntityType,TViewModel> where TV
             }
         }
 
+        var allCreatedAttributes = new List<AttributeConfigurationViewModel>();
         var allAttrProblemDetails = new List<ValidationErrorResponse>();
         for (var i = 0; i < entityConfigurationCreateRequest.Attributes.Count; i++)
         {
@@ -560,6 +478,7 @@ public abstract class EAVService<TUpdateRequest,TEntityType,TViewModel> where TV
                         {
                             AttributeConfigurationId = attrCreated.Id
                         };
+                    allCreatedAttributes.Add(attrCreated);
                 }
             }
         }
@@ -590,6 +509,7 @@ public abstract class EAVService<TUpdateRequest,TEntityType,TViewModel> where TV
                 new ValidationErrorResponse(entityConfiguration.MachineName, entityValidationErrors.ToArray()));
         }
 
+        await _valueAttributeService.InitializeEntityConfigurationGeneratedValues(entityConfiguration.Id, allCreatedAttributes);
 
         await _entityConfigurationRepository.SaveAsync(
             _userInfo,
@@ -680,6 +600,8 @@ public abstract class EAVService<TUpdateRequest,TEntityType,TViewModel> where TV
                     }
 
                     reservedAttributes.Add(attributeConfiguration.Id);
+
+                    await _valueAttributeService.InitializeGeneratedValue(entityConfiguration.Id, attributeConfiguration);
                 }
             }
             else if (attributeUpdate is AttributeConfigurationCreateUpdateRequest attributeCreateRequest)
@@ -713,6 +635,8 @@ public abstract class EAVService<TUpdateRequest,TEntityType,TViewModel> where TV
                     {
                         entityConfiguration.AddAttribute(attributeCreated.Id);
                         reservedAttributes.Add(attributeCreated.Id);
+
+                        await _valueAttributeService.InitializeGeneratedValue(entityConfiguration.Id, attributeCreated);
                     }
                 }
             }
@@ -815,6 +739,8 @@ public abstract class EAVService<TUpdateRequest,TEntityType,TViewModel> where TV
         await _entityConfigurationRepository.SaveAsync(_userInfo, entityConfiguration, cancellationToken)
             .ConfigureAwait(false);
 
+        await _valueAttributeService.InitializeGeneratedValue(entityConfigurationId, attributeConfiguration);
+
         return (_mapper.Map<EntityConfigurationViewModel>(entityConfiguration), null);
     }
 
@@ -859,6 +785,8 @@ public abstract class EAVService<TUpdateRequest,TEntityType,TViewModel> where TV
         await _attributeConfigurationProjectionRepository.EnsureIndex(cancellationToken).ConfigureAwait(false);
 
         await _entityConfigurationRepository.SaveAsync(_userInfo, entityConfiguration, cancellationToken);
+
+        await _valueAttributeService.InitializeGeneratedValue(entityConfigurationId, createdAttribute);
 
         return (createdAttribute, null)!;
     }
@@ -955,7 +883,7 @@ public abstract class EAVService<TUpdateRequest,TEntityType,TViewModel> where TV
             }
         }
     }
-private async Task<Guid?> CreateArrayElementConfiguration(EavAttributeType type, string machineName, AttributeConfigurationCreateUpdateRequest? attributeConfigurationCreateUpdateRequest, Guid? tenantId, CancellationToken cancellationToken)
+    private async Task<Guid?> CreateArrayElementConfiguration(EavAttributeType type, string machineName, AttributeConfigurationCreateUpdateRequest? attributeConfigurationCreateUpdateRequest, Guid? tenantId, CancellationToken cancellationToken)
     {
         Guid? resultGuid = null;
 
@@ -1068,7 +996,7 @@ private async Task<Guid?> CreateArrayElementConfiguration(EavAttributeType type,
         return SerializeEntityInstanceToJsonSingleLanguage(entityInstanceViewModel, language, fallbackLanguage);
     }
 
-    protected JsonDocument SerializeEntityInstanceToJsonMultiLanguage(TViewModel? entityInstanceViewModel)
+    public JsonDocument SerializeEntityInstanceToJsonMultiLanguage(TViewModel? entityInstanceViewModel)
     {
         var serializerOptions = new JsonSerializerOptions(_jsonSerializerOptions);
         serializerOptions.Converters.Add(new LocalizedStringMultiLanguageSerializer());
@@ -1077,7 +1005,7 @@ private async Task<Guid?> CreateArrayElementConfiguration(EavAttributeType type,
         return JsonSerializer.SerializeToDocument(entityInstanceViewModel, serializerOptions);
     }
 
-    private JsonDocument SerializeEntityInstanceToJsonSingleLanguage(
+    public JsonDocument SerializeEntityInstanceToJsonSingleLanguage(
         TViewModel? entityInstanceViewModel, string language, string fallbackLanguage = "en-US"
     )
     {
@@ -1156,6 +1084,8 @@ private async Task<Guid?> CreateArrayElementConfiguration(EavAttributeType type,
         }
 
         // Add or update attributes
+        List<IGeneratedValueInfo?> generatedValues = new();
+
         foreach (AttributeInstanceCreateUpdateRequest? newAttributeRequest in updateRequest.AttributesToAddOrUpdate)
         {
             AttributeConfiguration? attrConfig = entityConfigurationAttributeConfigurations
@@ -1178,21 +1108,24 @@ private async Task<Guid?> CreateArrayElementConfiguration(EavAttributeType type,
                 {
                     if (!newAttribute.Equals(currentAttribute))
                     {
-                        var updateExternalValuesErrors = UpdateEntityExternalValuesDuringInstanceUpdate(entityConfiguration, attrConfig, newAttribute);
+                        (IGeneratedValueInfo? valueInfo, List<string>? valueErrors) =
+                            await _valueAttributeService.UpdateGeneratedValueDuringInstanceUpdate(entityConfiguration, attrConfig, newAttribute);
 
-                        if (updateExternalValuesErrors == null)
+                        if (valueErrors == null)
                         {
                             entityInstance.UpdateAttributeInstance(newAttribute);
+
+                            generatedValues.Add(valueInfo);
                         }
                         else
                         {
-                            validationErrors.Add(newAttribute.ConfigurationAttributeMachineName, updateExternalValuesErrors.ToArray());
+                            validationErrors.Add(newAttribute.ConfigurationAttributeMachineName, valueErrors.ToArray());
                         }
                     }
                 }
                 else
                 {
-                    InitializeAttributeInstanceWithExternalValuesFromEntity(entityConfiguration, attrConfig, newAttribute);
+                    generatedValues.Add(await _valueAttributeService.GenerateAttributeInstanceValue(entityConfiguration, attrConfig, newAttribute));
 
                     entityInstance.AddAttributeInstance(
                         _mapper.Map<AttributeInstance>(newAttributeRequest)
@@ -1212,14 +1145,12 @@ private async Task<Guid?> CreateArrayElementConfiguration(EavAttributeType type,
 
         if (!dryRun)
         {
-            var entityConfigurationSaved = await _entityConfigurationRepository
-                .SaveAsync(_userInfo, entityConfiguration, cancellationToken)
-                .ConfigureAwait(false);
+            await _valueAttributeService.SaveValues(entityConfiguration.Id, generatedValues);
 
             var entityInstanceSaved = await _entityInstanceRepository
                 .SaveAsync(_userInfo, entityInstance, cancellationToken)
                 .ConfigureAwait(false);
-            if (!entityInstanceSaved || !entityConfigurationSaved)
+            if (!entityInstanceSaved)
             {
                 //TODO: Throw a error when ready
             }
@@ -1372,7 +1303,7 @@ private async Task<Guid?> CreateArrayElementConfiguration(EavAttributeType type,
             return (null, new ValidationErrorResponse(nameof(entityInstanceId), "Instance not found"))!;
         }
 
-        (var newCategoryPath, var parentId,  ProblemDetails? errors) =
+        (var newCategoryPath, var parentId, ProblemDetails? errors) =
             await BuildCategoryPath(treeId, newParentId, cancellationToken).ConfigureAwait(false);
 
         if (errors != null)
@@ -1413,60 +1344,4 @@ private async Task<Guid?> CreateArrayElementConfiguration(EavAttributeType type,
     }
 
     #endregion
-
-    internal void InitializeAttributeInstanceWithExternalValuesFromEntity(
-        EntityConfiguration entityConfiguration,
-        AttributeConfiguration attributeConfiguration,
-        AttributeInstance? attributeInstance
-    )
-    {
-        switch (attributeConfiguration.ValueType)
-        {
-            case EavAttributeType.Serial:
-                {
-                    if (attributeInstance == null)
-                    {
-                        return;
-                    }
-
-                    var serialAttributeConfiguration = attributeConfiguration as SerialAttributeConfiguration;
-
-                    var serialInstance = attributeInstance as SerialAttributeInstance;
-
-                    if (serialAttributeConfiguration == null || serialInstance == null)
-                    {
-                        throw new ArgumentException("Invalid attribute type");
-                    }
-
-                    EntityConfigurationAttributeReference? entityAttribute = entityConfiguration.Attributes
-                        .FirstOrDefault(x => x.AttributeConfigurationId == attributeConfiguration.Id);
-
-                    if (entityAttribute == null)
-                    {
-                        throw new NotFoundException("Attribute not found");
-                    }
-
-                    var existingAttributeValue =
-                        entityAttribute.AttributeConfigurationExternalValues.FirstOrDefault();
-
-                    long? deserializedValue = null;
-
-                    if (existingAttributeValue != null)
-                    {
-                        deserializedValue = JsonSerializer.Deserialize<long>(existingAttributeValue.ToString()!);
-                    }
-
-                    var newExternalValue = existingAttributeValue == null
-                        ? serialAttributeConfiguration.StartingNumber
-                        : deserializedValue += serialAttributeConfiguration.Increment;
-
-                    serialInstance.Value = newExternalValue!.Value;
-
-                    entityConfiguration.UpdateAttrributeExternalValues(attributeConfiguration.Id,
-                        new List<object> { newExternalValue }
-                    );
-                }
-                break;
-        }
-    }
 }
