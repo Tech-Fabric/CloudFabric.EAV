@@ -3,7 +3,6 @@ using System.Text.Json;
 
 using AutoMapper;
 
-using CloudFabric.EAV.Domain.Models;
 using CloudFabric.EAV.Domain.Projections.AttributeConfigurationProjection;
 using CloudFabric.EAV.Domain.Projections.EntityConfigurationProjection;
 using CloudFabric.EAV.Domain.Projections.EntityInstanceProjection;
@@ -24,6 +23,7 @@ public abstract class BaseQueryTests
 {
     protected EAVEntityInstanceService _eavEntityInstanceService;
     protected EAVCategoryService _eavCategoryService;
+    protected ValueAttributeService _valueAttributeService;
 
     protected IEventStore _eventStore;
     protected IStore _store;
@@ -138,6 +138,11 @@ public abstract class BaseQueryTests
 
         await ProjectionsRebuildProcessor.RebuildProjectionsThatRequireRebuild();
 
+        _valueAttributeService = new ValueAttributeService(
+            new SerialCounterService(new StoreRepository(_store)),
+            eiMapper
+        );
+
         _eavEntityInstanceService = new EAVEntityInstanceService(
             _eiLogger,
             eiMapper,
@@ -148,7 +153,8 @@ public abstract class BaseQueryTests
             },
             aggregateRepositoryFactory,
             projectionRepositoryFactory,
-            new EventUserInfo(Guid.NewGuid())
+            new EventUserInfo(Guid.NewGuid()),
+            _valueAttributeService
         );
 
         _eavCategoryService = new EAVCategoryService(
@@ -161,7 +167,8 @@ public abstract class BaseQueryTests
             },
             aggregateRepositoryFactory,
             projectionRepositoryFactory,
-            new EventUserInfo(Guid.NewGuid())
+            new EventUserInfo(Guid.NewGuid()),
+            _valueAttributeService
         );
     }
 }

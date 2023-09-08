@@ -25,11 +25,11 @@ public class CategoryTestsPostgresql : CategoryTests
         _eventStore = new PostgresqlEventStore(
             connectionString,
             "eav_tests_event_store",
-            "eav_tests_items_store"
+            "eav_tests_item_store"
         );
         _projectionRepositoryFactory = new PostgresqlProjectionRepositoryFactory(new LoggerFactory(), connectionString);
 
-        _store = new PostgresqlStore(connectionString, "eav_tests_item_store");
+        _store = new PostgresqlStore(connectionString, "eav_test_item_store");
 
         using var loggerFactory = new LoggerFactory();
         _logger = loggerFactory.CreateLogger<PostgresqlEventStoreEventObserver>();

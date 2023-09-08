@@ -1,12 +1,11 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-using CloudFabric.EAV.Domain.Models;
 using CloudFabric.EAV.Models.ViewModels;
 
 namespace CloudFabric.EAV.Service.Serialization;
 
-public class EntityInstanceViewModelToJsonSerializer: JsonConverter<EntityInstanceViewModel>
+public class EntityInstanceViewModelToJsonSerializer : JsonConverter<EntityInstanceViewModel>
 {
     public override EntityInstanceViewModel? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {

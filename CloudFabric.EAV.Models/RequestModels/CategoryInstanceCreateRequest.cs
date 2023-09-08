@@ -7,6 +7,7 @@ public class CategoryInstanceCreateRequest
     public Guid CategoryTreeId { get; set; }
 
     public string MachineName { get; set; }
+
     public List<AttributeInstanceCreateUpdateRequest> Attributes { get; set; }
 
     public Guid? ParentId { get; set; }
