@@ -9,8 +9,3 @@ public class EntityInstanceUpdateRequest
     public List<AttributeInstanceCreateUpdateRequest> AttributesToAddOrUpdate { get; set; }
     public List<string>? AttributeMachineNamesToRemove { get; set; }
 }
-
-public class CategoryUpdateRequest: EntityInstanceUpdateRequest
-{
-
-}

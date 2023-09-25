@@ -16,6 +16,8 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 using System.Text.Json;
 
+using CloudFabric.EAV.Service;
+
 // ReSharper disable AsyncConverter.ConfigureAwaitHighlighting
 
 namespace CloudFabric.EAV.Tests.EntityInstanceQueryingTests;
@@ -28,14 +30,14 @@ public abstract class EntityInstanceQueryingTests : BaseQueryTests.BaseQueryTest
         EntityConfigurationCreateRequest configurationCreateRequest =
             EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
 
-        (EntityConfigurationViewModel? createdConfiguration, _) = await _eavEntityInstanceService.CreateEntityConfiguration(
+        (EntityConfigurationViewModel? createdConfiguration, _) = await _eavService.CreateEntityConfiguration(
             configurationCreateRequest,
             CancellationToken.None
         );
 
         await ProjectionsRebuildProcessor.RebuildProjectionsThatRequireRebuild();
 
-        EntityConfigurationViewModel configuration = await _eavEntityInstanceService.GetEntityConfiguration(
+        EntityConfigurationViewModel configuration = await _eavService.GetEntityConfiguration(
             createdConfiguration.Id
         );
 
@@ -45,7 +47,7 @@ public abstract class EntityInstanceQueryingTests : BaseQueryTests.BaseQueryTest
             EntityInstanceFactory.CreateValidBoardGameEntityInstanceCreateRequest(createdConfiguration.Id);
 
         (EntityInstanceViewModel createdInstance, ProblemDetails createProblemDetails) =
-            await _eavEntityInstanceService.CreateEntityInstance(instanceCreateRequest);
+            await _eavService.CreateEntityInstance(instanceCreateRequest);
 
         createdInstance.EntityConfigurationId.Should().Be(instanceCreateRequest.EntityConfigurationId);
         createdInstance.TenantId.Should().Be(instanceCreateRequest.TenantId);
@@ -59,7 +61,7 @@ public abstract class EntityInstanceQueryingTests : BaseQueryTests.BaseQueryTest
 
         await Task.Delay(ProjectionsUpdateDelay);
 
-        ProjectionQueryResult<EntityInstanceViewModel>? results = await _eavEntityInstanceService
+        ProjectionQueryResult<EntityInstanceViewModel>? results = await _eavService
             .QueryInstances(createdConfiguration.Id, query);
 
         results?.TotalRecordsFound.Should().BeGreaterThan(0);
@@ -73,12 +75,12 @@ public abstract class EntityInstanceQueryingTests : BaseQueryTests.BaseQueryTest
         EntityConfigurationCreateRequest configurationCreateRequest =
             EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
 
-        (EntityConfigurationViewModel? createdConfiguration, _) = await _eavEntityInstanceService.CreateEntityConfiguration(
+        (EntityConfigurationViewModel? createdConfiguration, _) = await _eavService.CreateEntityConfiguration(
             configurationCreateRequest,
             CancellationToken.None
         );
 
-        EntityConfigurationViewModel configuration = await _eavEntityInstanceService.GetEntityConfiguration(
+        EntityConfigurationViewModel configuration = await _eavService.GetEntityConfiguration(
             createdConfiguration.Id
         );
 
@@ -88,7 +90,7 @@ public abstract class EntityInstanceQueryingTests : BaseQueryTests.BaseQueryTest
             EntityInstanceFactory.CreateValidBoardGameEntityInstanceCreateRequest(createdConfiguration.Id);
 
         (EntityInstanceViewModel createdInstance, ProblemDetails createProblemDetails) =
-            await _eavEntityInstanceService.CreateEntityInstance(instanceCreateRequest);
+            await _eavService.CreateEntityInstance(instanceCreateRequest);
 
         createdInstance.EntityConfigurationId.Should().Be(instanceCreateRequest.EntityConfigurationId);
         createdInstance.TenantId.Should().Be(instanceCreateRequest.TenantId);
@@ -103,7 +105,7 @@ public abstract class EntityInstanceQueryingTests : BaseQueryTests.BaseQueryTest
 
         await Task.Delay(ProjectionsUpdateDelay);
 
-        ProjectionQueryResult<EntityInstanceViewModel>? results = await _eavEntityInstanceService
+        ProjectionQueryResult<EntityInstanceViewModel>? results = await _eavService
             .QueryInstances(createdConfiguration.Id, query);
 
         results?.TotalRecordsFound.Should().BeGreaterThan(0);
@@ -120,7 +122,7 @@ public abstract class EntityInstanceQueryingTests : BaseQueryTests.BaseQueryTest
         };
 
         (EntityInstanceViewModel updateResult, ProblemDetails updateErrors) =
-            await _eavEntityInstanceService.UpdateEntityInstance(createdConfiguration.Id.ToString(),
+            await _eavService.UpdateEntityInstance(createdConfiguration.Id.ToString(),
                 new EntityInstanceUpdateRequest
                 {
                     Id = createdInstance.Id,
@@ -133,7 +135,7 @@ public abstract class EntityInstanceQueryingTests : BaseQueryTests.BaseQueryTest
 
         await Task.Delay(ProjectionsUpdateDelay);
 
-        ProjectionQueryResult<EntityInstanceViewModel>? searchResultsAfterUpdate = await _eavEntityInstanceService
+        ProjectionQueryResult<EntityInstanceViewModel>? searchResultsAfterUpdate = await _eavService
             .QueryInstances(createdConfiguration.Id, query);
 
         searchResultsAfterUpdate?.TotalRecordsFound.Should().BeGreaterThan(0);
@@ -150,7 +152,7 @@ public abstract class EntityInstanceQueryingTests : BaseQueryTests.BaseQueryTest
             .String.Should()
             .Be("Азул 2");
 
-        var resultsJson = await _eavEntityInstanceService
+        var resultsJson = await _eavService
             .QueryInstancesJsonMultiLanguage(createdConfiguration.Id, query);
 
         var resultString = JsonSerializer.Serialize(resultsJson);

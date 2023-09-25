@@ -1,7 +1,6 @@
 using CloudFabric.EAV.Domain.Events.Instance.Attribute;
 using CloudFabric.EAV.Domain.Events.Instance.Entity;
 using CloudFabric.EAV.Domain.Models;
-using CloudFabric.EAV.Domain.Models.Attributes;
 using CloudFabric.EventSourcing.Domain;
 using CloudFabric.Projections;
 
@@ -31,11 +30,11 @@ namespace CloudFabric.EAV.Domain.Projections.EntityInstanceProjection;
 /// </summary>
 public class EntityInstanceProjectionBuilder : ProjectionBuilder,
     IHandleEvent<EntityInstanceCreated>,
-    IHandleEvent<CategoryCreated>,
+    //IHandleEvent<CategoryCreated>,
 // IHandleEvent<AttributeInstanceAdded>,
     IHandleEvent<AttributeInstanceUpdated>,
     // IHandleEvent<AttributeInstanceRemoved>,
-    IHandleEvent<EntityCategoryPathChanged>,
+    IHandleEvent<EntityInstanceCategoryPathUpdated>,
     IHandleEvent<AggregateUpdatedEvent<EntityInstance>>
 {
     private readonly AggregateRepositoryFactory _aggregateRepositoryFactory;
@@ -118,7 +117,7 @@ public class EntityInstanceProjectionBuilder : ProjectionBuilder,
         ).ConfigureAwait(false);
     }
 
-    public async Task On(EntityCategoryPathChanged @event)
+    public async Task On(EntityInstanceCategoryPathUpdated @event)
     {
         ProjectionDocumentSchema projectionDocumentSchema =
             await BuildProjectionDocumentSchemaForEntityConfigurationIdAsync(
@@ -169,36 +168,8 @@ public class EntityInstanceProjectionBuilder : ProjectionBuilder,
             { "Id", @event.AggregateId },
             { "EntityConfigurationId", @event.EntityConfigurationId },
             { "TenantId", @event.TenantId },
-            { "CategoryPaths", new List<CategoryPath>() }
-        };
-
-        foreach (AttributeInstance attribute in @event.Attributes)
-        {
-            document.Add(attribute.ConfigurationAttributeMachineName, attribute.GetValue());
-        }
-
-        await UpsertDocument(
-            projectionDocumentSchema,
-            document,
-            @event.PartitionKey,
-            @event.Timestamp
-        );
-    }
-
-    public async Task On(CategoryCreated @event)
-    {
-        ProjectionDocumentSchema projectionDocumentSchema =
-            await BuildProjectionDocumentSchemaForEntityConfigurationIdAsync(
-                @event.EntityConfigurationId
-            ).ConfigureAwait(false);
-
-        var document = new Dictionary<string, object?>
-        {
-            { "Id", @event.AggregateId },
-            { "EntityConfigurationId", @event.EntityConfigurationId },
-            { "TenantId", @event.TenantId },
-            { "CategoryPaths", new List<CategoryPath>() },
-            { "MachineName", @event.MachineName},
+            { "MachineName", @event.MachineName },
+            { "CategoryPaths", @event.CategoryPaths }
         };
 
         foreach (AttributeInstance attribute in @event.Attributes)

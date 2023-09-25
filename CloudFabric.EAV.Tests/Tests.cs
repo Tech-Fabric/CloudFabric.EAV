@@ -42,13 +42,13 @@ public class Tests
 {
     private AggregateRepositoryFactory _aggregateRepositoryFactory;
 
-    private EAVEntityInstanceService _eavEntityInstanceService;
+    private EAVService _eavEntityInstanceService;
 
     private SerialCounterService _entitySerialCounterService;
 
     private IEventStore _eventStore;
     private IStore _store;
-    private ILogger<EAVEntityInstanceService> _eiLogger;
+    private ILogger<EAVService> _eavServiceLogger;
     private PostgresqlProjectionRepositoryFactory _projectionRepositoryFactory;
     private IMapper _mapper;
 
@@ -56,11 +56,11 @@ public class Tests
     public async Task SetUp()
     {
         var loggerFactory = new LoggerFactory();
-        _eiLogger = loggerFactory.CreateLogger<EAVEntityInstanceService>();
+        _eavServiceLogger = loggerFactory.CreateLogger<EAVService>();
 
         var configuration = new MapperConfiguration(cfg =>
             {
-                cfg.AddMaps(Assembly.GetAssembly(typeof(EAVEntityInstanceService)));
+                cfg.AddMaps(Assembly.GetAssembly(typeof(EAVService)));
             }
         );
         _mapper = configuration.CreateMapper();
@@ -136,8 +136,8 @@ public class Tests
 
         _entitySerialCounterService = new SerialCounterService(new StoreRepository(_store));
 
-        _eavEntityInstanceService = new EAVEntityInstanceService(
-            _eiLogger,
+        _eavEntityInstanceService = new EAVService(
+            _eavServiceLogger,
             _mapper,
             new JsonSerializerOptions()
             {

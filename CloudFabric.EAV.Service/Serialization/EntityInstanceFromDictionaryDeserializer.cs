@@ -1,3 +1,5 @@
+using System.Collections.ObjectModel;
+
 using AutoMapper;
 
 using CloudFabric.EAV.Enums;
@@ -8,16 +10,39 @@ using CloudFabric.EAV.Models.ViewModels.Attributes;
 
 namespace CloudFabric.EAV.Service.Serialization;
 
-public abstract class InstanceFromDictionaryDeserializer<T> where T: EntityInstanceViewModel
+
+/// <summary>
+/// Entities are stored as c# dictionaries in projections - something similar to json.
+/// That is required to not overload search engines with additional complexity of entity instances and attributes
+/// allowing us to simply store
+/// photo.likes = 4 instead of photo.attributes.where(a => a.machineName == "likes").value = 4
+///
+/// That comes with a price though - we now have to decode json-like dictionary back to entity instance view model.
+/// Also it becomes not clear where is a serialization part and where is the deserializer.
+///
+/// The following structure seems logical, not very understandable from the first sight however:
+///
+///
+/// Serialization happens in <see cref="CloudFabric.EAV.Domain/Projections/EntityInstanceProjection/EntityInstanceProjectionBuilder.cs"/>
+/// Projection builder creates dictionaries from EntityInstances and is responsible for storing projections data in
+/// the best way suitable for search engines like elasticsearch.
+///
+/// The segregation of reads and writes moves our decoding code out of ProjectionBuilder
+/// and even out of CloudFabric.EAV.Domain because our ViewModels are on another layer - same layer as a service.
+/// That means it's a service concern to decode dictionary into a ViewModel.
+///
+/// <see cref="CloudFabric.EAV.Service/Serialization/EntityInstanceFromDictionaryDeserializer.cs"/>
+/// </summary>
+public class InstanceFromDictionaryDeserializer
 {
-    internal IMapper _mapper { get; set; }
+    private readonly IMapper _mapper;
 
-    public abstract T Deserialize(
-        List<AttributeConfiguration> attributesConfigurations,
-        Dictionary<string, object?> record
-    );
+    public InstanceFromDictionaryDeserializer(IMapper mapper)
+    {
+        _mapper = mapper;
+    }
 
-    internal List<CategoryPathViewModel> ParseCategoryPaths(object? paths)
+    internal ReadOnlyCollection<CategoryPathViewModel> ParseCategoryPaths(object? paths)
     {
         var categoryPaths = new List<CategoryPathViewModel>();
         if (paths is List<object> pathsList)
@@ -60,7 +85,7 @@ public abstract class InstanceFromDictionaryDeserializer<T> where T: EntityInsta
             categoryPaths = _mapper.Map<List<CategoryPathViewModel>>(pathsListModel);
         }
 
-        return categoryPaths;
+        return categoryPaths.AsReadOnly();
     }
 
     internal AttributeInstanceViewModel DeserializeAttribute(
@@ -173,39 +198,8 @@ public abstract class InstanceFromDictionaryDeserializer<T> where T: EntityInsta
 
         return attributeInstance;
     }
-}
 
-/// <summary>
-/// Entities are stored as c# dictionaries in projections - something similar to json.
-/// That is required to not overload search engines with additional complexity of entity instances and attributes
-/// allowing us to simply store
-/// photo.likes = 4 instead of photo.attributes.where(a => a.machineName == "likes").value = 4
-///
-/// That comes with a price though - we now have to decode json-like dictionary back to entity instance view model.
-/// Also it becomes not clear where is a serialization part and where is a deserializer.
-///
-/// The following structure seems logical, not very understandable from the first sight however:
-///
-///
-/// Serialization happens in <see cref="CloudFabric.EAV.Domain/Projections/EntityInstanceProjection/EntityInstanceProjectionBuilder.cs"/>
-/// Projection builder creates dictionaries from EntityInstances and is responsible for storing projections data in
-/// the best way suitable for search engines like elasticsearch.
-///
-/// The segregation of reads and writes moves our decoding code out of ProjectionBuilder
-/// and even out of CloudFabric.EAV.Domain because our ViewModels are on another layer - same layer as a service.
-/// That means it's a service concern to decode dictionary into a ViewModel.
-///
-/// <see cref="CloudFabric.EAV.Service/Serialization/EntityInstanceFromDictionaryDeserializer.cs"/>
-/// </summary>
-public class EntityInstanceFromDictionaryDeserializer: InstanceFromDictionaryDeserializer<EntityInstanceViewModel>
-{
-
-    public EntityInstanceFromDictionaryDeserializer(IMapper mapper)
-    {
-        _mapper = mapper;
-    }
-
-    public override EntityInstanceViewModel Deserialize(
+    public EntityInstanceViewModel Deserialize(
         List<AttributeConfiguration> attributesConfigurations,
         Dictionary<string, object?> record
     )
@@ -223,48 +217,12 @@ public class EntityInstanceFromDictionaryDeserializer: InstanceFromDictionaryDes
                 .Select(attributeConfig =>
                     DeserializeAttribute(attributeConfig, record[attributeConfig.MachineName])
                 )
-                .ToList(),
+                .ToList().AsReadOnly(),
+            MachineName = record.ContainsKey("MachineName") ? (string)record["MachineName"]! : null,
             CategoryPaths = record.ContainsKey("CategoryPaths")
                 ? ParseCategoryPaths(record["CategoryPaths"])
-                : new List<CategoryPathViewModel>()
+                : new List<CategoryPathViewModel>().AsReadOnly()
         };
         return entityInstance;
-    }
-
-}
-
-public class CategoryFromDictionaryDeserializer : InstanceFromDictionaryDeserializer<CategoryViewModel>
-{
-
-    public CategoryFromDictionaryDeserializer(IMapper mapper)
-    {
-        _mapper = mapper;
-    }
-
-    public override CategoryViewModel Deserialize(
-        List<AttributeConfiguration> attributesConfigurations,
-        Dictionary<string, object?> record
-    )
-    {
-        var category = new CategoryViewModel()
-        {
-            Id = (Guid)record["Id"]!,
-            TenantId = record.ContainsKey("TenantId") && record["TenantId"] != null
-                ? (Guid)record["TenantId"]!
-                : null,
-            EntityConfigurationId = (Guid)record["EntityConfigurationId"]!,
-            PartitionKey = (string)record["PartitionKey"]!,
-            Attributes = attributesConfigurations
-                .Where(attributeConfig => record.ContainsKey(attributeConfig.MachineName))
-                .Select(attributeConfig =>
-                    DeserializeAttribute(attributeConfig, record[attributeConfig.MachineName])
-                )
-                .ToList(),
-            CategoryPaths = record.ContainsKey("CategoryPaths")
-                ? ParseCategoryPaths(record["CategoryPaths"])
-                : new List<CategoryPathViewModel>(),
-            MachineName = (string)record["MachineName"]!
-        };
-        return category;
     }
 }

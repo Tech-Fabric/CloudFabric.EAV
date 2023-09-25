@@ -2,15 +2,15 @@ using CloudFabric.EventSourcing.EventStore;
 
 namespace CloudFabric.EAV.Domain.Events.Instance.Entity;
 
-public record EntityCategoryPathChanged : Event
+public record EntityInstanceCategoryPathUpdated : Event
 {
     // ReSharper disable once UnusedMember.Global
     // This constructor is required for Event Store to properly deserialize from json
-    public EntityCategoryPathChanged()
+    public EntityInstanceCategoryPathUpdated()
     {
     }
 
-    public EntityCategoryPathChanged(Guid id,
+    public EntityInstanceCategoryPathUpdated(Guid id,
         Guid entityConfigurationId,
         Guid categoryTreeId,
         string categoryPath,
