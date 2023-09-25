@@ -1,37 +1,29 @@
-﻿using CloudFabric.EAV.Models.ViewModels.Attributes;
+﻿using System.Collections.ObjectModel;
+
+using CloudFabric.EAV.Models.ViewModels.Attributes;
 
 namespace CloudFabric.EAV.Models.ViewModels;
 
-public class EntityInstanceViewModel
+public record EntityInstanceViewModel
 {
-    public Guid Id { get; set; }
+    public Guid Id { get; init; }
 
-    public Guid EntityConfigurationId { get; set; }
+    public Guid EntityConfigurationId { get; init; }
 
-    public List<AttributeInstanceViewModel> Attributes { get; set; }
+    public string? MachineName { get; init; }
 
-    public Guid? TenantId { get; set; }
+    public ReadOnlyCollection<AttributeInstanceViewModel> Attributes { get; init; } =
+        new ReadOnlyCollection<AttributeInstanceViewModel>(new List<AttributeInstanceViewModel>());
 
-    public string PartitionKey { get; set; }
+    public Guid? TenantId { get; init; }
 
-    public List<CategoryPathViewModel> CategoryPaths { get; set; }
+    public string? PartitionKey { get; init; }
+
+    public ReadOnlyCollection<CategoryPathViewModel> CategoryPaths { get; init; } =
+        new ReadOnlyCollection<CategoryPathViewModel>(new List<CategoryPathViewModel>());
 }
 
-public class EntityTreeInstanceViewModel
+public record EntityTreeInstanceViewModel : EntityInstanceViewModel
 {
-    public Guid Id { get; set; }
-
-    public string MachineName { get; set; }
-
-    public Guid EntityConfigurationId { get; set; }
-
-    public List<AttributeInstanceViewModel> Attributes { get; set; }
-
-    public Guid? TenantId { get; set; }
-
-    public string PartitionKey { get; set; }
-
-    public List<CategoryPathViewModel> CategoryPaths { get; set; }
-
-    public List<EntityTreeInstanceViewModel> Children { get; set; }
+    public List<EntityTreeInstanceViewModel> Children { get; set; } = new ();
 }

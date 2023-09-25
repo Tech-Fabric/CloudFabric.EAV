@@ -1,4 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -31,41 +30,36 @@ using ProjectionDocumentSchemaFactory =
 
 namespace CloudFabric.EAV.Service;
 
-[SuppressMessage("ReSharper", "InconsistentNaming")]
-public abstract class EAVService<TUpdateRequest, TEntityType, TViewModel> where TViewModel : EntityInstanceViewModel
-    where TUpdateRequest : EntityInstanceUpdateRequest
-    where TEntityType : EntityInstanceBase
+public class EAVService
 {
+    private readonly ILogger<EAVService> _logger;
+    private readonly IMapper _mapper;
+    internal readonly JsonSerializerOptions JsonSerializerOptions;
+    private readonly EventUserInfo _userInfo;
+
+    internal readonly AggregateRepository<EntityConfiguration> EntityConfigurationRepository;
+    internal readonly AggregateRepository<EntityInstance> EntityInstanceRepository;
+
+    internal readonly AggregateRepository<AttributeConfiguration> AttributeConfigurationRepository;
+
+    internal readonly ProjectionRepositoryFactory _projectionRepositoryFactory;
+
     private readonly IProjectionRepository<AttributeConfigurationProjectionDocument>
         _attributeConfigurationProjectionRepository;
-
-    private readonly AggregateRepository<AttributeConfiguration> _attributeConfigurationRepository;
-
     private readonly IProjectionRepository<EntityConfigurationProjectionDocument>
         _entityConfigurationProjectionRepository;
 
-    internal readonly AggregateRepository<EntityConfiguration> _entityConfigurationRepository;
 
-    private readonly InstanceFromDictionaryDeserializer<TViewModel> _entityInstanceFromDictionaryDeserializer;
 
-    internal readonly EntityInstanceCreateUpdateRequestFromJsonDeserializer
+    private readonly InstanceFromDictionaryDeserializer
+        _entityInstanceFromDictionaryDeserializer;
+    private readonly EntityInstanceCreateUpdateRequestFromJsonDeserializer
         _entityInstanceCreateUpdateRequestFromJsonDeserializer;
-    internal readonly AggregateRepository<TEntityType> _entityInstanceRepository;
-    private readonly ILogger<EAVService<TUpdateRequest, TEntityType, TViewModel>> _logger;
-    internal readonly IMapper _mapper;
-    private readonly JsonSerializerOptions _jsonSerializerOptions;
-    internal readonly ProjectionRepositoryFactory _projectionRepositoryFactory;
-
-    internal readonly EventUserInfo _userInfo;
-
-    internal readonly AggregateRepository<CategoryTree> _categoryTreeRepository;
-    internal readonly AggregateRepository<Category> _categoryInstanceRepository;
 
     internal readonly ValueAttributeService _valueAttributeService;
 
-    protected EAVService(
-        ILogger<EAVService<TUpdateRequest, TEntityType, TViewModel>> logger,
-        InstanceFromDictionaryDeserializer<TViewModel> instanceFromDictionaryDeserializer,
+    public EAVService(
+        ILogger<EAVService> logger,
         IMapper mapper,
         JsonSerializerOptions jsonSerializerOptions,
         AggregateRepositoryFactory aggregateRepositoryFactory,
@@ -75,38 +69,31 @@ public abstract class EAVService<TUpdateRequest, TEntityType, TViewModel> where 
     {
         _logger = logger;
         _mapper = mapper;
-        _jsonSerializerOptions = jsonSerializerOptions;
+        JsonSerializerOptions = jsonSerializerOptions;
 
         _projectionRepositoryFactory = projectionRepositoryFactory;
 
         _userInfo = userInfo;
 
-
-
-        _attributeConfigurationRepository = aggregateRepositoryFactory
+        AttributeConfigurationRepository = aggregateRepositoryFactory
             .GetAggregateRepository<AttributeConfiguration>();
-        _entityConfigurationRepository = aggregateRepositoryFactory
+        EntityConfigurationRepository = aggregateRepositoryFactory
             .GetAggregateRepository<EntityConfiguration>();
-        _entityInstanceRepository = aggregateRepositoryFactory
-            .GetAggregateRepository<TEntityType>();
-
+        EntityInstanceRepository = aggregateRepositoryFactory
+            .GetAggregateRepository<EntityInstance>();
 
         _attributeConfigurationProjectionRepository = _projectionRepositoryFactory
             .GetProjectionRepository<AttributeConfigurationProjectionDocument>();
         _entityConfigurationProjectionRepository = _projectionRepositoryFactory
             .GetProjectionRepository<EntityConfigurationProjectionDocument>();
 
-        _entityInstanceFromDictionaryDeserializer = instanceFromDictionaryDeserializer;
+        _entityInstanceFromDictionaryDeserializer = new InstanceFromDictionaryDeserializer(_mapper);
 
         _entityInstanceCreateUpdateRequestFromJsonDeserializer =
             new EntityInstanceCreateUpdateRequestFromJsonDeserializer(
-                _attributeConfigurationRepository, jsonSerializerOptions
+                AttributeConfigurationRepository, jsonSerializerOptions
             );
 
-        _categoryInstanceRepository = aggregateRepositoryFactory
-            .GetAggregateRepository<Category>();
-        _categoryTreeRepository = aggregateRepositoryFactory
-            .GetAggregateRepository<CategoryTree>();
         _valueAttributeService = valueAttributeService;
     }
 
@@ -218,38 +205,11 @@ public abstract class EAVService<TUpdateRequest, TEntityType, TViewModel> where 
         return attributes;
     }
 
-    internal async Task<(string?, Guid?, ProblemDetails?)> BuildCategoryPath(Guid treeId, Guid? parentId,
-        CancellationToken cancellationToken)
-    {
-        CategoryTree? tree = await _categoryTreeRepository.LoadAsync(treeId, treeId.ToString(), cancellationToken)
-            .ConfigureAwait(false);
-        if (tree == null)
-        {
-            return (null, null, new ValidationErrorResponse("TreeId", "Tree not found"));
-        }
-
-        Category? parent = parentId == null
-            ? null
-            : _mapper.Map<Category>(await _categoryInstanceRepository
-                .LoadAsync(parentId.Value, tree.EntityConfigurationId.ToString(), cancellationToken)
-                .ConfigureAwait(false)
-            );
-
-        if (parent == null && parentId != null)
-        {
-            return (null, null, new ValidationErrorResponse("ParentId", "Parent category not found"));
-        }
-
-        CategoryPath? parentPath = parent?.CategoryPaths.FirstOrDefault(x => x.TreeId == treeId);
-        var categoryPath = parentPath == null ? "" : $"{parentPath.Path}/{parent?.MachineName}";
-        return (categoryPath, parent?.Id, null);
-    }
-
     #region EntityConfiguration
 
     public async Task<EntityConfigurationViewModel> GetEntityConfiguration(Guid id)
     {
-        EntityConfiguration? entityConfiguration = await _entityConfigurationRepository.LoadAsync(id, id.ToString());
+        EntityConfiguration? entityConfiguration = await EntityConfigurationRepository.LoadAsync(id, id.ToString());
 
         return _mapper.Map<EntityConfigurationViewModel>(entityConfiguration);
     }
@@ -259,7 +219,7 @@ public abstract class EAVService<TUpdateRequest, TEntityType, TViewModel> where 
         CancellationToken cancellationToken = default
     )
     {
-        var entityConfiguration = await _entityConfigurationRepository.LoadAsyncOrThrowNotFound(
+        var entityConfiguration = await EntityConfigurationRepository.LoadAsyncOrThrowNotFound(
             id,
             id.ToString(), // EntityConfiguration partition key is set to it's id in Domain model
             cancellationToken
@@ -333,7 +293,7 @@ public abstract class EAVService<TUpdateRequest, TEntityType, TViewModel> where 
 
         }
 
-        await _attributeConfigurationRepository.SaveAsync(_userInfo, attribute, cancellationToken)
+        await AttributeConfigurationRepository.SaveAsync(_userInfo, attribute, cancellationToken)
             .ConfigureAwait(false);
 
         return (_mapper.Map<AttributeConfigurationViewModel>(attribute), null);
@@ -346,7 +306,7 @@ public abstract class EAVService<TUpdateRequest, TEntityType, TViewModel> where 
         CancellationToken cancellationToken = default
     )
     {
-        AttributeConfiguration attribute = await _attributeConfigurationRepository
+        AttributeConfiguration attribute = await AttributeConfigurationRepository
             .LoadAsyncOrThrowNotFound(id, id.ToString(), cancellationToken);
 
         if (attribute.IsDeleted)
@@ -361,7 +321,7 @@ public abstract class EAVService<TUpdateRequest, TEntityType, TViewModel> where 
         Guid id, AttributeConfigurationCreateUpdateRequest updateRequest,
         CancellationToken cancellationToken = default)
     {
-        AttributeConfiguration? attribute = await _attributeConfigurationRepository
+        AttributeConfiguration? attribute = await AttributeConfigurationRepository
             .LoadAsync(id, id.ToString(), cancellationToken);
 
         if (attribute == null || attribute.IsDeleted)
@@ -388,7 +348,7 @@ public abstract class EAVService<TUpdateRequest, TEntityType, TViewModel> where 
 
         await _attributeConfigurationProjectionRepository.EnsureIndex(cancellationToken).ConfigureAwait(false);
 
-        await _attributeConfigurationRepository.SaveAsync(_userInfo, attribute, cancellationToken)
+        await AttributeConfigurationRepository.SaveAsync(_userInfo, attribute, cancellationToken)
             .ConfigureAwait(false);
 
         return (_mapper.Map<AttributeConfigurationViewModel>(attribute), null);
@@ -432,7 +392,7 @@ public abstract class EAVService<TUpdateRequest, TEntityType, TViewModel> where 
         {
             var requestAttribute = (EntityAttributeConfigurationCreateUpdateReferenceRequest)attribute;
 
-            AttributeConfiguration attributeConfiguration = await _attributeConfigurationRepository
+            AttributeConfiguration attributeConfiguration = await AttributeConfigurationRepository
                 .LoadAsyncOrThrowNotFound(
                     requestAttribute.AttributeConfigurationId,
                     requestAttribute.AttributeConfigurationId.ToString(),
@@ -511,7 +471,7 @@ public abstract class EAVService<TUpdateRequest, TEntityType, TViewModel> where 
 
         await _valueAttributeService.InitializeEntityConfigurationGeneratedValues(entityConfiguration.Id, allCreatedAttributes);
 
-        await _entityConfigurationRepository.SaveAsync(
+        await EntityConfigurationRepository.SaveAsync(
             _userInfo,
             entityConfiguration,
             cancellationToken
@@ -546,7 +506,7 @@ public abstract class EAVService<TUpdateRequest, TEntityType, TViewModel> where 
             );
         }
 
-        EntityConfiguration? entityConfiguration = await _entityConfigurationRepository.LoadAsync(
+        EntityConfiguration? entityConfiguration = await EntityConfigurationRepository.LoadAsync(
             entityUpdateRequest.Id,
             entityUpdateRequest.Id.ToString(),
             cancellationToken
@@ -583,7 +543,7 @@ public abstract class EAVService<TUpdateRequest, TEntityType, TViewModel> where 
                 var attributeShouldBeAdded = entityConfiguration.Attributes
                     .All(a => a.AttributeConfigurationId != attributeReferenceUpdate.AttributeConfigurationId);
 
-                AttributeConfiguration? attributeConfiguration = await _attributeConfigurationRepository.LoadAsync(
+                AttributeConfiguration? attributeConfiguration = await AttributeConfigurationRepository.LoadAsync(
                     attributeReferenceUpdate.AttributeConfigurationId,
                     attributeReferenceUpdate.AttributeConfigurationId.ToString(),
                     cancellationToken
@@ -672,7 +632,7 @@ public abstract class EAVService<TUpdateRequest, TEntityType, TViewModel> where 
         }
 
         //await _entityConfigurationProjectionRepository.EnsureIndex(cancellationToken).ConfigureAwait(false);
-        await _entityConfigurationRepository.SaveAsync(_userInfo, entityConfiguration, cancellationToken)
+        await EntityConfigurationRepository.SaveAsync(_userInfo, entityConfiguration, cancellationToken)
             .ConfigureAwait(false);
 
         await EnsureProjectionIndexForEntityConfiguration(entityConfiguration);
@@ -699,7 +659,7 @@ public abstract class EAVService<TUpdateRequest, TEntityType, TViewModel> where 
         CancellationToken cancellationToken = default
     )
     {
-        AttributeConfiguration attributeConfiguration = await _attributeConfigurationRepository
+        AttributeConfiguration attributeConfiguration = await AttributeConfigurationRepository
             .LoadAsyncOrThrowNotFound(
                 attributeId,
                 attributeId.ToString(),
@@ -711,7 +671,7 @@ public abstract class EAVService<TUpdateRequest, TEntityType, TViewModel> where 
             return (null, new ValidationErrorResponse(nameof(attributeId), "Attribute not found"));
         }
 
-        EntityConfiguration entityConfiguration = await _entityConfigurationRepository.LoadAsyncOrThrowNotFound(
+        EntityConfiguration entityConfiguration = await EntityConfigurationRepository.LoadAsyncOrThrowNotFound(
             entityConfigurationId,
             entityConfigurationId.ToString(),
             cancellationToken
@@ -736,7 +696,7 @@ public abstract class EAVService<TUpdateRequest, TEntityType, TViewModel> where 
         entityConfiguration.AddAttribute(attributeId);
         await _entityConfigurationProjectionRepository.EnsureIndex(cancellationToken).ConfigureAwait(false);
 
-        await _entityConfigurationRepository.SaveAsync(_userInfo, entityConfiguration, cancellationToken)
+        await EntityConfigurationRepository.SaveAsync(_userInfo, entityConfiguration, cancellationToken)
             .ConfigureAwait(false);
 
         await _valueAttributeService.InitializeGeneratedValue(entityConfigurationId, attributeConfiguration);
@@ -752,7 +712,7 @@ public abstract class EAVService<TUpdateRequest, TEntityType, TViewModel> where 
     {
         EnsureAttributeMachineNameIsAdded(attributeConfigurationCreateUpdateRequest);
 
-        EntityConfiguration entityConfiguration = await _entityConfigurationRepository.LoadAsyncOrThrowNotFound(
+        EntityConfiguration entityConfiguration = await EntityConfigurationRepository.LoadAsyncOrThrowNotFound(
             entityConfigurationId,
             entityConfigurationId.ToString(),
             cancellationToken
@@ -784,7 +744,7 @@ public abstract class EAVService<TUpdateRequest, TEntityType, TViewModel> where 
         entityConfiguration.AddAttribute(createdAttribute.Id);
         await _attributeConfigurationProjectionRepository.EnsureIndex(cancellationToken).ConfigureAwait(false);
 
-        await _entityConfigurationRepository.SaveAsync(_userInfo, entityConfiguration, cancellationToken);
+        await EntityConfigurationRepository.SaveAsync(_userInfo, entityConfiguration, cancellationToken);
 
         await _valueAttributeService.InitializeGeneratedValue(entityConfigurationId, createdAttribute);
 
@@ -794,7 +754,7 @@ public abstract class EAVService<TUpdateRequest, TEntityType, TViewModel> where 
     public async Task DeleteAttributesFromEntityConfiguration(List<Guid> attributesIds, Guid entityConfigurationId,
         CancellationToken cancellationToken = default)
     {
-        EntityConfiguration entityConfiguration = await _entityConfigurationRepository.LoadAsyncOrThrowNotFound(
+        EntityConfiguration entityConfiguration = await EntityConfigurationRepository.LoadAsyncOrThrowNotFound(
             entityConfigurationId,
             entityConfigurationId.ToString(),
             cancellationToken
@@ -813,14 +773,14 @@ public abstract class EAVService<TUpdateRequest, TEntityType, TViewModel> where 
 
         await _entityConfigurationProjectionRepository.EnsureIndex(cancellationToken).ConfigureAwait(false);
 
-        await _entityConfigurationRepository.SaveAsync(_userInfo, entityConfiguration, cancellationToken);
+        await EntityConfigurationRepository.SaveAsync(_userInfo, entityConfiguration, cancellationToken);
     }
 
     public async Task DeleteAttributes(List<Guid> attributesIds, CancellationToken cancellationToken = default)
     {
         foreach (Guid attributeId in attributesIds)
         {
-            AttributeConfiguration? attributeConfiguration = await _attributeConfigurationRepository.LoadAsync(
+            AttributeConfiguration? attributeConfiguration = await AttributeConfigurationRepository.LoadAsync(
                 attributeId,
                 attributeId.ToString(),
                 cancellationToken
@@ -833,7 +793,7 @@ public abstract class EAVService<TUpdateRequest, TEntityType, TViewModel> where 
             {
                 attributeConfiguration.Delete();
 
-                await _attributeConfigurationRepository
+                await AttributeConfigurationRepository
                     .SaveAsync(_userInfo, attributeConfiguration, cancellationToken).ConfigureAwait(false);
             }
         }
@@ -892,7 +852,7 @@ public abstract class EAVService<TUpdateRequest, TEntityType, TViewModel> where 
             var defaultTypeConfig = DefaultAttributeConfigurationFactory.GetDefaultConfiguration(type, $"element_config_{machineName}", tenantId);
             if (defaultTypeConfig != null)
             {
-                var saved = await _attributeConfigurationRepository.SaveAsync(_userInfo, defaultTypeConfig, cancellationToken).ConfigureAwait(false);
+                var saved = await AttributeConfigurationRepository.SaveAsync(_userInfo, defaultTypeConfig, cancellationToken).ConfigureAwait(false);
                 resultGuid = saved ? defaultTypeConfig.Id : null;
             }
         }
@@ -943,96 +903,144 @@ public abstract class EAVService<TUpdateRequest, TEntityType, TViewModel> where 
             };
         }
     }
-    #endregion
 
-    // public async Task<List<EntityInstanceViewModel>> ListEntityInstances(string entityConfigurationMachineName, int take, int skip = 0)
-    // {
-    //     var records = await _entityInstanceRepository
-    //         .GetQuery()
-    //         .Where(e => e.EntityConfiguration.MachineName == entityConfigurationMachineName)
-    //         .Take(take)
-    //         .Skip(skip)
-    //         .ToListAsync();
-    //
-    //     return _mapper.Map<List<EntityInstanceViewModel>>(records);
-    // }
-    //
-    // public async Task<List<EntityInstanceViewModel>> ListEntityInstances(Guid entityConfigurationId, int take, int skip = 0)
-    // {
-    //     var records = await _entityInstanceRepository
-    //         .GetQuery()
-    //         .Where(e => e.EntityConfigurationId == entityConfigurationId)
-    //         .Take(take)
-    //         .Skip(skip)
-    //         .ToListAsync();
-    //
-    //     return _mapper.Map<List<EntityInstanceViewModel>>(records);
-    // }
-
-    #region BaseEntityInstance
-
-    public async Task<TViewModel?> GetEntityInstance(Guid id, string partitionKey)
-    {
-        TEntityType? entityInstance = await _entityInstanceRepository.LoadAsync(id, partitionKey);
-
-        return _mapper.Map<TViewModel?>(entityInstance);
-    }
-
-    public async Task<JsonDocument> GetEntityInstanceJsonMultiLanguage(Guid id, string partitionKey)
-    {
-        TViewModel? entityInstanceViewModel = await GetEntityInstance(id, partitionKey);
-
-        return SerializeEntityInstanceToJsonMultiLanguage(entityInstanceViewModel);
-    }
-
-    public async Task<JsonDocument> GetEntityInstanceJsonSingleLanguage(
-        Guid id,
-        string partitionKey,
-        string language,
-        string fallbackLanguage = "en-US")
-    {
-        TViewModel? entityInstanceViewModel = await GetEntityInstance(id, partitionKey);
-
-        return SerializeEntityInstanceToJsonSingleLanguage(entityInstanceViewModel, language, fallbackLanguage);
-    }
-
-    public JsonDocument SerializeEntityInstanceToJsonMultiLanguage(TViewModel? entityInstanceViewModel)
-    {
-        var serializerOptions = new JsonSerializerOptions(_jsonSerializerOptions);
-        serializerOptions.Converters.Add(new LocalizedStringMultiLanguageSerializer());
-        serializerOptions.Converters.Add(new EntityInstanceViewModelToJsonSerializer());
-
-        return JsonSerializer.SerializeToDocument(entityInstanceViewModel, serializerOptions);
-    }
-
-    public JsonDocument SerializeEntityInstanceToJsonSingleLanguage(
-        TViewModel? entityInstanceViewModel, string language, string fallbackLanguage = "en-US"
+    internal async Task<List<AttributeConfiguration>> GetAttributeConfigurationsForEntityConfiguration(
+        EntityConfiguration entityConfiguration, CancellationToken cancellationToken = default
     )
     {
-        var serializerOptions = new JsonSerializerOptions(_jsonSerializerOptions);
-        serializerOptions.Converters.Add(new LocalizedStringSingleLanguageSerializer(language, fallbackLanguage));
-        serializerOptions.Converters.Add(new EntityInstanceViewModelToJsonSerializer());
+        var attributeConfigurations = new List<AttributeConfiguration>();
 
-        return JsonSerializer.SerializeToDocument(entityInstanceViewModel, serializerOptions);
+        foreach (EntityConfigurationAttributeReference attributeReference in entityConfiguration.Attributes)
+        {
+            attributeConfigurations.Add(
+                await AttributeConfigurationRepository.LoadAsyncOrThrowNotFound(
+                    attributeReference.AttributeConfigurationId,
+                    attributeReference.AttributeConfigurationId.ToString(),
+                    cancellationToken
+                )
+            );
+        }
+
+        return attributeConfigurations;
+    }
+    #endregion
+
+    #region EntityInstance
+
+    public async Task<(EntityInstanceViewModel?, ProblemDetails?)> CreateEntityInstance(
+         EntityInstanceCreateRequest entity,
+         bool dryRun = false,
+         bool requiredAttributesCanBeNull = false,
+         CancellationToken cancellationToken = default
+    )
+    {
+        EntityConfiguration? entityConfiguration = await EntityConfigurationRepository.LoadAsync(
+            entity.EntityConfigurationId,
+            entity.EntityConfigurationId.ToString(),
+            cancellationToken
+        );
+
+        if (entityConfiguration == null)
+        {
+            return (null, new ValidationErrorResponse("EntityConfigurationId", "Configuration not found"))!;
+        }
+
+        List<AttributeConfiguration> attributeConfigurations =
+            await GetAttributeConfigurationsForEntityConfiguration(
+                entityConfiguration,
+                cancellationToken
+            );
+
+        //TODO: add check for categoryPath
+        var entityInstance = new EntityInstance(
+            Guid.NewGuid(),
+            entity.EntityConfigurationId,
+            _mapper.Map<List<AttributeInstance>>(entity.Attributes),
+            entity.MachineName,
+            entity.TenantId,
+            _mapper.Map<List<CategoryPath>>(entity.CategoryPaths)
+        );
+
+        var validationErrors = new Dictionary<string, string[]>();
+        List<IGeneratedValueInfo?> generatedValues = new();
+
+        foreach (AttributeConfiguration a in attributeConfigurations)
+        {
+            AttributeInstance? attributeValue = entityInstance.Attributes
+                .FirstOrDefault(attr => a.MachineName == attr.ConfigurationAttributeMachineName);
+
+            List<string> attrValidationErrors = a.ValidateInstance(attributeValue, requiredAttributesCanBeNull);
+            if (attrValidationErrors is { Count: > 0 })
+            {
+                validationErrors.Add(a.MachineName, attrValidationErrors.ToArray());
+            }
+
+            generatedValues.Add(await _valueAttributeService.GenerateAttributeInstanceValue(entityConfiguration, a, attributeValue));
+        }
+
+        if (validationErrors.Count > 0)
+        {
+            return (null, new ValidationErrorResponse(validationErrors))!;
+        }
+
+        if (!dryRun)
+        {
+            var response = await _valueAttributeService.SaveValues(entityConfiguration.Id, generatedValues);
+
+            foreach (var actionResponse in response.Where(x => x.Status == GeneratedValueActionStatus.Failed))
+            {
+                var attributeMachineName = attributeConfigurations.First(x => x.Id == actionResponse.AttributeConfigurationId).MachineName;
+
+                validationErrors.Add(
+                    attributeMachineName,
+                    new string[] { $"Failed to generate value: {actionResponse.GeneratedValueType?.Name}" });
+            }
+
+            ProjectionDocumentSchema schema = ProjectionDocumentSchemaFactory
+                .FromEntityConfiguration(entityConfiguration, attributeConfigurations);
+
+            IProjectionRepository projectionRepository = _projectionRepositoryFactory.GetProjectionRepository(schema);
+            await projectionRepository.EnsureIndex(cancellationToken).ConfigureAwait(false);
+
+            var entityInstanceSaved =
+                await EntityInstanceRepository.SaveAsync(_userInfo, entityInstance, cancellationToken);
+
+            if (!entityInstanceSaved)
+            {
+                //TODO: What do we want to do with internal exceptions and unsuccessful flow?
+                throw new Exception("Entity was not saved");
+            }
+
+            return (_mapper.Map<EntityInstanceViewModel>(entityInstance), null);
+        }
+
+        return (_mapper.Map<EntityInstanceViewModel>(entityInstance), null);
     }
 
-    public async Task<(TViewModel, ProblemDetails)> UpdateEntityInstance(
+    public async Task<EntityInstanceViewModel?> GetEntityInstance(Guid id, string partitionKey)
+    {
+        EntityInstance? entityInstance = await EntityInstanceRepository.LoadAsync(id, partitionKey);
+
+        return _mapper.Map<EntityInstanceViewModel?>(entityInstance);
+    }
+
+    public async Task<(EntityInstanceViewModel, ProblemDetails)> UpdateEntityInstance(
         string partitionKey,
-        TUpdateRequest updateRequest,
+        EntityInstanceUpdateRequest updateRequest,
         bool dryRun = false,
         bool requiredAttributesCanBeNull = false,
         CancellationToken cancellationToken = default
     )
     {
-        TEntityType? entityInstance =
-            await _entityInstanceRepository.LoadAsync(updateRequest.Id, partitionKey, cancellationToken);
+        EntityInstance? entityInstance =
+            await EntityInstanceRepository.LoadAsync(updateRequest.Id, partitionKey, cancellationToken);
 
         if (entityInstance == null)
         {
             return (null, new ValidationErrorResponse(nameof(updateRequest.Id), "Entity instance not found"))!;
         }
 
-        EntityConfiguration? entityConfiguration = await _entityConfigurationRepository.LoadAsync(
+        EntityConfiguration? entityConfiguration = await EntityConfigurationRepository.LoadAsync(
             entityInstance.EntityConfigurationId,
             entityInstance.EntityConfigurationId.ToString(),
             cancellationToken
@@ -1147,7 +1155,7 @@ public abstract class EAVService<TUpdateRequest, TEntityType, TViewModel> where 
         {
             await _valueAttributeService.SaveValues(entityConfiguration.Id, generatedValues);
 
-            var entityInstanceSaved = await _entityInstanceRepository
+            var entityInstanceSaved = await EntityInstanceRepository
                 .SaveAsync(_userInfo, entityInstance, cancellationToken)
                 .ConfigureAwait(false);
             if (!entityInstanceSaved)
@@ -1156,7 +1164,7 @@ public abstract class EAVService<TUpdateRequest, TEntityType, TViewModel> where 
             }
         }
 
-        return (_mapper.Map<TViewModel>(entityInstance), null)!;
+        return (_mapper.Map<EntityInstanceViewModel>(entityInstance), null)!;
     }
 
     /// <summary>
@@ -1168,13 +1176,13 @@ public abstract class EAVService<TUpdateRequest, TEntityType, TViewModel> where 
     /// <param name="query"></param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    public async Task<ProjectionQueryResult<TViewModel>> QueryInstances(
+    public async Task<ProjectionQueryResult<EntityInstanceViewModel>> QueryInstances(
         Guid entityConfigurationId,
         ProjectionQuery query,
         CancellationToken cancellationToken = default
     )
     {
-        EntityConfiguration entityConfiguration = await _entityConfigurationRepository.LoadAsyncOrThrowNotFound(
+        EntityConfiguration entityConfiguration = await EntityConfigurationRepository.LoadAsyncOrThrowNotFound(
             entityConfigurationId,
             entityConfigurationId.ToString(),
             cancellationToken
@@ -1197,150 +1205,6 @@ public abstract class EAVService<TUpdateRequest, TEntityType, TViewModel> where 
         return results.TransformResultDocuments(
             r => _entityInstanceFromDictionaryDeserializer.Deserialize(attributes, r)
         );
-    }
-
-    /// <summary>
-    /// Returns records in json serialized format.
-    /// LocalizedStrings are returned as objects whose property names are language identifiers
-    /// and property values are language translation strings.
-    ///
-    /// EntityInstance with:
-    ///
-    /// - one text attribute of type LocalizedString "productName"
-    /// - one number attribute of type Number "price"
-    ///
-    /// will be returned in following json format:
-    ///
-    /// ```
-    /// {
-    ///   "productName": {
-    ///     "en-US": "Terraforming Mars",
-    ///     "ru-RU": "Покорение Марса"
-    ///   },
-    ///   "price": 100
-    /// }
-    /// ```
-    /// </summary>
-    /// <param name="entityConfigurationId"></param>
-    /// <param name="query"></param>
-    /// <param name="cancellationToken"></param>
-    /// <returns></returns>
-    public async Task<ProjectionQueryResult<JsonDocument>> QueryInstancesJsonMultiLanguage(
-        Guid entityConfigurationId,
-        ProjectionQuery query,
-        CancellationToken cancellationToken = default
-    )
-    {
-        var results = await QueryInstances(
-            entityConfigurationId,
-            query,
-            cancellationToken
-        );
-
-        var serializerOptions = new JsonSerializerOptions(_jsonSerializerOptions);
-        serializerOptions.Converters.Add(new EntityInstanceViewModelToJsonSerializer());
-        serializerOptions.Converters.Add(new LocalizedStringMultiLanguageSerializer());
-
-        return results.TransformResultDocuments(
-            r => JsonSerializer.SerializeToDocument(r, serializerOptions)
-        );
-    }
-
-    /// <summary>
-    /// Returns records in json serialized format.
-    /// LocalizedStrings are converted to a single language string of the language passed in parameters.
-    ///
-    /// EntityInstance with:
-    ///
-    /// - one text attribute of type LocalizedString "productName"
-    /// - one number attribute of type Number "price"
-    ///
-    /// will be returned in following json format:
-    ///
-    /// ```
-    /// {
-    ///   "productName": "Terraforming Mars",
-    ///   "price": 100
-    /// }
-    /// ```
-    /// </summary>
-    /// <param name="entityConfigurationId"></param>
-    /// <param name="query"></param>
-    /// <param name="language">Language to use from all localized strings. Only this language strings will be returned.</param>
-    /// <param name="fallbackLanguage">If main language will not be found, this language will be tried. Defaults to en-US.</param>
-    /// <param name="cancellationToken"></param>
-    /// <returns></returns>
-    public async Task<ProjectionQueryResult<JsonDocument>> QueryInstancesJsonSingleLanguage(
-        Guid entityConfigurationId,
-        ProjectionQuery query,
-        string language = "en-US",
-        string fallbackLanguage = "en-US",
-        CancellationToken cancellationToken = default
-    )
-    {
-        var results = await QueryInstances(
-            entityConfigurationId,
-            query,
-            cancellationToken
-        );
-
-        var serializerOptions = new JsonSerializerOptions(_jsonSerializerOptions);
-        serializerOptions.Converters.Add(new EntityInstanceViewModelToJsonSerializer());
-        serializerOptions.Converters.Add(new LocalizedStringSingleLanguageSerializer(language, fallbackLanguage));
-
-        return results.TransformResultDocuments(
-            r => JsonSerializer.SerializeToDocument(r, serializerOptions)
-        );
-    }
-
-    public async Task<(TViewModel, ProblemDetails)> UpdateCategoryPath(Guid entityInstanceId,
-        string entityInstancePartitionKey, Guid treeId, Guid? newParentId, CancellationToken cancellationToken = default)
-    {
-        TEntityType? entityInstance = await _entityInstanceRepository
-            .LoadAsync(entityInstanceId, entityInstancePartitionKey, cancellationToken).ConfigureAwait(false);
-        if (entityInstance == null)
-        {
-            return (null, new ValidationErrorResponse(nameof(entityInstanceId), "Instance not found"))!;
-        }
-
-        (var newCategoryPath, var parentId, ProblemDetails? errors) =
-            await BuildCategoryPath(treeId, newParentId, cancellationToken).ConfigureAwait(false);
-
-        if (errors != null)
-        {
-            return (null, errors)!;
-        }
-
-        entityInstance.ChangeCategoryPath(treeId, newCategoryPath ?? "", parentId!.Value);
-        var saved = await _entityInstanceRepository.SaveAsync(_userInfo, entityInstance, cancellationToken)
-            .ConfigureAwait(false);
-        if (!saved)
-        {
-            //TODO: What do we want to do with internal exceptions and unsuccessful flow?
-            throw new Exception("Entity was not saved");
-        }
-
-        return (_mapper.Map<TViewModel>(entityInstance), null)!;
-    }
-
-    internal async Task<List<AttributeConfiguration>> GetAttributeConfigurationsForEntityConfiguration(
-        EntityConfiguration entityConfiguration, CancellationToken cancellationToken = default
-    )
-    {
-        var attributeConfigurations = new List<AttributeConfiguration>();
-
-        foreach (EntityConfigurationAttributeReference attributeReference in entityConfiguration.Attributes)
-        {
-            attributeConfigurations.Add(
-                await _attributeConfigurationRepository.LoadAsyncOrThrowNotFound(
-                    attributeReference.AttributeConfigurationId,
-                    attributeReference.AttributeConfigurationId.ToString(),
-                    cancellationToken
-                )
-            );
-        }
-
-        return attributeConfigurations;
     }
 
     #endregion

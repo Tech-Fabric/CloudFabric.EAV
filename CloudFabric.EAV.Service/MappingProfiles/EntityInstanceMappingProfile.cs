@@ -14,25 +14,17 @@ public class EntityInstanceProfile : Profile
         CreateMap<EntityInstanceUpdateRequest, EntityInstance>();
 
         CreateMap<EntityInstance, EntityInstanceViewModel>();
+        CreateMap<EntityInstance, EntityTreeInstanceViewModel>();
         CreateMap<EntityInstanceViewModel, EntityInstance>();
+        CreateMap<EntityInstanceViewModel, EntityTreeInstanceViewModel>();
 
 
         CreateMap<CategoryTreeCreateRequest, CategoryTree>();
-        CreateMap<CategoryTree, HierarchyViewModel>();
-
-        CreateMap<CategoryInstanceCreateRequest, Category>();
-        CreateMap<Category, CategoryViewModel>();
-        CreateMap<Category, EntityInstanceViewModel>();
-        CreateMap<CategoryViewModel, EntityTreeInstanceViewModel>().ForMember(o => o.Children,
-            opt => opt.MapFrom(_ => new List<EntityTreeInstanceViewModel>())
-        );
-
-        CreateMap<EntityInstance, Category>();
-        CreateMap<Category, EntityInstance>();
-
-        CreateMap<EntityInstanceViewModel, CategoryViewModel>();
+        CreateMap<CategoryTree, CategoryTreeViewModel>();
 
         CreateMap<CategoryPath, CategoryPathViewModel>();
         CreateMap<CategoryPathViewModel, CategoryPath>();
+
+        CreateMap<CategoryPathCreateUpdateRequest, CategoryPath>();
     }
 }

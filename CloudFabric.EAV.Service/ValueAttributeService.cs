@@ -44,7 +44,7 @@ public class ValueAttributeService
     }
 
     /// <summary>
-    /// Initalize generating value for attribute configuration within entity configuration based on attribute type.
+    /// Initialize generating value for attribute configuration within entity configuration based on attribute type.
     /// Already initialized values will not be overriten or changed.
     /// </summary>
     /// <param name="entityConfigurationId"></param>

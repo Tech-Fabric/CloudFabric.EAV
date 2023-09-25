@@ -27,7 +27,9 @@ public class CategoryTestsPostgresql : CategoryTests
             "eav_tests_event_store",
             "eav_tests_item_store"
         );
-        _projectionRepositoryFactory = new PostgresqlProjectionRepositoryFactory(new LoggerFactory(), connectionString);
+        _projectionRepositoryFactory = new PostgresqlProjectionRepositoryFactory(
+            new LoggerFactory(), connectionString, includeDebugInformation: true
+        );
 
         _store = new PostgresqlStore(connectionString, "eav_test_item_store");
 

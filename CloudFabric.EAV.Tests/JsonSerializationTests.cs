@@ -3,6 +3,7 @@ using System.Text.Json;
 using CloudFabric.EAV.Domain.Models;
 using CloudFabric.EAV.Models.RequestModels;
 using CloudFabric.EAV.Models.ViewModels;
+using CloudFabric.EAV.Service;
 using CloudFabric.EAV.Tests.Factories;
 using CloudFabric.EventSourcing.EventStore;
 using CloudFabric.EventSourcing.EventStore.InMemory;
@@ -63,14 +64,14 @@ public class JsonSerializationTests : BaseQueryTests.BaseQueryTests
         EntityConfigurationCreateRequest configurationCreateRequest =
             EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
 
-        (EntityConfigurationViewModel? createdConfiguration, _) = await _eavEntityInstanceService.CreateEntityConfiguration(
+        (EntityConfigurationViewModel? createdConfiguration, _) = await _eavService.CreateEntityConfiguration(
             configurationCreateRequest,
             CancellationToken.None
         );
 
         await ProjectionsRebuildProcessor.RebuildProjectionsThatRequireRebuild();
 
-        EntityConfigurationViewModel configuration = await _eavEntityInstanceService.GetEntityConfiguration(
+        EntityConfigurationViewModel configuration = await _eavService.GetEntityConfiguration(
             createdConfiguration!.Id
         );
 
@@ -80,7 +81,7 @@ public class JsonSerializationTests : BaseQueryTests.BaseQueryTests
             .CreateValidBoardGameEntityInstanceCreateRequestJsonMultiLanguage(createdConfiguration.Id);
 
         (JsonDocument createdInstance, ProblemDetails createProblemDetails) =
-            await _eavEntityInstanceService.CreateEntityInstance(
+            await _eavService.CreateEntityInstance(
                 instanceCreateRequest,
                 configuration.Id,
                 configuration.TenantId.Value
@@ -102,7 +103,7 @@ public class JsonSerializationTests : BaseQueryTests.BaseQueryTests
 
         await Task.Delay(ProjectionsUpdateDelay);
 
-        ProjectionQueryResult<JsonDocument>? results = await _eavEntityInstanceService
+        ProjectionQueryResult<JsonDocument>? results = await _eavService
             .QueryInstancesJsonMultiLanguage(createdConfiguration.Id, query);
 
         results?.TotalRecordsFound.Should().BeGreaterThan(0);
@@ -139,7 +140,7 @@ public class JsonSerializationTests : BaseQueryTests.BaseQueryTests
             .Should()
             .Be(createdInstance.RootElement.GetProperty("release_date").GetProperty("from").GetDateTime());
 
-        ProjectionQueryResult<JsonDocument> resultsJsonMultiLanguage = await _eavEntityInstanceService
+        ProjectionQueryResult<JsonDocument> resultsJsonMultiLanguage = await _eavService
             .QueryInstancesJsonMultiLanguage(createdConfiguration.Id, query);
 
         resultsJsonMultiLanguage.Records.First().Document.RootElement.GetProperty("name")
@@ -147,7 +148,7 @@ public class JsonSerializationTests : BaseQueryTests.BaseQueryTests
         resultsJsonMultiLanguage.Records.First().Document.RootElement.GetProperty("name")
             .GetProperty("ru-RU").GetString().Should().Be("Азул");
 
-        ProjectionQueryResult<JsonDocument> resultsJsonSingleLanguage = await _eavEntityInstanceService
+        ProjectionQueryResult<JsonDocument> resultsJsonSingleLanguage = await _eavService
             .QueryInstancesJsonSingleLanguage(
                 createdConfiguration.Id, query, "en-US"
             );
@@ -155,7 +156,7 @@ public class JsonSerializationTests : BaseQueryTests.BaseQueryTests
         resultsJsonSingleLanguage.Records.First().Document.RootElement.GetProperty("name")
             .GetString().Should().Be("Azul");
 
-        ProjectionQueryResult<JsonDocument>? resultsJsonSingleLanguageRu = await _eavEntityInstanceService
+        ProjectionQueryResult<JsonDocument>? resultsJsonSingleLanguageRu = await _eavService
             .QueryInstancesJsonSingleLanguage(
                 createdConfiguration.Id, query, "ru-RU"
             );
@@ -169,14 +170,14 @@ public class JsonSerializationTests : BaseQueryTests.BaseQueryTests
 
         var firstDocumentId = resultsJsonMultiLanguage.Records[0]?.Document!.RootElement.GetProperty("id").GetString();
 
-        var oneInstanceJsonMultiLang = await _eavEntityInstanceService.GetEntityInstanceJsonMultiLanguage(
+        var oneInstanceJsonMultiLang = await _eavService.GetEntityInstanceJsonMultiLanguage(
             Guid.Parse(firstDocumentId!),
             createdInstance.RootElement.GetProperty("entityConfigurationId").GetString()!
         );
 
         oneInstanceJsonMultiLang.RootElement.GetProperty("name").GetProperty("en-US").GetString().Should().Be("Azul");
 
-        var oneInstanceJsonSingleLang = await _eavEntityInstanceService.GetEntityInstanceJsonSingleLanguage(
+        var oneInstanceJsonSingleLang = await _eavService.GetEntityInstanceJsonSingleLanguage(
             Guid.Parse(firstDocumentId!),
             createdInstance.RootElement.GetProperty("entityConfigurationId").GetString()!,
             "en-US"
@@ -191,12 +192,12 @@ public class JsonSerializationTests : BaseQueryTests.BaseQueryTests
         EntityConfigurationCreateRequest configurationCreateRequest =
             EntityConfigurationFactory.CreateBoardGameEntityConfigurationCreateRequest();
 
-        (EntityConfigurationViewModel? createdConfiguration, _) = await _eavEntityInstanceService.CreateEntityConfiguration(
+        (EntityConfigurationViewModel? createdConfiguration, _) = await _eavService.CreateEntityConfiguration(
             configurationCreateRequest,
             CancellationToken.None
         );
 
-        EntityConfigurationViewModel configuration = await _eavEntityInstanceService.GetEntityConfiguration(
+        EntityConfigurationViewModel configuration = await _eavService.GetEntityConfiguration(
             createdConfiguration!.Id
         );
 
@@ -206,7 +207,7 @@ public class JsonSerializationTests : BaseQueryTests.BaseQueryTests
             .CreateValidBoardGameEntityInstanceCreateRequestJsonSingleLanguage(createdConfiguration.Id);
 
         (JsonDocument createdInstance, ProblemDetails createProblemDetails) =
-            await _eavEntityInstanceService.CreateEntityInstance(
+            await _eavService.CreateEntityInstance(
                 instanceCreateRequest,
                 configuration.Id,
                 configuration.TenantId.Value
@@ -228,7 +229,7 @@ public class JsonSerializationTests : BaseQueryTests.BaseQueryTests
 
         await Task.Delay(ProjectionsUpdateDelay);
 
-        ProjectionQueryResult<JsonDocument>? results = await _eavEntityInstanceService
+        ProjectionQueryResult<JsonDocument>? results = await _eavService
             .QueryInstancesJsonMultiLanguage(createdConfiguration.Id, query);
 
         results?.TotalRecordsFound.Should().BeGreaterThan(0);
@@ -265,7 +266,7 @@ public class JsonSerializationTests : BaseQueryTests.BaseQueryTests
             .Should()
             .Be(createdInstance.RootElement.GetProperty("release_date").GetProperty("from").GetDateTime());
 
-        ProjectionQueryResult<JsonDocument> resultsJsonMultiLanguage = await _eavEntityInstanceService
+        ProjectionQueryResult<JsonDocument> resultsJsonMultiLanguage = await _eavService
             .QueryInstancesJsonMultiLanguage(createdConfiguration.Id, query);
 
         resultsJsonMultiLanguage.Records.First().Document.RootElement.GetProperty("name")
@@ -275,16 +276,16 @@ public class JsonSerializationTests : BaseQueryTests.BaseQueryTests
     [TestMethod]
     public async Task CreateCategoryInstance()
     {
-        JsonSerializerOptions _serializerOptions = new JsonSerializerOptions();
-        _serializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+        JsonSerializerOptions serializerOptions = new JsonSerializerOptions();
+        serializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
 
         EntityConfigurationCreateRequest categoryConfigurationRequest =
             EntityConfigurationFactory.CreateBoardGameCategoryConfigurationCreateRequest();
 
         (EntityConfigurationViewModel? createdCategoryConfiguration, _) =
-            await _eavEntityInstanceService.CreateEntityConfiguration(categoryConfigurationRequest, CancellationToken.None);
+            await _eavService.CreateEntityConfiguration(categoryConfigurationRequest, CancellationToken.None);
 
-        (HierarchyViewModel hierarchy, _) = await _eavCategoryService.CreateCategoryTreeAsync(
+        (CategoryTreeViewModel hierarchy, _) = await _eavCategoryService.CreateCategoryTreeAsync(
             new CategoryTreeCreateRequest
             {
                 EntityConfigurationId = createdCategoryConfiguration!.Id,
@@ -295,7 +296,7 @@ public class JsonSerializationTests : BaseQueryTests.BaseQueryTests
 
         await ProjectionsRebuildProcessor.RebuildProjectionsThatRequireRebuild();
 
-        EntityConfigurationViewModel configuration = await _eavEntityInstanceService.GetEntityConfiguration(
+        EntityConfigurationViewModel configuration = await _eavService.GetEntityConfiguration(
             createdCategoryConfiguration!.Id
         );
 
@@ -316,14 +317,14 @@ public class JsonSerializationTests : BaseQueryTests.BaseQueryTests
             }
         };
 
-        var results = await _eavEntityInstanceService.QueryInstancesJsonSingleLanguage(createdCategoryConfiguration.Id, query);
+        var results = await _eavService.QueryInstancesJsonSingleLanguage(createdCategoryConfiguration.Id, query);
 
         var resultDocument = results?.Records.Select(r => r.Document).First();
 
         resultDocument!.RootElement.GetProperty("entityConfigurationId").GetString().Should().Be(createdCategoryConfiguration.Id.ToString());
         resultDocument!.RootElement.GetProperty("tenantId").GetString().Should().Be(createdCategoryConfiguration.TenantId.ToString());
 
-        JsonSerializer.Deserialize<List<CategoryPath>>(resultDocument!.RootElement.GetProperty("categoryPaths"), _serializerOptions)!
+        JsonSerializer.Deserialize<List<CategoryPath>>(resultDocument!.RootElement.GetProperty("categoryPaths"), serializerOptions)!
             .First().TreeId.Should().Be(hierarchy.Id);
 
         (createdCategory, _) = await _eavCategoryService.CreateCategoryInstance(
@@ -338,7 +339,7 @@ public class JsonSerializationTests : BaseQueryTests.BaseQueryTests
         createdCategory!.RootElement.GetProperty("entityConfigurationId").GetString().Should().Be(createdCategoryConfiguration.Id.ToString());
         createdCategory!.RootElement.GetProperty("tenantId").GetString().Should().Be(createdCategoryConfiguration.TenantId.ToString());
 
-        JsonSerializer.Deserialize<List<CategoryPath>>(resultDocument!.RootElement.GetProperty("categoryPaths"), _serializerOptions)!
+        JsonSerializer.Deserialize<List<CategoryPath>>(resultDocument!.RootElement.GetProperty("categoryPaths"), serializerOptions)!
             .First().TreeId.Should().Be(hierarchy.Id);
     }
 }
